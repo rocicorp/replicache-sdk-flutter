@@ -1,13 +1,7 @@
-.env
-.now
-.vscode
-repl
+.DS_Store
+.dart_tool/
 
-# build artifacts
-build
-samples/hello-replicant-android-java/.idea
-samples/hello-replicant-android-java/repm/build/
-repm/repm-sources.jar
-repm/repm.aar
-repm/Repm.framework
-vendor
+.packages
+.pub/
+
+build/
