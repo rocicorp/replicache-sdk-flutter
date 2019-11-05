@@ -2,7 +2,7 @@
 
 #### 1. Get the SDK
 
-Download the latest [replicant-flutter-sdk.tar.gz](https://github.com/aboodman/replicant/releases), then unzip it.
+Download the latest [replicant-flutter-sdk.tar.gz](https://github.com/rocicorp/replicant-sdk-flutter/releases/latest/download/replicant-flutter-sdk.tar.gz), then unzip it
 
 ```
 tar xvzf replicant-flutter-sdk.tar.gz
