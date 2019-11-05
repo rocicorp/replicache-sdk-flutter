@@ -1,6 +1,6 @@
 name: replicant
-description: Offline Sync for Mobile Apps
-version: 0.0.1+a188349a
+description: Flutter Bindings for the Replicant Database
+version: 0.0.0+dev
 author: Rocicorp
 homepage: https://replicate.to
 
