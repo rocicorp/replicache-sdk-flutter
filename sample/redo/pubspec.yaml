@@ -1,0 +1,27 @@
+name: redo
+description: An offline-first todo app using Replicant!
+
+version: 1.0.0+1
+
+environment:
+  sdk: ">=2.1.0 <3.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^0.1.2
+  uuid: 2.0.1
+
+  # To run the sample, first run /replicant-sdk-flutter/build.sh once
+  replicant:
+    path:
+      ../../
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/bundle.js
