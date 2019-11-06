@@ -39,6 +39,7 @@ class _MyHomePageState extends State<MyHomePage> {
     _replicant = Replicant('http://localhost:7001/serve/sandbox/demo-counter');
     _replicant.onChange = this._handleChange;
     _replicant.onSync = this._handleSync;
+    _replicant.shallowSync = true;
     await _replicant.putBundle(await rootBundle.loadString('lib/bundle.js', cache: false));
     this._handleChange();
   }

@@ -29,7 +29,17 @@ class Replicant {
 
   /// If true, Replicant only syncs the head of the remote repository, which is
   /// must faster. Currently this disables bidirectional sync though :(.
-  bool hackyShallowSync;
+  bool shallowSync;
+
+  /// @Deprecated('Use shallowSync instead')
+  void set hackyShallowSync(bool val) {
+    shallowSync = true;
+  }
+
+  /// @Deprecated('Use shallowSync instead')
+  bool get hackyShallowSync {
+    return shallowSync;
+  }
 
   /// The authorization token to pass to the server during sync.
   String authToken;
@@ -115,7 +125,7 @@ class Replicant {
 
       _timer.cancel();
       _timer = null;
-      await _checkChange(await _invoke(this._name, "sync", {'remote': this._remote, 'shallow': this.hackyShallowSync, 'auth': this.authToken}));
+      await _checkChange(await _invoke(this._name, "sync", {'remote': this._remote, 'shallow': this.shallowSync, 'auth': this.authToken}));
       _scheduleSync(5);
     } catch (e) {
       // We are seeing some consistency errors during sync -- we push commits,
