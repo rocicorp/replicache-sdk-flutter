@@ -4,6 +4,12 @@ Run `./tool/build.sh` once. This will download the correct version of the Replic
 
 You won't need to do this again unless you want to pick up a newer version of that library.
 
+Get the [`repl` command line](https://github.com/rocicorp/replicant/releases) and start a dev server:
+
+```
+repl --db=/tmp/wherever serve
+```
+
 Once you've done this, you can run the sample apps (in `sample` directory) and they will pick up Dart changes
 in the library as you make them.
 
