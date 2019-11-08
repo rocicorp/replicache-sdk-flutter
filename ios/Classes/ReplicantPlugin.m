@@ -4,8 +4,6 @@
 
 const NSString* CHANNEL_NAME = @"replicant.dev";
 
-NSString* replicantDir(void);
-
 @implementation ReplicantPlugin
   dispatch_queue_t generalQueue;
   dispatch_queue_t syncQueue;
@@ -15,6 +13,7 @@ NSString* replicantDir(void);
       methodChannelWithName:CHANNEL_NAME
             binaryMessenger:[registrar messenger]];
   ReplicantPlugin* instance = [[ReplicantPlugin alloc] init];
+  instance->channel = channel;
   [registrar addMethodCallDelegate:instance channel:channel];
 
   // Most Replicant operations happen serially, but not blocking UI thread.
@@ -24,8 +23,7 @@ NSString* replicantDir(void);
   syncQueue = dispatch_get_global_queue( DISPATCH_QUEUE_PRIORITY_DEFAULT, 0);
 
   dispatch_async(generalQueue, ^(void){
-    NSLog(@"Replicant: init");
-    RepmInit(replicantDir(), @"");
+    RepmInit([instance replicantDir], @"", instance);
   });
 }
 
@@ -42,7 +40,6 @@ NSString* replicantDir(void);
   // 1st element are the rpc arguments (JSON-encoded)
   NSArray* args = (NSArray*)call.arguments;
 
-  NSLog(@"Replicant: Handling: %@ with arguments: %@", call.method, [args objectAtIndex:1]);
   dispatch_async(queue, ^(void){
     NSError* err = nil;
     NSData* res = RepmDispatch([args objectAtIndex:0], call.method, [[args objectAtIndex:1] dataUsingEncoding:NSUTF8StringEncoding], &err);
@@ -59,7 +56,7 @@ NSString* replicantDir(void);
   });
 };
 
-NSString* replicantDir() {
+-(NSString*)replicantDir {
   NSFileManager* sharedFM = [NSFileManager defaultManager];
   NSArray* possibleURLs = [sharedFM URLsForDirectory:NSApplicationSupportDirectory
                                            inDomains:NSUserDomainMask];
@@ -67,7 +64,7 @@ NSString* replicantDir() {
   NSURL* dataDir = nil;
 
   if ([possibleURLs count] < 1) {
-    NSLog(@"Replicant: Could not location application support directory: %@", dataDir);
+    [self log:[NSString stringWithFormat:@"Could not locate application support directory: %@", dataDir]];
     return nil;
   }
 
@@ -80,11 +77,23 @@ NSString* replicantDir() {
   NSError* err;
   [sharedFM createDirectoryAtPath:[dataDir path] withIntermediateDirectories:TRUE attributes:nil error:&err];
   if (err != nil) {
-    NSLog(@"Replicant: Could not create data directory: %@", dataDir);
+    [self log:[NSString stringWithFormat:@"Replicant: Could not create data directory: %@", dataDir]];
     return nil;
   }
 
   return [dataDir path];
+}
+
+- (BOOL)write:(NSData* _Nullable)data n:(long* _Nullable)len error:(NSError* _Nullable* _Nullable)error {
+  [self log:[[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding]];
+  *len = [data length];
+  return true;
+}
+
+-(void)log:(NSString*)message {
+  dispatch_async(dispatch_get_main_queue(), ^(void){
+    [self->channel invokeMethod:@"log" arguments:message];
+  });
 }
 
 @end

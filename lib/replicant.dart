@@ -22,7 +22,7 @@ typedef void SyncHandler(bool syncing);
 /// sync(), which runs concurrently with other operations (and might take awhile, since
 /// it attempts to go to the network).
 class Replicant {
-  static MethodChannel _platform = MethodChannel(CHANNEL_NAME);
+  static MethodChannel _platform = null;
 
   ChangeHandler onChange;
   SyncHandler onSync;
@@ -61,9 +61,21 @@ class Replicant {
     await _invoke(name, 'drop');
   }
 
+  static Future<void> _methodChannelHandler(MethodCall call) {
+    if (call.method == "log") {
+      print("Replicant (native): ${call.arguments}");
+    }
+    throw Exception("Unknown method: ${call.method}");
+  }
+
   /// Create or open a local Replicant database with named `name` synchronizing with `remote`.
   /// If `name` is omitted, it defaults to `remote`.
   Replicant(this._remote, {String name = "", this.authToken = ""}) {
+    if (_platform == null) {
+      _platform = MethodChannel(CHANNEL_NAME);
+      _platform.setMethodCallHandler(_methodChannelHandler);
+    }
+
     if (this._remote == "") {
       throw new Exception("remote must be non-empty");
     }

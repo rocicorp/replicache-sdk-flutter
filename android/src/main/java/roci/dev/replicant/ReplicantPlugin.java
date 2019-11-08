@@ -47,7 +47,6 @@ public class ReplicantPlugin implements MethodCallHandler {
 
     generalHandler.post(new Runnable() {
       public void run() {
-        Log.i("Replicant", "init");
         initReplicant();
       }
     });
@@ -55,8 +54,6 @@ public class ReplicantPlugin implements MethodCallHandler {
 
   @Override
   public void onMethodCall(final MethodCall call, final Result result) {
-    Log.i("Replicant", "Calling: " + call.method + " with arguments: " + (String)((ArrayList)call.arguments).get(1));
-
     Handler handler;
     if (call.method.equals("sync")) {
       handler = syncHandler;
@@ -118,7 +115,10 @@ public class ReplicantPlugin implements MethodCallHandler {
     tmpDir.deleteOnExit();
 
     try {
-      repm.Repm.init(dataDir.getAbsolutePath(), tmpDir.getAbsolutePath());
+      // TODO: It would be cool to pass `this` to third param as iOS does and route all logging to
+      // Flutter print(), but couldn't get that to compile. Not critical because currently we see
+      // logging from Go and Java just fine in console when running Flutter apps.
+      repm.Repm.init(dataDir.getAbsolutePath(), tmpDir.getAbsolutePath(), null);
     } catch (Exception e) {
       Log.e("Replicant", "Could not initialize Replicant", e);
     }
