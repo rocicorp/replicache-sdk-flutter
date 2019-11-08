@@ -2,7 +2,7 @@ ORIG=`pwd`
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 ROOT=$DIR/../
 REPM_REPO='rocicorp/replicant-client'
-REPM_VERSION='v0.0.12'
+REPM_VERSION='v1.0.1'
 PACKAGE_VERSION=`git describe --tags`
 
 echo "Building Flutter SDK..."
@@ -23,6 +23,10 @@ ls ../ | grep -v build | grep -v sample | grep -v tool | grep -v gh-dl-release |
 
 # Stamp the version number
 sed -i "" "s/version: 0.0.0+dev/version: $PACKAGE_VERSION/" replicant-flutter-sdk/pubspec.yaml
+
+# Remove the binary symlinks, which are now broken
+rm replicant-flutter-sdk/android/repm.aar
+rm -rf replicant-flutter-sdk/ios/Repm.framework
 
 # Copy in repm
 cp ../gh-dl-release/$REPM_REPO/$REPM_VERSION/repm.aar replicant-flutter-sdk/android/
