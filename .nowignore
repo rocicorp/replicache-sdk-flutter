@@ -1,7 +1,3 @@
+build
 .vscode
 
-# build artifacts
-build
-
-# Directories we don't deploy
-sample
