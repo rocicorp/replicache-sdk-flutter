@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, height=device-height, initial-scale=1, user-scalable=no">
+  <meta name="generator" content="made with love by dartdoc 0.28.2">
+  <meta name="description" content="replicant API docs, for the Dart programming language.">
+  <title>replicant - Dart API docs</title>
+
+  <link href="https://fonts.googleapis.com/css?family=Source+Code+Pro:500,400i,400,300|Source+Sans+Pro:400,300,700" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  <link rel="stylesheet" href="static-assets/github.css">
+  <link rel="stylesheet" href="static-assets/styles.css">
+  <link rel="icon" href="static-assets/favicon.png">
+  
+</head>
+
+<body>
+
+<div id="overlay-under-drawer"></div>
+
+<header id="title">
+  <button id="sidenav-left-toggle" type="button">&nbsp;</button>
+  <ol class="breadcrumbs gt-separated dark hidden-xs">
+    <li><a href="https://replicate.to">replicant package</a></li>
+  </ol>
+  <div class="self-name">replicant</div>
+  <form class="search navbar-right" role="search">
+    <input type="text" id="search-box" autocomplete="off" disabled class="form-control typeahead" placeholder="Loading search...">
+  </form>
+</header>
+
+<main>
+
+  <div id="dartdoc-sidebar-left" class="col-xs-6 col-sm-3 col-md-2 sidebar sidebar-offcanvas-left">
+    <header id="header-search-sidebar" class="hidden-l">
+      <form class="search-sidebar" role="search">
+        <input type="text" id="search-sidebar" autocomplete="off" disabled class="form-control typeahead" placeholder="Loading search...">
+      </form>
+    </header>
+    
+    <ol class="breadcrumbs gt-separated dark hidden-l" id="sidebar-nav">
+      <li><a href="https://replicate.to">replicant package</a></li>
+    </ol>
+    
+    <h5 class="hidden-xs"><span class="package-name">replicant</span> <span class="package-kind">package</span></h5>
+    <ol>
+          <li class="section-title">Libraries</li>
+          <li><a href="database_info/database_info-library.html">database_info</a></li>
+          <li><a href="replicant/replicant-library.html">replicant</a></li>
+    </ol>
+  </div>
+
+  <div id="dartdoc-main-content" class="col-xs-12 col-sm-9 col-md-8 main-content">
+      <section class="desc markdown">
+        <h1 id="local-first-flutter-apps-in-less-than-5-minutes">Local-First Flutter Apps in Less than 5 Minutes</h1>
+<h4 id="1-get-the-sdk">1. Get the SDK</h4>
+<p>Download the latest <a href="https://github.com/rocicorp/replicant-sdk-flutter/releases/latest/download/replicant-flutter-sdk.tar.gz">replicant-flutter-sdk.tar.gz</a>, then unzip it</p>
+<pre class="language-dart"><code>tar xvzf replicant-flutter-sdk.tar.gz
+</code></pre>
+<h4 id="2-add-the-replicant-dependency-to-your-pubspecyaml">2. Add the <code>replicant</code> dependency to your <code>pubspec.yaml</code></h4>
+<pre class="language-dart"><code>...
+
+  cupertino_icons: ^0.1.2
+
++   replicant:
++     path:
++       /tmp/replicant-flutter-sdk/
+
+...
+</code></pre>
+<h4 id="3-create-a-transaction-bundle">3. Create a transaction bundle</h4>
+<p>You interact with Replicant by executing <em>transactions</em>, which are written in JavaScript.</p>
+<p>Create a new <code>lib/bundle.js</code> file inside your app to hold some transactions, then add this code to it:</p>
+<pre class="language-dart"><code>function codeVersion() {
+    return 1.1;
+}
+
+function increment(delta) {
+    var val = getCount();
+    db.put('count', val + delta);
+}
+
+function getCount() {
+    return db.get('count') || 0;
+}
+</code></pre>
+<h4 id="4-mark-libbundlejs-as-an-asset-inside-pubspecyaml">4. Mark <code>lib/bundle.js</code> as an asset inside <code>pubspec.yaml</code>:</h4>
+<pre class="language-dart"><code>...
+
+flutter:
+  uses-material-design: true
+  assets:
++    - lib/bundle.js
+
+...
+</code></pre>
+<h4 id="5-instantiate-replicant">5. Instantiate Replicant</h4>
+<pre class="language-dart"><code>import 'package:replicant/replicant.dart';
+
+...
+
+var rep = Replicant('https://serve.replicate.to/sandbox/any-name-here');
+</code></pre>
+<p>For now, you can use any name you want after <code>serve</code> in the URL.</p>
+<h4 id="6-put-bundle">6. Put bundle</h4>
+<pre class="language-dart"><code class="language-dart">await rep.putBundle(
+  await rootBundle.loadString('lib/bundle.js', cache: false),
+);
+</code></pre>
+<h4 id="7-execute-transactions">7. Execute transactions</h4>
+<pre class="language-dart"><code>await rep.exec('increment', [1]);
+await rep.exec('increment', [41]);
+var count = await rep.exec('getCount');
+print('The answer is ${count}');
+</code></pre>
+<p>Congratulations — you are done 🎉. Time for a cup of coffee.</p>
+<p>In fact, while you're away, why not install the app on two devices and let them sync with each other?</p>
+<p>Disconnect them. Take a subway ride. Whatever. It's all good. The devices will sync up automatically when there is connectivity.</p>
+<p><a href="https://github.com/aboodman/replicant/blob/master/README.md#conflicts">Conflicts are handled naturally</a> by ordering atomic transactions consistently on all devices.</p>
+<h2 id="want-something-even-easier">Want something even easier?</h2>
+<p>Download the above steps as a running sample. See <a href="../samples/flutter/hello">flutter/hello</a>.</p>
+<h2 id="next-steps">Next steps</h2><ul><li>See <a href="../samples/flutter/redo"><code>flutter/redo</code></a> a fully functioning TODO app built on Flutter and Replicant</li><li>Review the <a href="https://replicate.to/doc/flutter/">Flutter API</a></li><li>Review the <a href="transaction-api.md">JavaScript API for Replicant transactions</a></li><li>Inspect your Replicant databases using <a href="cli.md">the <code>repl</code> tool</a></li></ul>
+<h2 id="more-questions">More questions?</h2>
+<p>See the <a href="../README.md">design doc</a>.</p>
+      </section>
+      
+        <section class="summary">
+            <h2>Libraries</h2>
+          <dl>
+            <dt id="database_info">
+              <span class="name"><a href="database_info/database_info-library.html">database_info</a></span>             
+            </dt>
+            <dd>
+              
+            </dd>            <dt id="replicant">
+              <span class="name"><a href="replicant/replicant-library.html">replicant</a></span>             
+            </dt>
+            <dd>
+              
+            </dd>          </dl>
+        </section>
+
+  </div> <!-- /.main-content -->
+
+  <div id="dartdoc-sidebar-right" class="col-xs-6 col-sm-6 col-md-2 sidebar sidebar-offcanvas-right">
+  </div>
+
+</main>
+
+<footer>
+  <span class="no-break">
+    replicant 0.0.0+dev
+  </span>
+
+  
+</footer>
+
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+<script src="static-assets/typeahead.bundle.min.js"></script>
+<script src="static-assets/highlight.pack.js"></script>
+<script src="static-assets/URI.js"></script>
+<script src="static-assets/script.js"></script>
+
+
+</body>
+
+</html>
