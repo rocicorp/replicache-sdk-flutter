@@ -63,7 +63,7 @@ import 'package:replicant/replicant.dart';
 
 ...
 
-var rep = Replicant('https://replicate.to/serve/sandbox/any-name-here');
+var rep = Replicant('https://serve.replicate.to/sandbox/any-name-here');
 ```
 
 For now, you can use any name you want after `serve` in the URL.
