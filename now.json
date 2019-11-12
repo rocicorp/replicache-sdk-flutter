@@ -1,0 +1,11 @@
+{
+    "version": 2,
+    "name": "replicant-docs",
+    "alias": "flutter.doc.replicate.to",
+    "builds": [
+        { "src": "doc/**", "use": "@now/static" }
+    ],
+    "routes": [
+        { "src": "/(.*)", "dest": "/doc/$1" }
+    ]
+}
