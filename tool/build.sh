@@ -37,3 +37,7 @@ tar -xvf ../../../gh-dl-release/$REPM_REPO/$REPM_VERSION/Repm.framework.tar.gz
 cd -
 tar -czvf replicant-flutter-sdk.tar.gz replicant-flutter-sdk
 cd $ORIG
+
+# Add symlinks to make dev builds work
+ln -s android/repm.aar build/replicant-flutter-sdk/android/repm.aar
+ln -s ios/Repm.framework build/replicant-flutter-sdk/ios/Repm.framework
