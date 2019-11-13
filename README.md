@@ -91,19 +91,19 @@ In fact, while you're away, why not install the app on two devices and let them 
 
 Disconnect them. Take a subway ride. Whatever. It's all good. The devices will sync up automatically when there is connectivity.
 
-[Conflicts are handled naturally](https://github.com/aboodman/replicant/blob/master/README.md#conflicts) by ordering atomic transactions consistently on all devices.
+[Conflicts are handled naturally](https://github.com/rocicorp/replicant/blob/master/design.md#conflicts) by ordering atomic transactions consistently on all devices.
 
 ## Want something even easier?
 
-Download the above steps as a running sample. See [flutter/hello](../samples/flutter/hello).
+Download the above steps as a running sample. See [flutter/hello](https://github.com/rocicorp/replicant-sdk-flutter/tree/master/sample/hello).
 
 ## Next steps
 
-- See [`flutter/redo`](../samples/flutter/redo) a fully functioning TODO app built on Flutter and Replicant
-- Review the [Flutter API](https://replicate.to/doc/flutter/)
-- Review the [JavaScript API for Replicant transactions](transaction-api.md)
-- Inspect your Replicant databases using [the `repl` tool](cli.md)
+- See [`flutter/redo`](https://github.com/rocicorp/replicant-sdk-flutter/tree/master/sample/redo) a fully functioning TODO app built on Flutter and Replicant
+- Review the [Replicant Dart Reference](https://flutter.doc.replicate.to/replicant/replicant-library.html)
+- Review the [JavaScript API for Replicant transactions](https://github.com/rocicorp/replicant-server/blob/master/doc/transaction-api.md)
+- Inspect your Replicant databases using [the `repl` tool](https://github.com/rocicorp/replicant-server/blob/master/doc/cli.md)
 
 ## More questions?
 
-See the [design doc](../README.md).
+See the [design doc](https://github.com/rocicorp/replicant/blob/master/design.md).
