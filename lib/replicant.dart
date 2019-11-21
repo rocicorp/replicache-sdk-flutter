@@ -64,6 +64,7 @@ class Replicant {
   static Future<void> _methodChannelHandler(MethodCall call) {
     if (call.method == "log") {
       print("Replicant (native): ${call.arguments}");
+      return;
     }
     throw Exception("Unknown method: ${call.method}");
   }
