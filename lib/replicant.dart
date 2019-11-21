@@ -83,10 +83,15 @@ class Replicant {
       name = this._remote;
     }
     this._name = name;
-    _invoke(this._name, 'open');
+
     print('Using remote: ' + this._remote);
-    _root = _getRoot();
-    this._scheduleSync(0);
+
+    _root = _invoke(this._name, 'open').then((_) {
+      return _getRoot();
+    });
+    _root.then((_) {
+      this._scheduleSync(0);
+    });
   }
 
   String get name => _name;
