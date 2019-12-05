@@ -2,7 +2,7 @@ ORIG=`pwd`
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 ROOT=$DIR/../
 REPM_REPO='rocicorp/replicant-client'
-REPM_VERSION='v2.0.0'
+REPM_VERSION='v2.0.1'
 PACKAGE_VERSION=`git describe --tags`
 
 echo "Building Flutter SDK..."
