@@ -150,8 +150,7 @@ class Replicant {
       // We are seeing some consistency errors during sync -- we push commits,
       // then turn around and fetch them and expect to see them, but don't.
       // that is bad, but for now, just retry.
-      print('ERROR DURING SYNC');
-      print(e);
+      print('Error syncing: ' + this._remote + ': ' + e.toString());
       _scheduleSync(1);
     } finally {
       this._fireOnSync(false);
