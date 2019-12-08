@@ -47,6 +47,7 @@ class Replicant {
   String _name;
   String _remote;
   Future<String> _root;
+  Future<dynamic> _opened;
   Timer _timer;
   bool _closed = false;
 
@@ -64,7 +65,7 @@ class Replicant {
   static Future<void> _methodChannelHandler(MethodCall call) {
     if (call.method == "log") {
       print("Replicant (native): ${call.arguments}");
-      return;
+      return Future.value();
     }
     throw Exception("Unknown method: ${call.method}");
   }
@@ -87,7 +88,8 @@ class Replicant {
 
     print('Using remote: ' + this._remote);
 
-    _root = _invoke(this._name, 'open').then((_) {
+    _opened = _invoke(this._name, 'open');
+    _root = _opened.then((_) {
       return _getRoot();
     });
     _root.then((_) {
@@ -103,34 +105,40 @@ class Replicant {
     // We check for changes here, even though putBundle doesn't change data, because
     // it can change the bundle which the client app uses to read the data, thus it
     // can affect display.
+    await _opened;
     return _result(await _checkChange(await _invoke(this._name, 'putBundle', {'code': bundle})));
   }
 
   /// Executes the named function with provided arguments from the current
   /// bundle as an atomic transaction.
   Future<dynamic> exec(String function, [List<dynamic> args = const []]) async {
+    await _opened;
     return _result(await _checkChange(await _invoke(this._name, 'exec', {'name': function, 'args': args})));
   }
 
   /// Puts a single value into the database in its own transaction.
   Future<void> put(String id, dynamic value) async {
+    await _opened;
     return _result(await _checkChange(await _invoke(this._name, 'put', {'id': id, 'value': value})));
   }
 
   /// Get a single value from the database.
   Future<dynamic> get(String id) async {
+    await _opened;
     return _result(await _invoke(this._name, 'get', {'id': id}));
   }
 
   /// Gets many values from the database.
   Future<List<ScanItem>> scan({prefix: String, startAtID: String, limit = 50}) async {
     List<Map<String, dynamic>> r = await _invoke(this._name, 'scan', {prefix: prefix, startAtID: startAtID, limit: limit});
+    await _opened;
     return r.map((e) => ScanItem.fromJson(e));
   }
 
   /// Synchronizes the database with the server. New local transactions that have been executed since the last
   /// sync are sent to the server, and new remote transactions are received and replayed.
   Future<void> sync() async {
+    await _opened;
     if (_closed) {
       return;
     }
@@ -158,15 +166,17 @@ class Replicant {
   }
 
   void _scheduleSync(seconds) {
-      _timer = new Timer(new Duration(seconds: seconds), sync);
+    _timer = new Timer(new Duration(seconds: seconds), sync);
   }
 
   Future<void> close() async {
     _closed = true;
+    await _opened;
     await _invoke(this.name, 'close');
   }
 
   Future<String> _getRoot() async {
+    await _opened;
     var res = await _invoke(this._name, 'getRoot');
     return res['root'];
   }
