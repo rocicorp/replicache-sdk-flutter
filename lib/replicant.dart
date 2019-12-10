@@ -10,6 +10,7 @@ const CHANNEL_NAME = 'replicant.dev';
 
 typedef void ChangeHandler();
 typedef void SyncHandler(bool syncing);
+typedef Future<String> AuthTokenGetter();
 
 /// Replicant is a connection to a local Replicant database. There can be multiple
 /// connections to the same database.
@@ -26,6 +27,7 @@ class Replicant {
 
   ChangeHandler onChange;
   SyncHandler onSync;
+  AuthTokenGetter getAuthToken;
 
   /// If true, Replicant only syncs the head of the remote repository, which is
   /// must faster. Currently this disables bidirectional sync though :(.
@@ -41,15 +43,13 @@ class Replicant {
     return shallowSync;
   }
 
-  /// The authorization token to pass to the server during sync.
-  String authToken;
-
   String _name;
   String _remote;
   Future<String> _root;
   Future<dynamic> _opened;
   Timer _timer;
   bool _closed = false;
+  String _authToken = "";
 
   /// Lists information about available local databases.
   static Future<List<DatabaseInfo>> list() async {
@@ -72,7 +72,7 @@ class Replicant {
 
   /// Create or open a local Replicant database with named `name` synchronizing with `remote`.
   /// If `name` is omitted, it defaults to `remote`.
-  Replicant(this._remote, {String name = "", this.authToken = ""}) {
+  Replicant(this._remote, {String name = ""}) {
     if (_platform == null) {
       _platform = MethodChannel(CHANNEL_NAME);
       _platform.setMethodCallHandler(_methodChannelHandler);
@@ -152,7 +152,24 @@ class Replicant {
 
       _timer.cancel();
       _timer = null;
-      await _checkChange(await _invoke(this._name, "sync", {'remote': this._remote, 'shallow': this.shallowSync, 'auth': this.authToken}));
+      for (var i = 0; ; i++) {
+        Map<String, dynamic> result = await _invoke(this._name, "sync", {'remote': this._remote, 'shallow': this.shallowSync, 'auth': this._authToken});
+        if (result.containsKey('error') && result['error'].containsKey('badAuth')) {
+          print('Auth error: ${result['error']['badAuth']}');
+          if (getAuthToken == null) {
+            print('Auth error: getAuthToken is null');
+            break;
+          }
+          if (i == 2) {
+            break;
+          }
+          print('Refreshing auth token to try again...');
+          this._authToken = await getAuthToken();
+        } else {
+          await _checkChange(result);
+          break;
+        }
+      }
       _scheduleSync(5);
     } catch (e) {
       // We are seeing some consistency errors during sync -- we push commits,
