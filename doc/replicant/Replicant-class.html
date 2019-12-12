@@ -54,6 +54,7 @@
       <li class="section-title"><a href="replicant/replicant-library.html#classes">Classes</a></li>
       <li><a href="replicant/Replicant-class.html">Replicant</a></li>
       <li><a href="replicant/ScanItem-class.html">ScanItem</a></li>
+      <li><a href="replicant/SyncProgress-class.html">SyncProgress</a></li>
     
     
       <li class="section-title"><a href="replicant/replicant-library.html#constants">Constants</a></li>
@@ -63,8 +64,10 @@
     
     
       <li class="section-title"><a href="replicant/replicant-library.html#typedefs">Typedefs</a></li>
+      <li><a href="replicant/AuthTokenGetter.html">AuthTokenGetter</a></li>
       <li><a href="replicant/ChangeHandler.html">ChangeHandler</a></li>
       <li><a href="replicant/SyncHandler.html">SyncHandler</a></li>
+      <li><a href="replicant/SyncProgressHandler.html">SyncProgressHandler</a></li>
     
     </ol>
   </div>
@@ -89,7 +92,7 @@ it attempts to go to the network).</p>
 
       <dl class="constructor-summary-list">
         <dt id="Replicant" class="callable">
-          <span class="name"><a href="replicant/Replicant/Replicant.html">Replicant</a></span><span class="signature">(<span class="parameter" id="-param-_remote"><span class="type-annotation">String</span> <span class="parameter-name">_remote</span>, {</span> <span class="parameter" id="-param-name"><span class="type-annotation">String</span> <span class="parameter-name">name</span>: <span class="default-value">""</span>, </span> <span class="parameter" id="-param-authToken"><span class="type-annotation">String</span> <span class="parameter-name">authToken</span>: <span class="default-value">""</span></span> })</span>
+          <span class="name"><a href="replicant/Replicant/Replicant.html">Replicant</a></span><span class="signature">(<span class="parameter" id="-param-_remote"><span class="type-annotation">String</span> <span class="parameter-name">_remote</span>, {</span> <span class="parameter" id="-param-name"><span class="type-annotation">String</span> <span class="parameter-name">name</span>: <span class="default-value">""</span></span> })</span>
         </dt>
         <dd>
           Create or open a local Replicant database with named <code>name</code> synchronizing with <code>remote</code>.
@@ -102,12 +105,12 @@ If <code>name</code> is omitted, it defaults to <code>remote</code>.
       <h2>Properties</h2>
 
       <dl class="properties">
-        <dt id="authToken" class="property">
-          <span class="name"><a href="replicant/Replicant/authToken.html">authToken</a></span>
-          <span class="signature">&#8596; String</span>         
+        <dt id="getAuthToken" class="property">
+          <span class="name"><a href="replicant/Replicant/getAuthToken.html">getAuthToken</a></span>
+          <span class="signature">&#8596; <a href="replicant/AuthTokenGetter.html">AuthTokenGetter</a></span>         
         </dt>
         <dd>
-          The authorization token to pass to the server during sync.
+          
                   <div class="features">read / write</div>
 </dd>
         <dt id="hackyShallowSync" class="property">
@@ -142,6 +145,14 @@ If <code>name</code> is omitted, it defaults to <code>remote</code>.
           
                   <div class="features">read / write</div>
 </dd>
+        <dt id="onSyncProgress" class="property">
+          <span class="name"><a href="replicant/Replicant/onSyncProgress.html">onSyncProgress</a></span>
+          <span class="signature">&#8596; <a href="replicant/SyncProgressHandler.html">SyncProgressHandler</a></span>         
+        </dt>
+        <dd>
+          
+                  <div class="features">read / write</div>
+</dd>
         <dt id="remote" class="property">
           <span class="name"><a href="replicant/Replicant/remote.html">remote</a></span>
           <span class="signature">&#8594; String</span>         
@@ -158,6 +169,14 @@ If <code>name</code> is omitted, it defaults to <code>remote</code>.
           If true, Replicant only syncs the head of the remote repository, which is
 must faster. Currently this disables bidirectional sync though :(.
                   <div class="features">read / write</div>
+</dd>
+        <dt id="syncProgress" class="property">
+          <span class="name"><a href="replicant/Replicant/syncProgress.html">syncProgress</a></span>
+          <span class="signature">&#8594; <a href="replicant/SyncProgress-class.html">SyncProgress</a></span>         
+        </dt>
+        <dd>
+          Gets the last sync progress for this repo.
+                  <div class="features">read-only</div>
 </dd>
         <dt id="hashCode" class="property inherited">
           <span class="name"><a href="replicant/Replicant/hashCode.html">hashCode</a></span>
@@ -318,13 +337,15 @@ sync are sent to the server, and new remote transactions are received and replay
       <li class="section-title">
         <a href="replicant/Replicant-class.html#instance-properties">Properties</a>
       </li>
-      <li><a href="replicant/Replicant/authToken.html">authToken</a></li>
+      <li><a href="replicant/Replicant/getAuthToken.html">getAuthToken</a></li>
       <li><a href="replicant/Replicant/hackyShallowSync.html">hackyShallowSync</a></li>
       <li><a href="replicant/Replicant/name.html">name</a></li>
       <li><a href="replicant/Replicant/onChange.html">onChange</a></li>
       <li><a href="replicant/Replicant/onSync.html">onSync</a></li>
+      <li><a href="replicant/Replicant/onSyncProgress.html">onSyncProgress</a></li>
       <li><a href="replicant/Replicant/remote.html">remote</a></li>
       <li><a href="replicant/Replicant/shallowSync.html">shallowSync</a></li>
+      <li><a href="replicant/Replicant/syncProgress.html">syncProgress</a></li>
       <li class="inherited"><a href="replicant/Replicant/hashCode.html">hashCode</a></li>
       <li class="inherited"><a href="replicant/Replicant/runtimeType.html">runtimeType</a></li>
     

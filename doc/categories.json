@@ -1,1 +1,38 @@
-[]
+[
+  {
+    "name": "dart:ffi",
+    "qualifiedName": "dart:ffi",
+    "href": "dart-ffi/dart-ffi-library.html",
+    "type": "library",
+    "categories": [
+      "VM"
+    ]
+  },
+  {
+    "name": "dart:html",
+    "qualifiedName": "dart:html",
+    "href": "dart-html/dart-html-library.html",
+    "type": "library",
+    "categories": [
+      "Web"
+    ]
+  },
+  {
+    "name": "dart:js",
+    "qualifiedName": "dart:js",
+    "href": "dart-js/dart-js-library.html",
+    "type": "library",
+    "categories": [
+      "Web"
+    ]
+  },
+  {
+    "name": "dart:js_util",
+    "qualifiedName": "dart:js_util",
+    "href": "dart-js_util/dart-js_util-library.html",
+    "type": "library",
+    "categories": [
+      "Web"
+    ]
+  }
+]
