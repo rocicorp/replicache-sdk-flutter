@@ -10,7 +10,17 @@ const CHANNEL_NAME = 'replicant.dev';
 
 typedef void ChangeHandler();
 typedef void SyncHandler(bool syncing);
+typedef void SyncProgressHandler(SyncProgress progress);
 typedef Future<String> AuthTokenGetter();
+
+class SyncProgress {
+  SyncProgress._new(this.bytesReceived, this.bytesExpected);
+  final int bytesReceived;
+  final int bytesExpected;
+  bool equals(SyncProgress other) {
+    return other != null && other.bytesExpected == bytesExpected && other.bytesReceived == bytesReceived;
+  }
+}
 
 /// Replicant is a connection to a local Replicant database. There can be multiple
 /// connections to the same database.
@@ -27,6 +37,7 @@ class Replicant {
 
   ChangeHandler onChange;
   SyncHandler onSync;
+  SyncProgressHandler onSyncProgress;
   AuthTokenGetter getAuthToken;
 
   /// If true, Replicant only syncs the head of the remote repository, which is
@@ -43,6 +54,9 @@ class Replicant {
     return shallowSync;
   }
 
+  /// Gets the last sync progress for this repo.
+  SyncProgress get syncProgress => _syncProgress;
+
   String _name;
   String _remote;
   Future<String> _root;
@@ -50,6 +64,7 @@ class Replicant {
   Timer _timer;
   bool _closed = false;
   String _authToken = "";
+  SyncProgress _syncProgress = SyncProgress._new(0, 0);
 
   /// Lists information about available local databases.
   static Future<List<DatabaseInfo>> list() async {
@@ -143,15 +158,36 @@ class Replicant {
       return;
     }
 
+    if (_timer == null) {
+      // Another call stack is already inside _sync();
+      return;
+    }
+
     this._fireOnSync(true);
-    try {
-      if (_timer == null) {
-        // Another call stack is already inside _sync();
+
+    final checkProgress = () async {
+      final result = await _invoke(this._name, 'syncProgress', {});
+      int r = result['bytesReceived'];
+      int e = result['bytesExpected'];
+      if (r == 0 && e == 0) {
         return;
       }
+      if (e == 0) {
+        e = r;
+      }
+      this._fireOnSyncProgress(SyncProgress._new(r, e));
+    };
 
+    this._syncProgress = SyncProgress._new(0, 0);
+
+    final progressTimer = Timer.periodic(new Duration(milliseconds: 500), (Timer t) {
+      checkProgress();
+    });
+
+    try {
       _timer.cancel();
       _timer = null;
+
       for (var i = 0; ; i++) {
         Map<String, dynamic> result = await _invoke(this._name, "sync", {'remote': this._remote, 'shallow': this.shallowSync, 'auth': this._authToken});
         if (result.containsKey('error') && result['error'].containsKey('badAuth')) {
@@ -178,6 +214,8 @@ class Replicant {
       print('Error syncing: ' + this._remote + ': ' + e.toString());
       _scheduleSync(1);
     } finally {
+      progressTimer.cancel();
+      await checkProgress();
       this._fireOnSync(false);
     }
   }
@@ -223,6 +261,16 @@ class Replicant {
   void _fireOnSync(bool syncing) {
     if (onSync != null) {
       scheduleMicrotask(() => onSync(syncing));
+    }
+  }
+
+  void _fireOnSyncProgress(SyncProgress p) {
+    if (_syncProgress != null && p.bytesExpected == _syncProgress.bytesExpected && p.bytesReceived == _syncProgress.bytesReceived) {
+      return;
+    }
+    _syncProgress = p;
+    if (onSyncProgress != null) {
+      scheduleMicrotask(() => onSyncProgress(p));
     }
   }
 
