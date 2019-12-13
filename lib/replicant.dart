@@ -1,6 +1,7 @@
 import 'dart:core';
 import 'dart:async';
 import 'dart:convert';
+import 'dart:ffi';
 
 import 'package:flutter/services.dart';
 
@@ -144,8 +145,15 @@ class Replicant {
   }
 
   /// Gets many values from the database.
-  Future<List<ScanItem>> scan({prefix: String, startAtID: String, limit = 50}) async {
-    List<Map<String, dynamic>> r = await _invoke(this._name, 'scan', {prefix: prefix, startAtID: startAtID, limit: limit});
+  Future<List<ScanItem>> scan({startAtID: String, startAfterID: String, prefix: String, startAtIndex: int, startAfterIndex: int, limit = 50}) async {
+    List<Map<String, dynamic>> r = await _invoke(this._name, 'scan', {
+      prefix: prefix,
+      startAtID: startAtID,
+      startAfterID: startAfterID,
+      startAtIndex: startAtIndex,
+      startAfterIndex: startAfterIndex,
+      limit: limit
+    });
     await _opened;
     return r.map((e) => ScanItem.fromJson(e));
   }
