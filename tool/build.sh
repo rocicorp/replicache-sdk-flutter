@@ -19,7 +19,7 @@ rm -rf build
 mkdir build
 cd build
 mkdir replicant-flutter-sdk
-ls ../ | grep -v build | grep -v sample | grep -v tool | grep -v gh-dl-release | grep -v sample | xargs -I{} cp -R ../{} replicant-flutter-sdk/{}
+ls ../ | grep -v build | grep -v sample | grep -v tool | grep -v gh-dl-release | grep -v doc | xargs -I{} cp -R ../{} replicant-flutter-sdk/{}
 
 # Stamp the version number
 sed -i "" "s/version: 0.0.0+dev/version: $PACKAGE_VERSION/" replicant-flutter-sdk/pubspec.yaml
