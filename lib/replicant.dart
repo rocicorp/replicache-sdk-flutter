@@ -41,6 +41,8 @@ class Replicant {
   SyncProgressHandler onSyncProgress;
   AuthTokenGetter getAuthToken;
 
+  static bool logVerbosely = false;
+
   /// If true, Replicant only syncs the head of the remote repository, which is
   /// must faster. Currently this disables bidirectional sync though :(.
   bool shallowSync;
@@ -79,7 +81,7 @@ class Replicant {
   }
 
   static Future<void> _methodChannelHandler(MethodCall call) {
-    if (call.method == "log") {
+    if (call.method == "log" && logVerbosely) {
       print("Replicant (native): ${call.arguments}");
       return Future.value();
     }
