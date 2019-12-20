@@ -41,7 +41,7 @@ class Replicant {
   SyncProgressHandler onSyncProgress;
   AuthTokenGetter getAuthToken;
 
-  static bool logVerbosely = false;
+  static bool logVerbosely = true;
 
   /// If true, Replicant only syncs the head of the remote repository, which is
   /// must faster. Currently this disables bidirectional sync though :(.
@@ -147,14 +147,14 @@ class Replicant {
   }
 
   /// Gets many values from the database.
-  Future<List<ScanItem>> scan({startAtID: String, startAfterID: String, prefix: String, startAtIndex: int, startAfterIndex: int, limit = 50}) async {
-    List<Map<String, dynamic>> r = await _invoke(this._name, 'scan', {
-      prefix: prefix,
-      startAtID: startAtID,
-      startAfterID: startAfterID,
-      startAtIndex: startAtIndex,
-      startAfterIndex: startAfterIndex,
-      limit: limit
+  Future<Iterable<ScanItem>> scan({startAtID: '', startAfterID: '', prefix: '', startAtIndex: 0, startAfterIndex: 0, limit: 50}) async {
+    List<dynamic> r = await _invoke(this._name, 'scan', {
+      'prefix': prefix,
+      'startAtID': startAtID,
+      'startAfterID': startAfterID,
+      'startAtIndex': startAtIndex,
+      'startAfterIndex': startAfterIndex,
+      'limit': limit
     });
     await _opened;
     return r.map((e) => ScanItem.fromJson(e));
