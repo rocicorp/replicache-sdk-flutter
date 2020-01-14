@@ -23,6 +23,34 @@ class SyncProgress {
   }
 }
 
+class ScanBound {
+  ScanBound(this.id, this.index);
+  final ScanID id;
+  final int index;
+  Map<String, dynamic> _json() {
+    var r = {};
+    if (this.id != null) {
+      r['id'] = this.id._json();
+    }
+    if (this.index != null) {
+      r['index'] = this.index;
+    }
+    return r;
+  }
+}
+
+class ScanID {
+  ScanID(this.value, this.exclusive);
+  final String value;
+  final bool exclusive;
+  Map<String, dynamic> _json() {
+    return {
+      'value': value ?? '',
+      'exclusive': exclusive ?? false,
+    };
+  }
+}
+
 /// Replicant is a connection to a local Replicant database. There can be multiple
 /// connections to the same database.
 /// 
@@ -147,15 +175,15 @@ class Replicant {
   }
 
   /// Gets many values from the database.
-  Future<Iterable<ScanItem>> scan({startAtID: '', startAfterID: '', prefix: '', startAtIndex: 0, startAfterIndex: 0, limit: 50}) async {
-    List<dynamic> r = await _invoke(this._name, 'scan', {
+  Future<Iterable<ScanItem>> scan({prefix: '', ScanBound start, limit: 50}) async {
+    var args = {
       'prefix': prefix,
-      'startAtID': startAtID,
-      'startAfterID': startAfterID,
-      'startAtIndex': startAtIndex,
-      'startAfterIndex': startAfterIndex,
-      'limit': limit
-    });
+      'limit': limit,
+    };
+    if (start != null) {
+      args['start'] = start._json();
+    }
+    List<dynamic> r = await _invoke(this._name, 'scan', args);
     await _opened;
     return r.map((e) => ScanItem.fromJson(e));
   }
