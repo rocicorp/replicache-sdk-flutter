@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:replicant/replicant.dart';
+import 'package:replicache/replicache.dart';
 
 void main() => runApp(MyApp());
 
@@ -29,26 +29,27 @@ class MyHomePage extends StatefulWidget {
 class _MyHomePageState extends State<MyHomePage> {
   int _counter = 0;
 
-  Replicant _replicant;
+  Replicache _replicache;
 
   _MyHomePageState() {
     this.init();
   }
 
   void init() async {
-    _replicant = Replicant('https://serve.replicate.to/sandbox/demo-counter');
-    _replicant.onChange = this._handleChange;
-    _replicant.onSync = this._handleSync;
-    await _replicant.putBundle(await rootBundle.loadString('lib/bundle.js', cache: false));
+    _replicache = Replicache('https://serve.replicate.to/sandbox/demo-counter');
+    _replicache.onChange = this._handleChange;
+    _replicache.onSync = this._handleSync;
+    await _replicache
+        .putBundle(await rootBundle.loadString('lib/bundle.js', cache: false));
     this._handleChange();
   }
 
   void _incrementCounter() {
-    _replicant.exec('incr', [1]);
+    _replicache.exec('incr', [1]);
   }
 
   void _handleChange() async {
-    var count = await _replicant.exec('getCount');
+    var count = await _replicache.exec('getCount');
     setState(() {
       _counter = count;
     });

@@ -1,8 +1,8 @@
-name: replicant
-description: Flutter Bindings for the Replicant Database
+name: replicache
+description: Flutter Bindings for the Replicache Database
 version: 0.0.0+dev
 author: Rocicorp
-homepage: https://replicate.to
+homepage: https://replicache.dev
 
 environment:
   sdk: ">=2.1.0 <3.0.0"
@@ -17,5 +17,5 @@ dev_dependencies:
 
 flutter:
   plugin:
-    androidPackage: roci.dev.replicant
-    pluginClass: ReplicantPlugin
+    androidPackage: roci.dev.replicache
+    pluginClass: ReplicachePlugin

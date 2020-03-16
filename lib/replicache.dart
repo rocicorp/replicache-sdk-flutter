@@ -7,7 +7,7 @@ import 'package:flutter/services.dart';
 
 import 'database_info.dart';
 
-const CHANNEL_NAME = 'replicant.dev';
+const CHANNEL_NAME = 'replicache.dev';
 
 typedef void ChangeHandler();
 typedef void SyncHandler(bool syncing);
@@ -19,7 +19,9 @@ class SyncProgress {
   final int bytesReceived;
   final int bytesExpected;
   bool equals(SyncProgress other) {
-    return other != null && other.bytesExpected == bytesExpected && other.bytesReceived == bytesReceived;
+    return other != null &&
+        other.bytesExpected == bytesExpected &&
+        other.bytesReceived == bytesReceived;
   }
 }
 
@@ -51,17 +53,17 @@ class ScanID {
   }
 }
 
-/// Replicant is a connection to a local Replicant database. There can be multiple
+/// Replicache is a connection to a local Replicache database. There can be multiple
 /// connections to the same database.
-/// 
+///
 /// Operations are generally async because they go to local storage. However on modern
 /// mobile devices this will typically be ~instant, and in most cases no progress UI
 /// should be necessary.
-/// 
-/// Replicant operations are serialized per-connection, with the sole exception of
+///
+/// Replicache operations are serialized per-connection, with the sole exception of
 /// sync(), which runs concurrently with other operations (and might take awhile, since
 /// it attempts to go to the network).
-class Replicant {
+class Replicache {
   static MethodChannel _platform = null;
 
   ChangeHandler onChange;
@@ -71,7 +73,7 @@ class Replicant {
 
   static bool logVerbosely = true;
 
-  /// If true, Replicant only syncs the head of the remote repository, which is
+  /// If true, Replicache only syncs the head of the remote repository, which is
   /// must faster. Currently this disables bidirectional sync though :(.
   bool shallowSync;
 
@@ -110,15 +112,15 @@ class Replicant {
 
   static Future<void> _methodChannelHandler(MethodCall call) {
     if (call.method == "log" && logVerbosely) {
-      print("Replicant (native): ${call.arguments}");
+      print("Replicache (native): ${call.arguments}");
       return Future.value();
     }
     throw Exception("Unknown method: ${call.method}");
   }
 
-  /// Create or open a local Replicant database with named `name` synchronizing with `remote`.
+  /// Create or open a local Replicache database with named `name` synchronizing with `remote`.
   /// If `name` is omitted, it defaults to `remote`.
-  Replicant(this._remote, {String name = ""}) {
+  Replicache(this._remote, {String name = ""}) {
     if (_platform == null) {
       _platform = MethodChannel(CHANNEL_NAME);
       _platform.setMethodCallHandler(_methodChannelHandler);
@@ -152,20 +154,23 @@ class Replicant {
     // it can change the bundle which the client app uses to read the data, thus it
     // can affect display.
     await _opened;
-    return _result(await _checkChange(await _invoke(this._name, 'putBundle', {'code': bundle})));
+    return _result(await _checkChange(
+        await _invoke(this._name, 'putBundle', {'code': bundle})));
   }
 
   /// Executes the named function with provided arguments from the current
   /// bundle as an atomic transaction.
   Future<dynamic> exec(String function, [List<dynamic> args = const []]) async {
     await _opened;
-    return _result(await _checkChange(await _invoke(this._name, 'exec', {'name': function, 'args': args})));
+    return _result(await _checkChange(
+        await _invoke(this._name, 'exec', {'name': function, 'args': args})));
   }
 
   /// Puts a single value into the database in its own transaction.
   Future<void> put(String id, dynamic value) async {
     await _opened;
-    return _result(await _checkChange(await _invoke(this._name, 'put', {'id': id, 'value': value})));
+    return _result(await _checkChange(
+        await _invoke(this._name, 'put', {'id': id, 'value': value})));
   }
 
   /// Get a single value from the database.
@@ -175,7 +180,8 @@ class Replicant {
   }
 
   /// Gets many values from the database.
-  Future<Iterable<ScanItem>> scan({prefix: '', ScanBound start, limit: 50}) async {
+  Future<Iterable<ScanItem>> scan(
+      {prefix: '', ScanBound start, limit: 50}) async {
     var args = {
       'prefix': prefix,
       'limit': limit,
@@ -218,7 +224,8 @@ class Replicant {
 
     this._syncProgress = SyncProgress._new(0, 0);
 
-    final progressTimer = Timer.periodic(new Duration(milliseconds: 500), (Timer t) {
+    final progressTimer =
+        Timer.periodic(new Duration(milliseconds: 500), (Timer t) {
       checkProgress();
     });
 
@@ -226,9 +233,14 @@ class Replicant {
       _timer.cancel();
       _timer = null;
 
-      for (var i = 0; ; i++) {
-        Map<String, dynamic> result = await _invoke(this._name, "sync", {'remote': this._remote, 'shallow': this.shallowSync, 'auth': this._authToken});
-        if (result.containsKey('error') && result['error'].containsKey('badAuth')) {
+      for (var i = 0;; i++) {
+        Map<String, dynamic> result = await _invoke(this._name, "sync", {
+          'remote': this._remote,
+          'shallow': this.shallowSync,
+          'auth': this._authToken
+        });
+        if (result.containsKey('error') &&
+            result['error'].containsKey('badAuth')) {
           print('Auth error: ${result['error']['badAuth']}');
           if (getAuthToken == null) {
             print('Auth error: getAuthToken is null');
@@ -279,15 +291,18 @@ class Replicant {
   }
 
   Future<Map<String, dynamic>> _checkChange(Map<String, dynamic> result) async {
-    var currentRoot = await _root;  // instantaneous except maybe first time
-    if (result != null && result['root'] != null && result['root'] != currentRoot) {
+    var currentRoot = await _root; // instantaneous except maybe first time
+    if (result != null &&
+        result['root'] != null &&
+        result['root'] != currentRoot) {
       _root = Future.value(result['root']);
       _fireOnChange();
     }
     return result;
   }
 
-  static Future<dynamic> _invoke(String dbName, String rpc, [Map<String, dynamic> args = const {}]) async {
+  static Future<dynamic> _invoke(String dbName, String rpc,
+      [Map<String, dynamic> args = const {}]) async {
     try {
       final r = await _platform.invokeMethod(rpc, [dbName, jsonEncode(args)]);
       return r == '' ? null : jsonDecode(r);
@@ -303,7 +318,9 @@ class Replicant {
   }
 
   void _fireOnSyncProgress(SyncProgress p) {
-    if (_syncProgress != null && p.bytesExpected == _syncProgress.bytesExpected && p.bytesReceived == _syncProgress.bytesReceived) {
+    if (_syncProgress != null &&
+        p.bytesExpected == _syncProgress.bytesExpected &&
+        p.bytesReceived == _syncProgress.bytesReceived) {
       return;
     }
     _syncProgress = p;
@@ -322,8 +339,7 @@ class Replicant {
 class ScanItem {
   ScanItem.fromJson(Map<String, dynamic> data)
       : id = data['id'],
-        value = data['value'] {
-  }
+        value = data['value'] {}
   String id;
   var value;
 }

@@ -1,10 +1,10 @@
-#import "ReplicantPlugin.h"
+#import "ReplicachePlugin.h"
 
 #import <Repm/Repm.h>
 
-const NSString* CHANNEL_NAME = @"replicant.dev";
+const NSString* CHANNEL_NAME = @"replicache.dev";
 
-@implementation ReplicantPlugin
+@implementation ReplicachePlugin
   dispatch_queue_t generalQueue;
   dispatch_queue_t syncQueue;
 
@@ -12,18 +12,18 @@ const NSString* CHANNEL_NAME = @"replicant.dev";
   FlutterMethodChannel* channel = [FlutterMethodChannel
       methodChannelWithName:CHANNEL_NAME
             binaryMessenger:[registrar messenger]];
-  ReplicantPlugin* instance = [[ReplicantPlugin alloc] init];
+  ReplicachePlugin* instance = [[ReplicachePlugin alloc] init];
   instance->channel = channel;
   [registrar addMethodCallDelegate:instance channel:channel];
 
-  // Most Replicant operations happen serially, but not blocking UI thread.
-  generalQueue = dispatch_queue_create("dev.roci.Replicant", NULL);
+  // Most Replicache operations happen serially, but not blocking UI thread.
+  generalQueue = dispatch_queue_create("dev.roci.Replicache", NULL);
 
-  // Sync uses a concurrent queue because we don't want it to block other Replicant operations.
+  // Sync uses a concurrent queue because we don't want it to block other Replicache operations.
   syncQueue = dispatch_get_global_queue( DISPATCH_QUEUE_PRIORITY_DEFAULT, 0);
 
   dispatch_async(generalQueue, ^(void){
-    RepmInit([instance replicantDir], @"", instance);
+    RepmInit([instance replicacheDir], @"", instance);
   });
 }
 
@@ -56,7 +56,7 @@ const NSString* CHANNEL_NAME = @"replicant.dev";
   });
 };
 
--(NSString*)replicantDir {
+-(NSString*)replicacheDir {
   NSFileManager* sharedFM = [NSFileManager defaultManager];
   NSArray* possibleURLs = [sharedFM URLsForDirectory:NSApplicationSupportDirectory
                                            inDomains:NSUserDomainMask];
@@ -72,12 +72,12 @@ const NSString* CHANNEL_NAME = @"replicant.dev";
   appSupportDir = [possibleURLs objectAtIndex:0];
   NSString* appBundleID = [[NSBundle mainBundle] bundleIdentifier];
   dataDir = [appSupportDir URLByAppendingPathComponent:appBundleID];
-  dataDir = [dataDir URLByAppendingPathComponent:@"replicant"];
+  dataDir = [dataDir URLByAppendingPathComponent:@"replicache"];
 
   NSError* err;
   [sharedFM createDirectoryAtPath:[dataDir path] withIntermediateDirectories:TRUE attributes:nil error:&err];
   if (err != nil) {
-    [self log:[NSString stringWithFormat:@"Replicant: Could not create data directory: %@", dataDir]];
+    [self log:[NSString stringWithFormat:@"Replicache: Could not create data directory: %@", dataDir]];
     return nil;
   }
 

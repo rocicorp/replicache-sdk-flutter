@@ -1,4 +1,4 @@
-group 'roci.dev.replicant'
+group 'roci.dev.replicache'
 version '1.0-SNAPSHOT'
 
 buildscript {

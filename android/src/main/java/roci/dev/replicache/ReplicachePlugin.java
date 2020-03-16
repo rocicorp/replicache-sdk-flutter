@@ -1,4 +1,4 @@
-package roci.dev.replicant;
+package roci.dev.replicache;
 
 import android.content.Context;
 import android.os.HandlerThread;
@@ -16,9 +16,9 @@ import java.util.ArrayList;
 
 import android.util.Log;
 
-/** ReplicantPlugin */
-public class ReplicantPlugin implements MethodCallHandler {
-  private static final String CHANNEL = "replicant.dev";
+/** ReplicachePlugin */
+public class ReplicachePlugin implements MethodCallHandler {
+  private static final String CHANNEL = "replicache.dev";
   private static Context appContext;
 
   private Handler uiThreadHandler;
@@ -29,25 +29,25 @@ public class ReplicantPlugin implements MethodCallHandler {
   public static void registerWith(Registrar registrar) {
     appContext = registrar.context();
     final MethodChannel channel = new MethodChannel(registrar.messenger(), CHANNEL);
-    channel.setMethodCallHandler(new ReplicantPlugin());
+    channel.setMethodCallHandler(new ReplicachePlugin());
   }
 
-  public ReplicantPlugin() {
+  public ReplicachePlugin() {
     uiThreadHandler = new Handler(Looper.getMainLooper());
 
-    // Most Replicant operations happen serially, but not blocking UI thread.
-    HandlerThread generalThread = new HandlerThread("replicant.dev/general");
+    // Most Replicache operations happen serially, but not blocking UI thread.
+    HandlerThread generalThread = new HandlerThread("replicache.dev/general");
     generalThread.start();
     generalHandler = new Handler(generalThread.getLooper()); 
 
-    // Sync shouldn't block the UI or other Replicant operations.
-    HandlerThread syncThread = new HandlerThread("replicant.dev/sync");
+    // Sync shouldn't block the UI or other Replicache operations.
+    HandlerThread syncThread = new HandlerThread("replicache.dev/sync");
     syncThread.start();
     syncHandler = new Handler(syncThread.getLooper()); 
 
     generalHandler.post(new Runnable() {
       public void run() {
-        initReplicant();
+        initReplicache();
       }
     });
   }
@@ -92,7 +92,7 @@ public class ReplicantPlugin implements MethodCallHandler {
       @Override
       public void run() {
         if (e != null) {
-          result.error("Replicant error", e.toString(), null);
+          result.error("Replicache error", e.toString(), null);
         } else {
           result.success(retStr);
         }
@@ -100,15 +100,15 @@ public class ReplicantPlugin implements MethodCallHandler {
     });
   }
 
-  private static void initReplicant() {
-    File replicantDir = appContext.getFileStreamPath("replicant");
-    File dataDir = new File(replicantDir, "data");
-    File tmpDir = new File(replicantDir, "temp");
+  private static void initReplicache() {
+    File replicacheDir = appContext.getFileStreamPath("replicache");
+    File dataDir = new File(replicacheDir, "data");
+    File tmpDir = new File(replicacheDir, "temp");
 
     // Android apps can't create directories in the global tmp directory, so we must create our own.
     if (!tmpDir.exists()) {
       if (!tmpDir.mkdirs()) {
-        Log.e("Replicant", "Could not create temp directory");
+        Log.e("Replicache", "Could not create temp directory");
         return;
       }
     }
@@ -120,7 +120,7 @@ public class ReplicantPlugin implements MethodCallHandler {
       // logging from Go and Java just fine in console when running Flutter apps.
       repm.Repm.init(dataDir.getAbsolutePath(), tmpDir.getAbsolutePath(), null);
     } catch (Exception e) {
-      Log.e("Replicant", "Could not initialize Replicant", e);
+      Log.e("Replicache", "Could not initialize Replicache", e);
     }
   }
 }

@@ -1,10 +1,10 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:replicant/database_info.dart';
+import 'package:replicache/database_info.dart';
 import 'package:uuid/uuid.dart';
 
-import 'package:replicant/replicant.dart';
+import 'package:replicache/replicache.dart';
 
 void main() => runApp(MyApp());
 
@@ -50,7 +50,7 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  List<Replicant> _databases = new List();
+  List<Replicache> _databases = new List();
 
   _MyHomePageState() {
     _load();
@@ -58,7 +58,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
   Future<void> _load() async {
     _databases.forEach((db) => db.close());
-    List<DatabaseInfo> infos = await Replicant.list();
+    List<DatabaseInfo> infos = await Replicache.list();
     setState(() {
       _databases = List.from(infos.map((info) => _fromName(info.name)));
     });
@@ -71,8 +71,8 @@ class _MyHomePageState extends State<MyHomePage> {
     });
   }
 
-  Replicant _fromName(String name) {
-    return new Replicant('http://localhost:7001/sandbox/' + name, name: name);
+  Replicache _fromName(String name) {
+    return new Replicache('http://localhost:7001/sandbox/' + name, name: name);
   }
 
   @override
@@ -93,30 +93,29 @@ class _MyHomePageState extends State<MyHomePage> {
         // Center is a layout widget. It takes a single child and positions it
         // in the middle of the parent.
         child: Column(
-          // Column is also a layout widget. It takes a list of children and
-          // arranges them vertically. By default, it sizes itself to fit its
-          // children horizontally, and tries to be as tall as its parent.
-          //
-          // Invoke "debug painting" (press "p" in the console, choose the
-          // "Toggle Debug Paint" action from the Flutter Inspector in Android
-          // Studio, or the "Toggle Debug Paint" command in Visual Studio Code)
-          // to see the wireframe for each widget.
-          //
-          // Column has various properties to control how it sizes itself and
-          // how it positions its children. Here we use mainAxisAlignment to
-          // center the children vertically; the main axis here is the vertical
-          // axis because Columns are vertical (the cross axis would be
-          // horizontal).
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: List.from(_databases.map((rep) => MaterialButton(
-            onPressed: () async {
-              rep.close();
-              await Replicant.drop(rep.name);
-              _load();
-            },
-            child: Text('${rep.name}: ${rep.remote}'),
-          )))
-        ),
+            // Column is also a layout widget. It takes a list of children and
+            // arranges them vertically. By default, it sizes itself to fit its
+            // children horizontally, and tries to be as tall as its parent.
+            //
+            // Invoke "debug painting" (press "p" in the console, choose the
+            // "Toggle Debug Paint" action from the Flutter Inspector in Android
+            // Studio, or the "Toggle Debug Paint" command in Visual Studio Code)
+            // to see the wireframe for each widget.
+            //
+            // Column has various properties to control how it sizes itself and
+            // how it positions its children. Here we use mainAxisAlignment to
+            // center the children vertically; the main axis here is the vertical
+            // axis because Columns are vertical (the cross axis would be
+            // horizontal).
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: List.from(_databases.map((rep) => MaterialButton(
+                  onPressed: () async {
+                    rep.close();
+                    await Replicache.drop(rep.name);
+                    _load();
+                  },
+                  child: Text('${rep.name}: ${rep.remote}'),
+                )))),
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: _createDatabase,
