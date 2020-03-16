@@ -1,4 +1,9 @@
+.flutter-plugins
+.flutter-plugins-dependencies
 .vscode
 build
 gh-dl-release
-
+flutter_export_environment.sh
+pubspec.lock
+.dart_tool/
+.packages
