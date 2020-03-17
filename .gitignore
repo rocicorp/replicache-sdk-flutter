@@ -7,3 +7,4 @@ flutter_export_environment.sh
 pubspec.lock
 .dart_tool/
 .packages
+**/ios/Flutter/Flutter.podspec
