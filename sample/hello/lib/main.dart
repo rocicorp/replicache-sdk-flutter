@@ -39,8 +39,6 @@ class _MyHomePageState extends State<MyHomePage> {
     _replicache = Replicache('https://serve.replicate.to/sandbox/demo-counter');
     _replicache.onChange = this._handleChange;
     _replicache.onSync = this._handleSync;
-    await _replicache
-        .putBundle(await rootBundle.loadString('lib/bundle.js', cache: false));
     this._handleChange();
   }
 

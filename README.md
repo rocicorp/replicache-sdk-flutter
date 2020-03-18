@@ -22,41 +22,7 @@ tar xvzf replicache-flutter-sdk.tar.gz
 ...
 ```
 
-#### 3. Create a transaction bundle
-
-You interact with Replicache by executing _transactions_, which are written in JavaScript.
-
-Create a new `lib/bundle.js` file inside your app to hold some transactions, then add this code to it:
-
-```
-function codeVersion() {
-    return 1.1;
-}
-
-function increment(delta) {
-    var val = getCount();
-    db.put('count', val + delta);
-}
-
-function getCount() {
-    return db.get('count') || 0;
-}
-```
-
-#### 4. Mark `lib/bundle.js` as an asset inside `pubspec.yaml`:
-
-```
-...
-
-flutter:
-  uses-material-design: true
-  assets:
-+    - lib/bundle.js
-
-...
-```
-
-#### 5. Instantiate Replicache
+#### 3. Instantiate Replicache
 
 ```
 import 'package:replicache/replicache.dart';
@@ -68,15 +34,7 @@ var rep = Replicache('https://serve.replicate.to/sandbox/any-name-here');
 
 For now, you can use any name you want after `serve` in the URL.
 
-#### 6. Put bundle
-
-```dart
-await rep.putBundle(
-  await rootBundle.loadString('lib/bundle.js', cache: false),
-);
-```
-
-#### 7. Execute transactions
+#### 4. Execute transactions
 
 ```
 await rep.exec('increment', [1]);

@@ -148,16 +148,6 @@ class Replicache {
   String get name => _name;
   String get remote => _remote;
 
-  /// Adds new transactions to the db.
-  Future<void> putBundle(String bundle) async {
-    // We check for changes here, even though putBundle doesn't change data, because
-    // it can change the bundle which the client app uses to read the data, thus it
-    // can affect display.
-    await _opened;
-    return _result(await _checkChange(
-        await _invoke(this._name, 'putBundle', {'code': bundle})));
-  }
-
   /// Executes the named function with provided arguments from the current
   /// bundle as an atomic transaction.
   Future<dynamic> exec(String function, [List<dynamic> args = const []]) async {

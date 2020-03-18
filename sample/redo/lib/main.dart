@@ -61,8 +61,6 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   Future<void> _init() async {
-    await _replicache.putBundle(
-        await rootBundle.loadString('assets/bundle.js', cache: false));
     await _replicache.exec('init');
     await _load();
   }
@@ -70,7 +68,7 @@ class _MyHomePageState extends State<MyHomePage> {
   Future<void> _load() async {
     final dynamic res = await _replicache.exec('getAllTodos');
     if (res == null) {
-      // This can happen when we put a bundle but we haven't even setup the schema yet.
+      // TODO(arv): Can this still happen without bundles?
       return;
     }
     List<Todo> todos =
