@@ -1,3 +1,3 @@
 # Management
 
-This sample exercises the management APIs on the Replicant class.
+This sample exercises the management APIs on the Replicache class.

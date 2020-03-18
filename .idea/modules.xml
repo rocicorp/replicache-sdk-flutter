@@ -2,9 +2,9 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/replicant.iml" filepath="$PROJECT_DIR$/replicant.iml" />
-      <module fileurl="file://$PROJECT_DIR$/android/replicant_android.iml" filepath="$PROJECT_DIR$/android/replicant_android.iml" />
-      <module fileurl="file://$PROJECT_DIR$/example/android/replicant_example_android.iml" filepath="$PROJECT_DIR$/example/android/replicant_example_android.iml" />
+      <module fileurl="file://$PROJECT_DIR$/replicache.iml" filepath="$PROJECT_DIR$/replicache.iml" />
+      <module fileurl="file://$PROJECT_DIR$/android/replicache_android.iml" filepath="$PROJECT_DIR$/android/replicache_android.iml" />
+      <module fileurl="file://$PROJECT_DIR$/example/android/replicache_example_android.iml" filepath="$PROJECT_DIR$/example/android/replicache_example_android.iml" />
     </modules>
   </component>
 </project>

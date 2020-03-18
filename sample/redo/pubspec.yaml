@@ -1,5 +1,5 @@
 name: redo
-description: An offline-first todo app using Replicant!
+description: An offline-first todo app using Replicache!
 
 version: 1.0.0+1
 
@@ -12,10 +12,9 @@ dependencies:
   cupertino_icons: ^0.1.2
   uuid: 2.0.1
 
-  # To run the sample, first run /replicant-sdk-flutter/build.sh once
-  replicant:
-    path:
-      ../../
+  # To run the sample, first run /replicache-sdk-flutter/build.sh once
+  replicache:
+    path: ../../
 
 dev_dependencies:
   flutter_test:

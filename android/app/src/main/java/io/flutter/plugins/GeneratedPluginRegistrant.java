@@ -1,7 +1,7 @@
 package io.flutter.plugins;
 
 import io.flutter.plugin.common.PluginRegistry;
-import roci.dev.replicant.ReplicantPlugin;
+import roci.dev.replicache.ReplicachePlugin;
 
 /**
  * Generated file. Do not edit.
@@ -11,7 +11,7 @@ public final class GeneratedPluginRegistrant {
     if (alreadyRegisteredWith(registry)) {
       return;
     }
-    ReplicantPlugin.registerWith(registry.registrarFor("roci.dev.replicant.ReplicantPlugin"));
+    ReplicachePlugin.registerWith(registry.registrarFor("roci.dev.replicache.ReplicachePlugin"));
   }
 
   private static boolean alreadyRegisteredWith(PluginRegistry registry) {
