@@ -219,7 +219,7 @@ class Replicache {
       _timer = null;
 
       for (var i = 0;; i++) {
-        Map<String, dynamic> result = await _invoke(this._name, "sync", {
+        Map<String, dynamic> result = await _invoke(this._name, 'requestSync', {
           'remote': this._remote,
           'shallow': this.shallowSync,
           'auth': this._authToken

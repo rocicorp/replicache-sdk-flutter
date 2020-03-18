@@ -38,12 +38,12 @@ public class ReplicachePlugin implements MethodCallHandler {
     // Most Replicache operations happen serially, but not blocking UI thread.
     HandlerThread generalThread = new HandlerThread("replicache.dev/general");
     generalThread.start();
-    generalHandler = new Handler(generalThread.getLooper()); 
+    generalHandler = new Handler(generalThread.getLooper());
 
     // Sync shouldn't block the UI or other Replicache operations.
     HandlerThread syncThread = new HandlerThread("replicache.dev/sync");
     syncThread.start();
-    syncHandler = new Handler(syncThread.getLooper()); 
+    syncHandler = new Handler(syncThread.getLooper());
 
     generalHandler.post(new Runnable() {
       public void run() {
@@ -55,7 +55,7 @@ public class ReplicachePlugin implements MethodCallHandler {
   @Override
   public void onMethodCall(final MethodCall call, final Result result) {
     Handler handler;
-    if (call.method.equals("sync")) {
+    if (call.method.equals("requestSync")) {
       handler = syncHandler;
     } else {
       handler = generalHandler;
@@ -66,11 +66,11 @@ public class ReplicachePlugin implements MethodCallHandler {
         // The arguments passed from Flutter is a two-element array:
         // 0th element is the name of the database to call on
         // 1st element are the rpc arguments (JSON-encoded)
-        ArrayList args = (ArrayList)call.arguments;
+        ArrayList args = (ArrayList) call.arguments;
 
-        String dbName = (String)args.get(0);
+        String dbName = (String) args.get(0);
         // TODO: Avoid conversion here - can dart just send as bytes?
-        byte[] argData = ((String)args.get(1)).getBytes();
+        byte[] argData = ((String) args.get(1)).getBytes();
 
         byte[] resultData = null;
         Exception exception = null;
@@ -105,7 +105,8 @@ public class ReplicachePlugin implements MethodCallHandler {
     File dataDir = new File(replicacheDir, "data");
     File tmpDir = new File(replicacheDir, "temp");
 
-    // Android apps can't create directories in the global tmp directory, so we must create our own.
+    // Android apps can't create directories in the global tmp directory, so we must
+    // create our own.
     if (!tmpDir.exists()) {
       if (!tmpDir.mkdirs()) {
         Log.e("Replicache", "Could not create temp directory");
@@ -115,8 +116,10 @@ public class ReplicachePlugin implements MethodCallHandler {
     tmpDir.deleteOnExit();
 
     try {
-      // TODO: It would be cool to pass `this` to third param as iOS does and route all logging to
-      // Flutter print(), but couldn't get that to compile. Not critical because currently we see
+      // TODO: It would be cool to pass `this` to third param as iOS does and route
+      // all logging to
+      // Flutter print(), but couldn't get that to compile. Not critical because
+      // currently we see
       // logging from Go and Java just fine in console when running Flutter apps.
       repm.Repm.init(dataDir.getAbsolutePath(), tmpDir.getAbsolutePath(), null);
     } catch (Exception e) {

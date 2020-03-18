@@ -29,7 +29,7 @@ const NSString* CHANNEL_NAME = @"replicache.dev";
 
 - (void)handleMethodCall:(FlutterMethodCall*)call result:(FlutterResult)result {
   dispatch_queue_t queue;
-  if ([call.method isEqualToString:@"sync"]) {
+  if ([call.method isEqualToString:@"requestSync"]) {
     queue = syncQueue;
   } else {
     queue = generalQueue;
