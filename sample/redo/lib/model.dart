@@ -3,8 +3,7 @@ class Todo {
       : id = id,
         title = data['title'],
         done = data['done'],
-        order = data['order'] {
-  }
+        order = data['order'];
 
   String id;
   String title;

@@ -1,7 +1,6 @@
 import 'dart:core';
 import 'dart:async';
 import 'dart:convert';
-import 'dart:ffi';
 
 import 'package:flutter/services.dart';
 
@@ -64,7 +63,7 @@ class ScanID {
 /// sync(), which runs concurrently with other operations (and might take awhile, since
 /// it attempts to go to the network).
 class Replicache {
-  static MethodChannel _platform = null;
+  static MethodChannel _platform;
 
   ChangeHandler onChange;
   SyncHandler onSync;
@@ -78,7 +77,7 @@ class Replicache {
   bool shallowSync;
 
   /// @Deprecated('Use shallowSync instead')
-  void set hackyShallowSync(bool val) {
+  set hackyShallowSync(bool val) {
     shallowSync = true;
   }
 
@@ -329,7 +328,7 @@ class Replicache {
 class ScanItem {
   ScanItem.fromJson(Map<String, dynamic> data)
       : id = data['id'],
-        value = data['value'] {}
+        value = data['value'];
   String id;
   var value;
 }
