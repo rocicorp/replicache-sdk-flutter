@@ -9,6 +9,12 @@ import 'settings.dart';
 
 void main() => runApp(MyApp());
 
+const prefix = 'todo/';
+
+String stripPrefix(String id) => id.substring(prefix.length);
+
+String addPrefix(String id) => "$prefix$id";
+
 class MyApp extends StatelessWidget {
   // This widget is the root of your application.
   @override
@@ -65,13 +71,8 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   Future<void> _load() async {
-    final dynamic res = await _replicache.exec('getAllTodos');
-    if (res == null) {
-      // TODO(arv): Can this still happen without bundles?
-      return;
-    }
-    List<Todo> todos =
-        List.from(res.map((e) => Todo.fromJson(e['id'], e['value'])));
+    List<Todo> todos = List.from((await _replicache.scan(prefix: prefix))
+        .map((item) => Todo.fromJson(stripPrefix(item.id), item.value)));
     todos.sort(
         (t1, t2) => t1.order < t2.order ? -1 : t1.order == t2.order ? 0 : 1);
     setState(() {
