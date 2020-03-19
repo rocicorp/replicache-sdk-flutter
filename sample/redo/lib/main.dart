@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:replicache/replicache.dart';
 import 'package:uuid/uuid.dart';
 
@@ -194,7 +193,7 @@ class TodoList extends StatelessWidget {
         );
       }),
       onReorder: (int oldIndex, int newIndex) {
-        this._handleReorder(oldIndex, newIndex);
+        _handleReorder(oldIndex, newIndex);
       },
     );
   }

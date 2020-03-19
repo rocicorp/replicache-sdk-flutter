@@ -26,7 +26,7 @@ class SyncProgress {
 
 class ScanBound {
   ScanBound(this.id, this.index);
-  final ScanID id;
+  final ScanId id;
   final int index;
   Map<String, dynamic> _json() {
     var r = {};
@@ -40,8 +40,8 @@ class ScanBound {
   }
 }
 
-class ScanID {
-  ScanID(this.value, this.exclusive);
+class ScanId {
+  ScanId(this.value, this.exclusive);
   final String value;
   final bool exclusive;
   Map<String, dynamic> _json() {
@@ -82,9 +82,7 @@ class Replicache {
   }
 
   /// @Deprecated('Use shallowSync instead')
-  bool get hackyShallowSync {
-    return shallowSync;
-  }
+  bool get hackyShallowSync => shallowSync;
 
   /// Gets the last sync progress for this repo.
   SyncProgress get syncProgress => _syncProgress;
@@ -101,7 +99,7 @@ class Replicache {
   /// Lists information about available local databases.
   static Future<List<DatabaseInfo>> list() async {
     var res = await _invoke('', 'list');
-    return List.from(res['databases'].map((d) => DatabaseInfo.fromJSON(d)));
+    return List.from(res['databases'].map((d) => DatabaseInfo.fromJson(d)));
   }
 
   /// Completely delete a local database. Remote replicas in the group aren't affected.
@@ -136,9 +134,7 @@ class Replicache {
     print('Using remote: ' + this._remote);
 
     _opened = _invoke(this._name, 'open');
-    _root = _opened.then((_) {
-      return _getRoot();
-    });
+    _root = _opened.then((_) => _getRoot());
     _root.then((_) {
       this._scheduleSync(0);
     });
