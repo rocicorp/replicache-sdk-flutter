@@ -70,33 +70,7 @@
 
 ...
 </code></pre>
-<h4 id="3-create-a-transaction-bundle">3. Create a transaction bundle</h4>
-<p>You interact with Replicache by executing <em>transactions</em>, which are written in JavaScript.</p>
-<p>Create a new <code>lib/bundle.js</code> file inside your app to hold some transactions, then add this code to it:</p>
-<pre class="language-dart"><code>function codeVersion() {
-    return 1.1;
-}
-
-function increment(delta) {
-    var val = getCount();
-    db.put('count', val + delta);
-}
-
-function getCount() {
-    return db.get('count') || 0;
-}
-</code></pre>
-<h4 id="4-mark-libbundlejs-as-an-asset-inside-pubspecyaml">4. Mark <code>lib/bundle.js</code> as an asset inside <code>pubspec.yaml</code>:</h4>
-<pre class="language-dart"><code>...
-
-flutter:
-  uses-material-design: true
-  assets:
-+    - lib/bundle.js
-
-...
-</code></pre>
-<h4 id="5-instantiate-replicache">5. Instantiate Replicache</h4>
+<h4 id="3-instantiate-replicache">3. Instantiate Replicache</h4>
 <pre class="language-dart"><code>import 'package:replicache/replicache.dart';
 
 ...
@@ -104,12 +78,7 @@ flutter:
 var rep = Replicache('https://serve.replicate.to/sandbox/any-name-here');
 </code></pre>
 <p>For now, you can use any name you want after <code>serve</code> in the URL.</p>
-<h4 id="6-put-bundle">6. Put bundle</h4>
-<pre class="language-dart"><code class="language-dart">await rep.putBundle(
-  await rootBundle.loadString('lib/bundle.js', cache: false),
-);
-</code></pre>
-<h4 id="7-execute-transactions">7. Execute transactions</h4>
+<h4 id="4-execute-transactions">4. Execute transactions</h4>
 <pre class="language-dart"><code>await rep.exec('increment', [1]);
 await rep.exec('increment', [41]);
 var count = await rep.exec('getCount');
