@@ -143,14 +143,6 @@ class Replicache {
   String get name => _name;
   String get remote => _remote;
 
-  /// Executes the named function with provided arguments from the current
-  /// bundle as an atomic transaction.
-  Future<dynamic> exec(String function, [List<dynamic> args = const []]) async {
-    await _opened;
-    return _result(await _checkChange(
-        await _invoke(this._name, 'exec', {'name': function, 'args': args})));
-  }
-
   /// Puts a single value into the database in its own transaction.
   Future<void> put(String id, dynamic value) async {
     await _opened;
@@ -162,6 +154,13 @@ class Replicache {
   Future<dynamic> get(String id) async {
     await _opened;
     return _result(await _invoke(this._name, 'get', {'id': id}));
+  }
+
+  /// Deletes a single value from the database in its own transaction.
+  Future<void> del(String id) async {
+    await _opened;
+    return _result(
+        await _checkChange(await _invoke(this._name, 'del', {'id': id})));
   }
 
   /// Gets many values from the database.

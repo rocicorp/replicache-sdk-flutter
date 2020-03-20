@@ -41,12 +41,18 @@ class _MyHomePageState extends State<MyHomePage> {
     this._handleChange();
   }
 
-  void _incrementCounter() {
-    _replicache.exec('incr', [1]);
+  Future<int> _getCount() async {
+    final count = await _replicache.get('count');
+    return count ?? 0;
+  }
+
+  Future<void> _incrementCounter() async {
+    final count = await _getCount();
+    await _replicache.put('count', count + 1);
   }
 
   void _handleChange() async {
-    var count = await _replicache.exec('getCount');
+    final count = await _getCount();
     setState(() {
       _counter = count;
     });

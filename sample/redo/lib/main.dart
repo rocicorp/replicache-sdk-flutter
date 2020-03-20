@@ -66,7 +66,7 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   Future<void> _init() async {
-    await _replicache.exec('init');
+    // TODO(arv): Do we still need init
     await _load();
   }
 
@@ -86,34 +86,60 @@ class _MyHomePageState extends State<MyHomePage> {
     });
   }
 
+  Future<Todo> _read(String id) async {
+    final data = await _replicache.get(addPrefix(id));
+    return data == null ? null : Todo.fromJson(id, data);
+  }
+
+  Future<void> _write(String id, Todo todo) {
+    return _replicache.put(addPrefix(id), todo.toJson());
+  }
+
+  Future<void> _del(String id) {
+    return _replicache.del(addPrefix(id));
+  }
+
   Future<void> _handleDone(String id, bool isDone) async {
-    await _replicache.exec('setDone', [id, isDone]);
+    var todo = await _read(id);
+    if (todo == null) {
+      return;
+    }
+    todo.done = isDone;
+    _write(id, todo);
   }
 
   Future<void> _handleReorder(int oldIndex, int newIndex) async {
     String id = this._todos[oldIndex].id;
     double order = _getNewOrder(newIndex);
-    await _replicache.exec('setOrder', [id, order]);
+    var todo = await _read(id);
+    if (todo == null) {
+      return;
+    }
+    todo.order = order;
+    _write(id, todo);
   }
 
   Future<void> _handleRemove(String id) async {
-    await _replicache.exec('deleteTodo', [id]);
+    await _del(id);
   }
 
   Future<void> _dropDatabase() async {
     Navigator.pop(context);
-    await _replicache.exec('deleteAllTodos');
+    var items = await _replicache.scan(prefix: prefix);
+    for (final ScanItem item in items) {
+      await _replicache.del(item.id);
+    }
     await _init();
   }
 
-  void _addTodoItem(String task) {
+  Future<void> _addTodoItem(String task) async {
     var uuid = new Uuid();
     // Only add the task if the user actually entered something
     if (task.length > 0) {
       int index = _todos.length == 0 ? 0 : _todos.length;
       String id = uuid.v4();
       double order = _getNewOrder(index);
-      _replicache.exec('addTodo', [id, task, order]);
+      await _write(id, Todo(id, task, false, order));
     }
   }
 
