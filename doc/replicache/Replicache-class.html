@@ -212,14 +212,13 @@ must faster. Currently this disables bidirectional sync though :(.
           
                   
 </dd>
-        <dt id="exec" class="callable">
-          <span class="name"><a href="replicache/Replicache/exec.html">exec</a></span><span class="signature">(<wbr><span class="parameter" id="exec-param-function"><span class="type-annotation">String</span> <span class="parameter-name">function</span>, [</span> <span class="parameter" id="exec-param-args"><span class="type-annotation">List</span> <span class="parameter-name">args</span> = <span class="default-value">const []</span></span> ])
-            <span class="returntype parameter">&#8594; Future</span>
+        <dt id="del" class="callable">
+          <span class="name"><a href="replicache/Replicache/del.html">del</a></span><span class="signature">(<wbr><span class="parameter" id="del-param-id"><span class="type-annotation">String</span> <span class="parameter-name">id</span></span>)
+            <span class="returntype parameter">&#8594; Future<span class="signature">&lt;<wbr><span class="type-parameter">void</span>&gt;</span></span>
           </span>
                   </dt>
         <dd>
-          Executes the named function with provided arguments from the current
-bundle as an atomic transaction.
+          Deletes a single value from the database in its own transaction.
                   
 </dd>
         <dt id="get" class="callable">
@@ -360,7 +359,7 @@ sync are sent to the server, and new remote transactions are received and replay
     
       <li class="section-title"><a href="replicache/Replicache-class.html#instance-methods">Methods</a></li>
       <li><a href="replicache/Replicache/close.html">close</a></li>
-      <li><a href="replicache/Replicache/exec.html">exec</a></li>
+      <li><a href="replicache/Replicache/del.html">del</a></li>
       <li><a href="replicache/Replicache/get.html">get</a></li>
       <li><a href="replicache/Replicache/put.html">put</a></li>
       <li><a href="replicache/Replicache/scan.html">scan</a></li>
