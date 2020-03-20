@@ -23,7 +23,7 @@
 #
 # If your version/tag doesn't match, the script will exit with error.
 
-TOKEN="95f57a9004653b3266b5f3717d192b8499d7330a"
+TOKEN="5f99655e144cfcd0bded68ef4665c003ef675f6d"
 REPO=$1
 VERSION=$2
 FILE=$3
