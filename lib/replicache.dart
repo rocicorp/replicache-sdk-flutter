@@ -74,7 +74,7 @@ class Replicache {
 
   /// If true, Replicache only syncs the head of the remote repository, which is
   /// must faster. Currently this disables bidirectional sync though :(.
-  bool shallowSync;
+  bool shallowSync = false;
 
   /// @Deprecated('Use shallowSync instead')
   set hackyShallowSync(bool val) {
