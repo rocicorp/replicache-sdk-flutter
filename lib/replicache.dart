@@ -94,6 +94,7 @@ class Replicache {
   Timer _timer;
   bool _closed = false;
   String _authToken = "";
+  String _clientViewUserId = "";
   SyncProgress _syncProgress = SyncProgress._new(0, 0);
 
   /// Lists information about available local databases.
@@ -117,7 +118,7 @@ class Replicache {
 
   /// Create or open a local Replicache database with named `name` synchronizing with `remote`.
   /// If `name` is omitted, it defaults to `remote`.
-  Replicache(this._remote, {String name = ""}) {
+  Replicache(this._remote, {String name = "", String clientViewUserId = ""}) {
     if (_platform == null) {
       _platform = MethodChannel(CHANNEL_NAME);
       _platform.setMethodCallHandler(_methodChannelHandler);
@@ -131,6 +132,11 @@ class Replicache {
     }
     this._name = name;
 
+    if (clientViewUserId == "") {
+      throw new Exception("clientViewUserId must be non-empty");
+    }
+    this._clientViewUserId = clientViewUserId;
+
     print('Using remote: ' + this._remote);
 
     _opened = _invoke(this._name, 'open');
@@ -142,6 +148,7 @@ class Replicache {
 
   String get name => _name;
   String get remote => _remote;
+  String get clientViewUserId => _clientViewUserId;
 
   /// Puts a single value into the database in its own transaction.
   Future<void> put(String id, dynamic value) async {
@@ -220,6 +227,7 @@ class Replicache {
       for (var i = 0;; i++) {
         Map<String, dynamic> result = await _invoke(this._name, 'requestSync', {
           'remote': this._remote,
+          'clientViewUserId': this._clientViewUserId,
           'shallow': this.shallowSync,
           'auth': this._authToken
         });

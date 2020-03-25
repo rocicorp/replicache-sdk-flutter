@@ -42,7 +42,7 @@ class _MyHomePageState extends State<MyHomePage> {
   bool _syncing = false;
 
   _MyHomePageState() {
-    _replicache = Replicache(db);
+    _replicache = Replicache(db, clientViewUserId: "42");
     _replicache.onChange = this._load;
     _replicache.onSync = this._handleSync;
     _init();
