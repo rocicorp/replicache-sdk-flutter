@@ -1,7 +1,6 @@
 {
   "version": 2,
   "name": "replicache-docs",
-  "alias": "flutter.doc.replicache.to",
   "builds": [{"src": "doc/**", "use": "@now/static"}],
   "routes": [{"src": "/(.*)", "dest": "/doc/$1"}]
 }
