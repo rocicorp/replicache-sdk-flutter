@@ -9,7 +9,7 @@ import 'settings.dart';
 
 void main() => runApp(MyApp());
 
-const prefix = 'todo/';
+const prefix = '/todo/';
 
 String stripPrefix(String id) => id.substring(prefix.length);
 
@@ -99,12 +99,12 @@ class _MyHomePageState extends State<MyHomePage> {
     return _replicache.del(addPrefix(id));
   }
 
-  Future<void> _handleDone(String id, bool isDone) async {
+  Future<void> _handleDone(String id, bool complete) async {
     var todo = await _read(id);
     if (todo == null) {
       return;
     }
-    todo.done = isDone;
+    todo.complete = complete;
     _write(id, todo);
   }
 
@@ -212,8 +212,8 @@ class TodoList extends StatelessWidget {
           // Show a red background as the item is swiped away.
           background: Container(color: Colors.red),
           child: new CheckboxListTile(
-              title: new Text(todo.title),
-              value: todo.done,
+              title: new Text(todo.text),
+              value: todo.complete,
               onChanged: (bool newValue) {
                 _handleDone(id, newValue);
               }),
