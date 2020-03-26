@@ -1,18 +1,18 @@
 class Todo {
   String id;
-  String title;
-  bool done;
+  String text;
+  bool complete;
   num order;
 
-  Todo(this.id, this.title, this.done, this.order);
+  Todo(this.id, this.text, this.complete, this.order);
 
   factory Todo.fromJson(String id, Map<String, dynamic> data) =>
-      Todo(id, data['title'], data['done'], data['order']);
+      Todo(id, data['text'], data['complete'], data['order']);
 
   Map<String, dynamic> toJson() {
     return {
-      'title': title,
-      'done': done,
+      'text': text,
+      'complete': complete,
       'order': order,
     };
   }
