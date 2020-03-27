@@ -38,13 +38,15 @@ class _MyHomePageState extends State<MyHomePage> {
   final GlobalKey<ScaffoldState> _scaffoldKey = new GlobalKey<ScaffoldState>();
 
   Replicache _replicache;
-  List<Todo> _todos = [];
+  List<num> _listIds = [];
+  List<Todo> _allTodos = [];
   bool _syncing = false;
+  num _selectedListId;
 
   _MyHomePageState() {
     _replicache = Replicache(db);
-    _replicache.onChange = this._load;
-    _replicache.onSync = this._handleSync;
+    _replicache.onChange = _load;
+    _replicache.onSync = _handleSync;
     _init();
   }
 
@@ -56,8 +58,14 @@ class _MyHomePageState extends State<MyHomePage> {
         title: new Text('Todo List'),
         actions: _syncing ? [Icon(Icons.sync)] : [],
       ),
-      drawer: TodoDrawer(_replicache.sync, _dropDatabase),
-      body: TodoList(_todos, _handleDone, _handleRemove, _handleReorder),
+      drawer: TodoDrawer(
+          listIds: _listIds,
+          selectedListId: _selectedListId,
+          onSelectListId: _selectListId,
+          onSync: _replicache.sync,
+          onDrop: _dropDatabase),
+      body:
+          TodoList(_activeTodos(), _handleDone, _handleRemove, _handleReorder),
       floatingActionButton: new FloatingActionButton(
           onPressed: _pushAddTodoScreen,
           tooltip: 'Add task',
@@ -71,12 +79,23 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   Future<void> _load() async {
-    List<Todo> todos = List.from((await _replicache.scan(prefix: prefix))
-        .map((item) => Todo.fromJson(stripPrefix(item.id), item.value)));
-    todos.sort(
-        (t1, t2) => t1.order < t2.order ? -1 : t1.order == t2.order ? 0 : 1);
+    List<num> listIds = List.from((await _replicache.scan(prefix: "/list/"))
+        .map((item) => num.parse(item.id.substring("/list/".length))));
+
+    if (_selectedListId == null && listIds.length > 0) {
+      setState(() {
+        _selectedListId = listIds[0];
+      });
+    }
+
     setState(() {
-      _todos = todos;
+      _listIds = listIds;
+    });
+
+    List<Todo> allTodos = List.from((await _replicache.scan(prefix: prefix))
+        .map((item) => Todo.fromJson(stripPrefix(item.id), item.value)));
+    setState(() {
+      _allTodos = allTodos;
     });
   }
 
@@ -108,8 +127,16 @@ class _MyHomePageState extends State<MyHomePage> {
     _write(id, todo);
   }
 
+  List<Todo> _activeTodos() {
+    List<Todo> todos =
+        List.from(_allTodos.where((todo) => todo.listId == _selectedListId));
+    todos.sort((t1, t2) => (t1.order - t2.order).sign.toInt());
+    return todos;
+  }
+
   Future<void> _handleReorder(int oldIndex, int newIndex) async {
-    String id = this._todos[oldIndex].id;
+    List<Todo> todos = _activeTodos();
+    String id = todos[oldIndex].id;
     double order = _getNewOrder(newIndex);
     var todo = await _read(id);
     if (todo == null) {
@@ -121,6 +148,12 @@ class _MyHomePageState extends State<MyHomePage> {
 
   Future<void> _handleRemove(String id) async {
     await _del(id);
+  }
+
+  void _selectListId(num listId) {
+    setState(() {
+      _selectedListId = listId;
+    });
   }
 
   Future<void> _dropDatabase() async {
@@ -136,10 +169,11 @@ class _MyHomePageState extends State<MyHomePage> {
     var uuid = new Uuid();
     // Only add the task if the user actually entered something
     if (task.length > 0) {
-      int index = _todos.length == 0 ? 0 : _todos.length;
+      List<Todo> todos = _activeTodos();
+      int index = todos.length == 0 ? 0 : todos.length;
       String id = uuid.v4();
       double order = _getNewOrder(index);
-      await _write(id, Todo(id, task, false, order));
+      await _write(id, Todo(id, _selectedListId, task, false, order));
     }
   }
 
@@ -147,12 +181,13 @@ class _MyHomePageState extends State<MyHomePage> {
   // min default value = -minPositive
   // max default value = double.maxFinite
   double _getNewOrder(int index) {
+    List<Todo> todos = _activeTodos();
     double minOrderValue = 0;
     double maxOrderValue = double.maxFinite;
     double leftNeighborOrder =
-        index == 0 ? minOrderValue : _todos[index - 1].order.toDouble();
+        index == 0 ? minOrderValue : todos[index - 1].order.toDouble();
     double rightNeighborOrder =
-        index == _todos.length ? maxOrderValue : _todos[index].order.toDouble();
+        index == todos.length ? maxOrderValue : todos[index].order.toDouble();
     double order =
         leftNeighborOrder + ((rightNeighborOrder - leftNeighborOrder) / 2);
     return order;
@@ -226,33 +261,54 @@ class TodoList extends StatelessWidget {
   }
 }
 
-class TodoDrawer extends StatelessWidget {
-  final Future<void> Function() _sync;
-  final Future<void> Function() _dropDatabase;
+typedef Future<void> OnSync();
+typedef Future<void> OnDrop();
+typedef void OnSelectListId(num id);
 
-  TodoDrawer(this._sync, this._dropDatabase);
+class TodoDrawer extends StatelessWidget {
+  final OnSync _sync;
+  final OnDrop _dropDatabase;
+  final OnSelectListId _onSelectListId;
+  final List<num> _listIds;
+  final num _selectedListId;
+
+  TodoDrawer(
+      {List<num> listIds = const [],
+      OnSync onSync,
+      OnDrop onDrop,
+      num selectedListId,
+      OnSelectListId onSelectListId})
+      : _listIds = listIds,
+        _sync = onSync,
+        _dropDatabase = onDrop,
+        _selectedListId = selectedListId,
+        _onSelectListId = onSelectListId;
 
   @override
   Widget build(BuildContext context) {
-    return Drawer(
-      child: ListView(
-        children: <Widget>[
-          DrawerHeader(
-            child: Text(""),
-            decoration: BoxDecoration(
-              color: Colors.blue,
-            ),
-          ),
-          ListTile(
-            title: Text('Sync'),
-            onTap: _sync,
-          ),
-          ListTile(
-            title: Text('Delete local state'),
-            onTap: _dropDatabase,
-          ),
-        ],
+    final children = <Widget>[
+      DrawerHeader(
+        child: Text(""),
+        decoration: BoxDecoration(
+          color: Colors.blue,
+        ),
       ),
-    );
+      ListTile(
+        title: Text('Sync'),
+        onTap: _sync,
+      ),
+      ListTile(
+        title: Text('Delete local state'),
+        onTap: _dropDatabase,
+      ),
+    ];
+    children.addAll(_listIds.map((id) => ListTile(
+        title: Text('List #$id'),
+        selected: _selectedListId == id,
+        onTap: () {
+          _onSelectListId(id);
+          Navigator.pop(context);
+        })));
+    return Drawer(child: ListView(children: children));
   }
 }
