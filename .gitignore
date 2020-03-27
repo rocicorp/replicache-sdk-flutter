@@ -2,9 +2,12 @@
 .flutter-plugins-dependencies
 .vscode
 build
+repl
 gh-dl-release
 flutter_export_environment.sh
 pubspec.lock
 .dart_tool/
 .packages
 **/ios/Flutter/Flutter.podspec
+**/android/.project
+**/android/.settings/org.eclipse.buildship.core.prefs
