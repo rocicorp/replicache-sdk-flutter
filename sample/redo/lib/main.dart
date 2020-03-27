@@ -130,8 +130,7 @@ class _MyHomePageState extends State<MyHomePage> {
   List<Todo> _activeTodos() {
     List<Todo> todos =
         List.from(_allTodos.where((todo) => todo.listId == _selectedListId));
-    todos.sort(
-        (t1, t2) => t1.order < t2.order ? -1 : t1.order == t2.order ? 0 : 1);
+    todos.sort((t1, t2) => (t1.order - t2.order).sign.toInt());
     return todos;
   }
 
