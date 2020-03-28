@@ -44,7 +44,7 @@ class _MyHomePageState extends State<MyHomePage> {
   num _selectedListId;
 
   _MyHomePageState() {
-    _replicache = Replicache(db);
+    _replicache = Replicache(db, clientViewAuth: "42");
     _replicache.onChange = _load;
     _replicache.onSync = _handleSync;
     _init();

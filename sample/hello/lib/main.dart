@@ -35,7 +35,8 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   void init() async {
-    _replicache = Replicache('https://serve.replicate.to/sandbox/demo-counter');
+    _replicache = Replicache('https://serve.replicate.to/sandbox/demo-counter',
+        clientViewAuth: "");
     _replicache.onChange = this._handleChange;
     _replicache.onSync = this._handleSync;
     this._handleChange();
