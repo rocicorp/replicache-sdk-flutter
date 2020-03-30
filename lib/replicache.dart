@@ -2,6 +2,7 @@ import 'dart:core';
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
 import 'database_info.dart';
@@ -89,6 +90,7 @@ class Replicache {
 
   String _name;
   String _remote;
+  String _clientViewAuth;
   Future<String> _root;
   Future<dynamic> _opened;
   Timer _timer;
@@ -117,7 +119,8 @@ class Replicache {
 
   /// Create or open a local Replicache database with named `name` synchronizing with `remote`.
   /// If `name` is omitted, it defaults to `remote`.
-  Replicache(this._remote, {String name = ""}) {
+  Replicache(this._remote,
+      {String name = "", @required String clientViewAuth}) {
     if (_platform == null) {
       _platform = MethodChannel(CHANNEL_NAME);
       _platform.setMethodCallHandler(_methodChannelHandler);
@@ -130,6 +133,8 @@ class Replicache {
       name = this._remote;
     }
     this._name = name;
+
+    this._clientViewAuth = clientViewAuth;
 
     print('Using remote: ' + this._remote);
 
@@ -220,6 +225,7 @@ class Replicache {
       for (var i = 0;; i++) {
         Map<String, dynamic> result = await _invoke(this._name, 'requestSync', {
           'remote': this._remote,
+          'clientViewAuth': this._clientViewAuth,
           'shallow': this.shallowSync,
           'auth': this._authToken
         });
