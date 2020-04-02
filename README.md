@@ -1,14 +1,22 @@
-# Local-First Flutter Apps in Less than 5 Minutes
+# Replicache Flutter SDK - Quickstart
 
 #### 1. Get the SDK
 
-Download the latest [replicache-flutter-sdk.tar.gz](https://github.com/rocicorp/replicache-sdk-flutter/releases/latest/download/replicache-flutter-sdk.tar.gz), then unzip it
+Download the [Replicache SDK](https://github.com/rocicorp/replicache/releases/latest/download/replicache-sdk.tar.gz), then unzip it:
 
 ```
-tar xvzf replicache-flutter-sdk.tar.gz
+tar xvzf replicache-sdk.tar.gz
 ```
 
-#### 2. Add the `replicache` dependency to your `pubspec.yaml`
+#### 2. Start a development diff-server and put some sample data in it:
+
+```
+/path/to/replicache-sdk/diffs --enable-inject
+# TODO
+curl -d '{...}' http://localhost:7000/inject
+```
+
+#### 3. Add the `replicache` dependency to your Flutter app's `pubspec.yaml`
 
 ```
 ...
@@ -22,46 +30,52 @@ tar xvzf replicache-flutter-sdk.tar.gz
 ...
 ```
 
-#### 3. Instantiate Replicache
+#### 4. Instantiate Replicache
 
 ```
 import 'package:replicache/replicache.dart';
 
 ...
+var rep = Replicache(
+  // The Replicache diff-server to talk to.
+  'http://localhost:7000',
 
-var rep = Replicache('https://serve.replicate.to/sandbox/any-name-here');
+  // Your server, where the /replicache-client-view and /replicache-batch handlers are.
+  'http://localhost:8000');
 ```
 
-For now, you can use any name you want after `serve` in the URL.
-
-#### 4. Execute transactions
+#### 5. Read Data
 
 ```
-await rep.exec('increment', [1]);
-await rep.exec('increment', [41]);
-var count = await rep.exec('getCount');
-print('The answer is ${count}');
+rep.subscribe((tx) {
+}).onchange...
 ```
 
-Congratulations — you are done 🎉. Time for a cup of coffee.
+Now inject a new snapshot, you'll see your view dynamically update:
 
-In fact, while you're away, why not install the app on two devices and let them sync with each other?
+```
+curl -d ...
+```
 
-Disconnect them. Take a subway ride. Whatever. It's all good. The devices will sync up automatically when there is connectivity.
+Nice!
 
-[Conflicts are handled naturally](https://github.com/rocicorp/replicache/blob/master/design.md#conflicts) by ordering atomic transactions consistently on all devices.
+#### 6. Write Data
 
-## Want something even easier?
+TODO (this isn't implemented in the SDK yet)
 
-Download the above steps as a running sample. See [flutter/hello](https://github.com/rocicorp/replicache-sdk-flutter/tree/master/sample/hello).
+
+Congratulations — you are done with the client setup 🎉. Time for a cup of coffee.
+
+In fact, while you're away, why not turn off the wifi and click around. Your app will respond instantly with cached data and queue up the changes to replay, once you setup the server-side integration.
 
 ## Next steps
 
+- Implement the [server-side of Replicache integration](https://github.com/rocicorp/replicache/)
 - See [`flutter/redo`](https://github.com/rocicorp/replicache-sdk-flutter/tree/master/sample/redo) a fully functioning TODO app built on Flutter and Replicache
 - Review the [Replicache Dart Reference](https://flutter.doc.replicate.to/replicache/replicache-library.html)
-- Review the [JavaScript API for Replicache transactions](https://github.com/rocicorp/replicache-server/blob/master/doc/transaction-api.md)
 - Inspect your Replicache databases using [the `repl` tool](https://github.com/rocicorp/replicache-server/blob/master/doc/cli.md)
 
 ## More questions?
 
-See the [design doc](https://github.com/rocicorp/replicache/blob/master/design.md).
+* [Join us on Slack!](#TODO)
+* See the [design doc](https://github.com/rocicorp/replicache/blob/master/design.md).
