@@ -1,7 +1,9 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:redo/loginpage.dart';
 import 'package:replicache/replicache.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
 
 import 'model.dart';
@@ -13,10 +15,9 @@ const prefix = '/todo/';
 
 String stripPrefix(String id) => id.substring(prefix.length);
 
-String addPrefix(String id) => "$prefix$id";
+String addPrefix(String id) => '$prefix$id';
 
 class MyApp extends StatelessWidget {
-  // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -38,49 +39,100 @@ class _MyHomePageState extends State<MyHomePage> {
   final GlobalKey<ScaffoldState> _scaffoldKey = new GlobalKey<ScaffoldState>();
 
   Replicache _replicache;
-  List<num> _listIds = [];
+  List<int> _listIds = [];
   List<Todo> _allTodos = [];
   bool _syncing = false;
-  num _selectedListId;
+  int _selectedListId;
+  final Future<SharedPreferences> _prefs;
 
-  _MyHomePageState() {
-    _replicache = Replicache(db, clientViewAuth: "42");
-    _replicache.onChange = _load;
-    _replicache.onSync = _handleSync;
+  LoginResult _loginResult;
+
+  _MyHomePageState() : _prefs = SharedPreferences.getInstance() {
     _init();
+  }
+
+  Future<String> _getAuthToken() {
+    return Future.value(
+        _loginResult == null ? '' : _loginResult.userId.toString());
   }
 
   @override
   Widget build(BuildContext context) {
-    return new Scaffold(
+    return Scaffold(
       key: _scaffoldKey,
-      appBar: new AppBar(
-        title: new Text('Todo List'),
+      appBar: AppBar(
+        title: Text('Todo List'),
         actions: _syncing ? [Icon(Icons.sync)] : [],
       ),
       drawer: TodoDrawer(
-          listIds: _listIds,
-          selectedListId: _selectedListId,
-          onSelectListId: _selectListId,
-          onSync: _replicache.sync,
-          onDrop: _dropDatabase),
-      body:
-          TodoList(_activeTodos(), _handleDone, _handleRemove, _handleReorder),
-      floatingActionButton: new FloatingActionButton(
+        listIds: _listIds,
+        selectedListId: _selectedListId,
+        onSelectListId: _selectListId,
+        onSync: _replicache?.sync,
+        onDrop: _dropDatabase,
+        loggedIn: _loginResult != null,
+        logout: _logout,
+      ),
+      body: TodoList(
+        _activeTodos(),
+        _handleDone,
+        _handleRemove,
+        _handleReorder,
+      ),
+      floatingActionButton: FloatingActionButton(
           onPressed: _pushAddTodoScreen,
           tooltip: 'Add task',
-          child: new Icon(Icons.add)),
+          child: Icon(Icons.add)),
     );
   }
 
   Future<void> _init() async {
-    // TODO(arv): Do we still need init
+    var loginResult = await _checkUserId();
+
+    if (loginResult == null) {
+      loginResult = await Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute<LoginResult>(
+            builder: (context) => LoginPage(),
+            settings: RouteSettings(name: '/login'),
+          ),
+          ModalRoute.withName('/'));
+    }
+
+    final p = await _prefs;
+    if (!(await p.setInt('userId', loginResult.userId))) {
+      throw ('Failed to write user ID');
+    }
+    if (!(await p.setString('email', loginResult.email))) {
+      throw ('Failed to write email');
+    }
+
+    _replicache = Replicache(db);
+    _replicache.onChange = _load;
+    _replicache.onSync = _handleSync;
+    _replicache.getAuthToken = _getAuthToken;
+    _replicache.clientViewAuth = loginResult.userId.toString();
+
+    setState(() {
+      _loginResult = loginResult;
+    });
+
     await _load();
   }
 
+  Future<LoginResult> _checkUserId() async {
+    final p = await _prefs;
+    String email = p.getString('email');
+    int userId = p.getInt('userId');
+    if (email == null || userId == null) {
+      return null;
+    }
+    return LoginResult(email, userId);
+  }
+
   Future<void> _load() async {
-    List<num> listIds = List.from((await _replicache.scan(prefix: "/list/"))
-        .map((item) => num.parse(item.id.substring("/list/".length))));
+    List<int> listIds = List.from((await _replicache.scan(prefix: '/list/'))
+        .map((item) => int.parse(item.id.substring('/list/'.length))));
 
     if (_selectedListId == null && listIds.length > 0) {
       setState(() {
@@ -150,7 +202,7 @@ class _MyHomePageState extends State<MyHomePage> {
     await _del(id);
   }
 
-  void _selectListId(num listId) {
+  void _selectListId(int listId) {
     setState(() {
       _selectedListId = listId;
     });
@@ -199,19 +251,38 @@ class _MyHomePageState extends State<MyHomePage> {
         // MaterialPageRoute will automatically animate the screen entry, as well as adding
         // a back button to close it
         new MaterialPageRoute(builder: (context) {
-      return new Scaffold(
-          appBar: new AppBar(title: new Text('Add a new task')),
-          body: new TextField(
-            autofocus: true,
-            onSubmitted: (val) {
-              _addTodoItem(val);
-              Navigator.pop(context); // Close the add todo screen
-            },
-            decoration: new InputDecoration(
-                hintText: 'Enter something to do...',
-                contentPadding: const EdgeInsets.all(16.0)),
-          ));
+      return Scaffold(
+        appBar: AppBar(title: new Text('Add a new task')),
+        body: TextField(
+          autofocus: true,
+          onSubmitted: (val) {
+            _addTodoItem(val);
+            Navigator.pop(context); // Close the add todo screen
+          },
+          decoration: new InputDecoration(
+              hintText: 'Enter something to do...',
+              contentPadding: const EdgeInsets.all(16.0)),
+        ),
+      );
     }));
+  }
+
+  void _logout() async {
+    final p = await _prefs;
+    if (!(await p.clear())) {
+      throw Exception('Failed to clear local prefs.');
+    }
+
+    await _replicache.close();
+    _replicache = null;
+
+    setState(() {
+      _loginResult = null;
+      _allTodos = [];
+      _listIds = [];
+    });
+
+    _init();
   }
 }
 
@@ -261,54 +332,79 @@ class TodoList extends StatelessWidget {
   }
 }
 
-typedef Future<void> OnSync();
-typedef Future<void> OnDrop();
-typedef void OnSelectListId(num id);
-
 class TodoDrawer extends StatelessWidget {
-  final OnSync _sync;
-  final OnDrop _dropDatabase;
-  final OnSelectListId _onSelectListId;
-  final List<num> _listIds;
-  final num _selectedListId;
+  final Future<void> Function() onSync;
+  final Future<void> Function() onDrop;
+  final void Function(int id) onSelectListId;
+  final List<int> listIds;
+  final int selectedListId;
+  final bool loggedIn;
 
-  TodoDrawer(
-      {List<num> listIds = const [],
-      OnSync onSync,
-      OnDrop onDrop,
-      num selectedListId,
-      OnSelectListId onSelectListId})
-      : _listIds = listIds,
-        _sync = onSync,
-        _dropDatabase = onDrop,
-        _selectedListId = selectedListId,
-        _onSelectListId = onSelectListId;
+  final void Function() logout;
+
+  TodoDrawer({
+    this.listIds = const [],
+    this.onSync,
+    this.onDrop,
+    @required this.selectedListId,
+    @required this.onSelectListId,
+    @required this.loggedIn,
+    @required this.logout,
+  });
 
   @override
   Widget build(BuildContext context) {
     final children = <Widget>[
       DrawerHeader(
-        child: Text(""),
+        child: Text(''),
         decoration: BoxDecoration(
           color: Colors.blue,
         ),
       ),
       ListTile(
-        title: Text('Sync'),
-        onTap: _sync,
-      ),
-      ListTile(
-        title: Text('Delete local state'),
-        onTap: _dropDatabase,
+        title: Text(
+          "LISTS",
+          style: TextStyle(
+            letterSpacing: 3,
+            fontWeight: FontWeight.normal,
+            color: Colors.grey,
+          ),
+        ),
       ),
     ];
-    children.addAll(_listIds.map((id) => ListTile(
+    children.addAll(listIds.map((id) => ListTile(
         title: Text('List #$id'),
-        selected: _selectedListId == id,
+        selected: selectedListId == id,
         onTap: () {
-          _onSelectListId(id);
+          onSelectListId(id);
           Navigator.pop(context);
         })));
+    children.add(Divider());
+    children.add(
+      ListTile(
+        title: Text('Sync'),
+        onTap: onSync,
+      ),
+    );
+    if (onDrop != null) {
+      children.add(
+        ListTile(
+          title: Text('Delete local state'),
+          onTap: onDrop,
+        ),
+      );
+    }
+    children.add(
+      ListTile(
+        title: Text('Logout'),
+        onTap: loggedIn
+            ? () async {
+                Navigator.pop(context);
+                logout();
+              }
+            : null,
+      ),
+    );
     return Drawer(child: ListView(children: children));
   }
 }
