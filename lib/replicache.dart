@@ -1,8 +1,6 @@
 import 'dart:core';
 import 'dart:async';
 import 'dart:convert';
-
-import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
 import 'database_info.dart';
@@ -15,7 +13,7 @@ typedef void SyncProgressHandler(SyncProgress progress);
 typedef Future<String> AuthTokenGetter();
 
 class SyncProgress {
-  SyncProgress._new(this.bytesReceived, this.bytesExpected);
+  const SyncProgress._new(this.bytesReceived, this.bytesExpected);
   final int bytesReceived;
   final int bytesExpected;
   bool equals(SyncProgress other) {
@@ -90,7 +88,7 @@ class Replicache {
 
   String _name;
   String _remote;
-  String _clientViewAuth;
+  String clientViewAuth;
   Future<String> _root;
   Future<dynamic> _opened;
   Timer _timer;
@@ -119,8 +117,8 @@ class Replicache {
 
   /// Create or open a local Replicache database with named `name` synchronizing with `remote`.
   /// If `name` is omitted, it defaults to `remote`.
-  Replicache(this._remote,
-      {String name = "", @required String clientViewAuth}) {
+  Replicache(this._remote, {String name = "", String clientViewAuth = ""})
+      : clientViewAuth = clientViewAuth {
     if (_platform == null) {
       _platform = MethodChannel(CHANNEL_NAME);
       _platform.setMethodCallHandler(_methodChannelHandler);
@@ -133,8 +131,6 @@ class Replicache {
       name = this._remote;
     }
     this._name = name;
-
-    this._clientViewAuth = clientViewAuth;
 
     print('Using remote: ' + this._remote);
 
@@ -198,7 +194,13 @@ class Replicache {
 
     this._fireOnSync(true);
 
+    Timer progressTimer;
+
     final checkProgress = () async {
+      if (_closed) {
+        progressTimer.cancel();
+        return;
+      }
       final result = await _invoke(this._name, 'syncProgress', {});
       int r = result['bytesReceived'];
       int e = result['bytesExpected'];
@@ -211,10 +213,9 @@ class Replicache {
       this._fireOnSyncProgress(SyncProgress._new(r, e));
     };
 
-    this._syncProgress = SyncProgress._new(0, 0);
+    this._syncProgress = const SyncProgress._new(0, 0);
 
-    final progressTimer =
-        Timer.periodic(new Duration(milliseconds: 500), (Timer t) {
+    progressTimer = Timer.periodic(new Duration(milliseconds: 500), (Timer t) {
       checkProgress();
     });
 
@@ -223,11 +224,11 @@ class Replicache {
       _timer = null;
 
       for (var i = 0;; i++) {
-        Map<String, dynamic> result = await _invoke(this._name, 'requestSync', {
-          'remote': this._remote,
-          'clientViewAuth': this._clientViewAuth,
-          'shallow': this.shallowSync,
-          'auth': this._authToken
+        Map<String, dynamic> result = await _invoke(_name, 'requestSync', {
+          'remote': _remote,
+          'clientViewAuth': clientViewAuth,
+          'shallow': shallowSync,
+          'auth': _authToken,
         });
         if (result.containsKey('error') &&
             result['error'].containsKey('badAuth')) {
