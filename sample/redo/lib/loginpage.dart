@@ -17,10 +17,16 @@ class _LoginPageState extends State<LoginPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    final themeData = ThemeData.dark().copyWith(
+      accentColor: Colors.white70,
       backgroundColor: Colors.blue,
+      buttonTheme: ButtonThemeData(buttonColor: Colors.blue[700]),
+      errorColor: Colors.amberAccent,
+    );
+    return Scaffold(
+      backgroundColor: themeData.backgroundColor,
       body: Theme(
-        data: ThemeData.dark(),
+        data: themeData,
         child: Center(
           child: Padding(
             padding: EdgeInsets.all(16),
@@ -30,10 +36,6 @@ class _LoginPageState extends State<LoginPage> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: <Widget>[
-                    Text(
-                      'This demo app uses your email as authorization.',
-                      style: ThemeData.dark().textTheme.body1,
-                    ),
                     TextFormField(
                       decoration: InputDecoration(
                         labelText: 'Email',
@@ -48,18 +50,21 @@ class _LoginPageState extends State<LoginPage> {
                       autocorrect: false,
                       style: TextStyle(
                         decorationColor: Colors.white,
-                        color: Colors.white,
+                        // color: Colors.white,
                       ),
                     ),
-                    FlatButton(
-                        child: Text(
-                          'Login',
-                        ),
-                        onPressed: () {
-                          if (_formKey.currentState.validate()) {
-                            _formKey.currentState.save();
-                          }
-                        }),
+                    Container(
+                      margin: EdgeInsets.symmetric(vertical: 8),
+                      child: RaisedButton(
+                          child: Text(
+                            'Login',
+                          ),
+                          onPressed: () {
+                            if (_formKey.currentState.validate()) {
+                              _formKey.currentState.save();
+                            }
+                          }),
+                    ),
                     Text(
                       _error == null ? '' : _error.toString(),
                     ),
