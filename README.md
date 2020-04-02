@@ -11,7 +11,7 @@ tar xvzf replicache-sdk.tar.gz
 #### 2. Start a development diff-server and put some sample data in it:
 
 ```
-/path/to/replicache-sdk/diffs --enable-inject
+/path/to/replicache-sdk/<platform>/diffs --enable-inject
 # TODO
 curl -d '{...}' http://localhost:7000/inject
 ```
@@ -25,7 +25,7 @@ curl -d '{...}' http://localhost:7000/inject
 
 +   replicache:
 +     path:
-+       /tmp/replicache-flutter-sdk/
++       /path/to/replicache-sdk/flutter/
 
 ...
 ```
