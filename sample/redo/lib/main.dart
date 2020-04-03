@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:redo/loginpage.dart';
 import 'package:replicache/replicache.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
 
 import 'model.dart';
@@ -43,17 +42,18 @@ class _MyHomePageState extends State<MyHomePage> {
   List<Todo> _allTodos = [];
   bool _syncing = false;
   int _selectedListId;
-  final Future<SharedPreferences> _prefs;
 
   LoginResult _loginResult;
+  LoginPrefs _loginPrefs;
 
-  _MyHomePageState() : _prefs = SharedPreferences.getInstance() {
+  _MyHomePageState() {
+    _loginPrefs = LoginPrefs(() => context);
     _init();
   }
 
-  Future<String> _getAuthToken() {
-    return Future.value(
-        _loginResult == null ? '' : _loginResult.userId.toString());
+  Future<String> _getAuthToken() async {
+    final user = await _loginPrefs.loggedInUser();
+    return user?.userId.toString() ?? '';
   }
 
   @override
@@ -70,7 +70,7 @@ class _MyHomePageState extends State<MyHomePage> {
         onSelectListId: _selectListId,
         onSync: _replicache?.sync,
         onDrop: _dropDatabase,
-        loggedIn: _loginResult != null,
+        email: _loginResult?.email,
         logout: _logout,
       ),
       body: TodoList(
@@ -87,27 +87,9 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   Future<void> _init() async {
-    var loginResult = await _checkUserId();
+    var loginResult = await _loginPrefs.login();
 
-    if (loginResult == null) {
-      loginResult = await Navigator.pushAndRemoveUntil(
-          context,
-          MaterialPageRoute<LoginResult>(
-            builder: (context) => LoginPage(),
-            settings: RouteSettings(name: '/login'),
-          ),
-          ModalRoute.withName('/'));
-    }
-
-    final p = await _prefs;
-    if (!(await p.setInt('userId', loginResult.userId))) {
-      throw ('Failed to write user ID');
-    }
-    if (!(await p.setString('email', loginResult.email))) {
-      throw ('Failed to write email');
-    }
-
-    _replicache = Replicache(db);
+    _replicache = Replicache(db, name: loginResult.userId.toString());
     _replicache.onChange = _load;
     _replicache.onSync = _handleSync;
     _replicache.getAuthToken = _getAuthToken;
@@ -118,16 +100,6 @@ class _MyHomePageState extends State<MyHomePage> {
     });
 
     await _load();
-  }
-
-  Future<LoginResult> _checkUserId() async {
-    final p = await _prefs;
-    String email = p.getString('email');
-    int userId = p.getInt('userId');
-    if (email == null || userId == null) {
-      return null;
-    }
-    return LoginResult(email, userId);
   }
 
   Future<void> _load() async {
@@ -268,15 +240,13 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   void _logout() async {
-    final p = await _prefs;
-    if (!(await p.clear())) {
-      throw Exception('Failed to clear local prefs.');
-    }
+    await _loginPrefs.logout();
 
     await _replicache.close();
     _replicache = null;
 
     setState(() {
+      _selectedListId = null;
       _loginResult = null;
       _allTodos = [];
       _listIds = [];
@@ -338,7 +308,7 @@ class TodoDrawer extends StatelessWidget {
   final void Function(int id) onSelectListId;
   final List<int> listIds;
   final int selectedListId;
-  final bool loggedIn;
+  final String email;
 
   final void Function() logout;
 
@@ -348,15 +318,22 @@ class TodoDrawer extends StatelessWidget {
     this.onDrop,
     @required this.selectedListId,
     @required this.onSelectListId,
-    @required this.loggedIn,
     @required this.logout,
+    this.email,
   });
 
   @override
   Widget build(BuildContext context) {
     final children = <Widget>[
-      DrawerHeader(
-        child: Text(''),
+      UserAccountsDrawerHeader(
+        currentAccountPicture: CircleAvatar(
+          child: Text(
+            email?.substring(0, 1)?.toUpperCase() ?? '',
+            style: TextStyle(fontSize: 50),
+          ),
+        ),
+        accountName: Text(''),
+        accountEmail: Text(email ?? ''),
         decoration: BoxDecoration(
           color: Colors.blue,
         ),
@@ -397,12 +374,10 @@ class TodoDrawer extends StatelessWidget {
     children.add(
       ListTile(
         title: Text('Logout'),
-        onTap: loggedIn
-            ? () async {
-                Navigator.pop(context);
-                logout();
-              }
-            : null,
+        onTap: () async {
+          Navigator.pop(context);
+          logout();
+        },
       ),
     );
     return Drawer(child: ListView(children: children));
