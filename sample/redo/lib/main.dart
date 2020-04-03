@@ -1,7 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:redo/loginpage.dart';
+import 'package:redo/login.dart';
 import 'package:replicache/replicache.dart';
 import 'package:uuid/uuid.dart';
 
