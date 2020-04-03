@@ -55,7 +55,7 @@ var rep = Replicache(
 
 ```
 rep.subscribe((tx) {
-}).onchange...
+}).onChange...
 ```
 
 Now inject a new snapshot, you'll see your view dynamically update:
