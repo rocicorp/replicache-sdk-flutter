@@ -149,18 +149,9 @@ class LoginPrefs {
     final p = await _prefs;
     final resJson = p.getString('knownUsers');
 
-    int userId;
     Map<String, dynamic> knownUsers =
         resJson != null ? json.decode(resJson) : {};
-    if (resJson != null) {
-      for (final entry in knownUsers.entries) {
-        if (entry.key == email) {
-          userId = entry.value;
-          break;
-        }
-      }
-    }
-
+    int userId = knownUsers[email];
     if (userId == null) {
       userId = await _remoteLogin(email);
     }
