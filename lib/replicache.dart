@@ -76,7 +76,7 @@ class Replicache {
 
   String _name;
   String _remote;
-  String clientViewAuth;
+  String _clientViewAuth;
   Future<String> _root;
   Future<dynamic> _opened;
   Timer _timer;
@@ -106,7 +106,7 @@ class Replicache {
   /// Create or open a local Replicache database with named `name` synchronizing with `remote`.
   /// If `name` is omitted, it defaults to `remote`.
   Replicache(this._remote, {String name = "", String clientViewAuth = ""})
-      : clientViewAuth = clientViewAuth {
+      : _clientViewAuth = clientViewAuth {
     if (_platform == null) {
       _platform = MethodChannel(CHANNEL_NAME);
       _platform.setMethodCallHandler(_methodChannelHandler);
@@ -131,6 +131,7 @@ class Replicache {
 
   String get name => _name;
   String get remote => _remote;
+  String get clientViewAuth => _clientViewAuth;
 
   /// Puts a single value into the database in its own transaction.
   Future<void> put(String id, dynamic value) async {
@@ -214,7 +215,7 @@ class Replicache {
       for (var i = 0;; i++) {
         Map<String, dynamic> result = await _invoke(_name, 'requestSync', {
           'remote': _remote,
-          'clientViewAuth': clientViewAuth,
+          'clientViewAuth': _clientViewAuth,
           'auth': _authToken,
         });
         if (result.containsKey('error') &&

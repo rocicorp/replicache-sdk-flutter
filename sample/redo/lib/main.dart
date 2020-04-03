@@ -70,6 +70,7 @@ class _MyHomePageState extends State<MyHomePage> {
         onSelectListId: _selectListId,
         onSync: _replicache?.sync,
         onDrop: _dropDatabase,
+        onFakeId: _setFakeUserId,
         email: _loginResult?.email,
         logout: _logout,
       ),
@@ -88,12 +89,18 @@ class _MyHomePageState extends State<MyHomePage> {
 
   Future<void> _init() async {
     var loginResult = await _loginPrefs.login();
+    await _initWithLoginResult(loginResult);
+  }
 
-    _replicache = Replicache(db, name: loginResult.userId);
+  Future<void> _initWithLoginResult(LoginResult loginResult) async {
+    _replicache = Replicache(
+      db,
+      name: loginResult.userId,
+      clientViewAuth: loginResult.userId,
+    );
     _replicache.onChange = _load;
     _replicache.onSync = _handleSync;
     _replicache.getAuthToken = _getAuthToken;
-    _replicache.clientViewAuth = loginResult.userId;
 
     setState(() {
       _loginResult = loginResult;
@@ -241,7 +248,11 @@ class _MyHomePageState extends State<MyHomePage> {
 
   void _logout() async {
     await _loginPrefs.logout();
+    await _clearState();
+    _init();
+  }
 
+  Future<void> _clearState() async {
     await _replicache.close();
     _replicache = null;
 
@@ -251,8 +262,13 @@ class _MyHomePageState extends State<MyHomePage> {
       _allTodos = [];
       _listIds = [];
     });
+  }
 
-    _init();
+  void _setFakeUserId() async {
+    await _loginPrefs.logout();
+    await _clearState();
+    _initWithLoginResult(LoginResult("fake@roci.dev", "-1"));
+    Navigator.pop(context);
   }
 }
 
@@ -311,11 +327,13 @@ class TodoDrawer extends StatelessWidget {
   final String email;
 
   final void Function() logout;
+  final void Function() onFakeId;
 
   TodoDrawer({
     this.listIds = const [],
     this.onSync,
     this.onDrop,
+    this.onFakeId,
     @required this.selectedListId,
     @required this.onSelectListId,
     @required this.logout,
@@ -368,6 +386,14 @@ class TodoDrawer extends StatelessWidget {
         ListTile(
           title: Text('Delete local state'),
           onTap: onDrop,
+        ),
+      );
+    }
+    if (onFakeId != null) {
+      children.add(
+        ListTile(
+          title: Text('Change to invalid user ID'),
+          onTap: onFakeId,
         ),
       );
     }
