@@ -71,18 +71,6 @@ class Replicache {
 
   static bool logVerbosely = true;
 
-  /// If true, Replicache only syncs the head of the remote repository, which is
-  /// must faster. Currently this disables bidirectional sync though :(.
-  bool shallowSync = false;
-
-  /// @Deprecated('Use shallowSync instead')
-  set hackyShallowSync(bool val) {
-    shallowSync = true;
-  }
-
-  /// @Deprecated('Use shallowSync instead')
-  bool get hackyShallowSync => shallowSync;
-
   /// Gets the last sync progress for this repo.
   SyncProgress get syncProgress => _syncProgress;
 
@@ -227,7 +215,6 @@ class Replicache {
         Map<String, dynamic> result = await _invoke(_name, 'requestSync', {
           'remote': _remote,
           'clientViewAuth': clientViewAuth,
-          'shallow': shallowSync,
           'auth': _authToken,
         });
         if (result.containsKey('error') &&
