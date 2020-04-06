@@ -12,7 +12,36 @@ Download the [Replicache SDK](https://github.com/rocicorp/replicache/releases/la
 tar xvzf replicache-sdk.tar.gz
 ```
 
-#### 2. Start a development diff-server and put some sample data in it:
+#### 2. Add the `replicache` dependency to your Flutter app's `pubspec.yaml`
+
+```
+...
+
+  cupertino_icons: ^0.1.2
+
++   replicache:
++     path:
++       /path/to/replicache-sdk/flutter/
+
+...
+```
+
+#### 3. Instantiate Replicache
+
+```
+import 'package:replicache/replicache.dart';
+
+...
+var rep = Replicache(
+  // The Replicache diff-server to talk to - we will start this in the next step.
+  'http://localhost:7000',
+  
+  // Optional: pass an auth token to access /replicache-client-view on your server
+  // This will be sent by Replicache in the Authorization header.
+  clientViewAuth: yourAuthToken);
+```
+
+#### 4. Start a development diff-server and put some sample data in it:
 
 Under normal circumstances, Replicache periodically pulls a snapshot of user data that should be persistent on the client (the *Client View*) from your service. Replicache computes a diff for each client and sends only the changes as part of downstream sync.
 
@@ -28,6 +57,7 @@ curl -d @- http://localhost:7001/inject << EOF
   # The account to modify. For development, use "sandbox".
   "accountID": "sandbox",
   # The clientID of the cache to modify. diff-server tracks a unique cache for every unique client.
+  # TODO: How do we get this?
   "clientID": "c1",
   "clientViewResponse": {
     "clientView": {
@@ -40,35 +70,6 @@ curl -d @- http://localhost:7001/inject << EOF
 }
 EOF
 
-```
-
-#### 3. Add the `replicache` dependency to your Flutter app's `pubspec.yaml`
-
-```
-...
-
-  cupertino_icons: ^0.1.2
-
-+   replicache:
-+     path:
-+       /path/to/replicache-sdk/flutter/
-
-...
-```
-
-#### 4. Instantiate Replicache
-
-```
-import 'package:replicache/replicache.dart';
-
-...
-var rep = Replicache(
-  // The Replicache diff-server to talk to.
-  'http://localhost:7000',
-  
-  // Optional: pass an auth token to access /replicache-client-view on your server
-  // This will be sent by Replicache in the Authorization header.
-  clientViewAuth: yourAuthToken);
 ```
 
 #### 5. Read Data
@@ -122,6 +123,8 @@ class _MyHomePageState extends State<MyHomePage> {
 }
 ```
 
+#### 6. Update Data
+
 Now inject a new snapshot, you'll see your view dynamically update:
 
 ```
@@ -143,7 +146,7 @@ EOF
 
 Nice!
 
-#### 6. Write Data
+#### 7. Write Data
 
 TODO (this isn't implemented in the SDK yet)
 
