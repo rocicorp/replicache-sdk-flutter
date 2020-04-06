@@ -267,7 +267,7 @@ class _MyHomePageState extends State<MyHomePage> {
   void _setFakeUserId() async {
     await _loginPrefs.logout();
     await _clearState();
-    _initWithLoginResult(LoginResult("fake@roci.dev", "-1"));
+    _initWithLoginResult(LoginResult("fake@roci.dev", "11111111"));
     Navigator.pop(context);
   }
 }
