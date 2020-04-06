@@ -1,6 +1,8 @@
 # Replicache Flutter SDK - Quickstart
 
-Hi! This tutorial will walk you through setting up the [Replicache](https://replicache.dev) client for Flutter as quickly as possible. For more detail on how Replicache works, see the [design document](https://github.com/rocicorp/replicache/blob/master/design.md).
+Hi! This tutorial will walk you through setting up Replicache for Flutter as quickly as possible.
+
+**Note:** This document assumes you already know what Replicache is, why you might need it, and broadly how it works. If that's not true, see the [Replicache homepage](https://replicache.dev) for an overview, or the [design document](https://github.com/rocicorp/replicache/blob/master/design.md) for a detailed deep-dive.
 
 #### 1. Get the SDK
 
@@ -20,7 +22,24 @@ But while you're working on the client side, it's easiest to just inject snapsho
 
 ```
 /path/to/replicache-sdk/<platform>/diffs --enable-inject
-curl -d '{"accountID":"sandbox", "clientID":"c1", "clientViewResponse":{"clientView":{"foo":"bar"},"lastTransactionID":"0"}}' http://localhost:7001/inject
+
+curl -d @- http://localhost:7001/inject << EOF
+{
+  # The account to modify. For development, use "sandbox".
+  "accountID": "sandbox",
+  # The clientID of the cache to modify. diff-server tracks a unique cache for every unique client.
+  "clientID": "c1",
+  "clientViewResponse": {
+    "clientView": {
+      # Put any key/value pairs you like in here.
+      "firstKey": "originalValue"
+    },
+    # Must be zero for now. See mutation section below.
+    "lastTransactionID":"0"
+  }
+}
+EOF
+
 ```
 
 #### 3. Add the `replicache` dependency to your Flutter app's `pubspec.yaml`
@@ -46,22 +65,80 @@ import 'package:replicache/replicache.dart';
 var rep = Replicache(
   // The Replicache diff-server to talk to.
   'http://localhost:7000',
-
-  // Your server, where the /replicache-client-view and /replicache-batch handlers are.
-  'http://localhost:8000');
+  
+  // Optional: pass an auth token to access /replicache-client-view on your server
+  // This will be sent by Replicache in the Authorization header.
+  clientViewAuth: yourAuthToken);
 ```
 
 #### 5. Read Data
 
 ```
-rep.subscribe((tx) {
-}).onChange...
+class _MyHomePageState extends State<MyHomePage> {
+  List<String> _todos;
+  Replicache _rep;
+
+  _MyHomePageState() {
+    ...
+    _rep.onChange = this._handleChange;
+    _handleChange();
+  }
+
+  void _handleChange() async {
+    // TODO
+    let todos = await _rep.scan("/todo/")...
+    setState(() {
+      _todos = todos;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(widget.title),
+      ),
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: <Widget>[
+            Text(
+              'You have pushed the button this many times:',
+            ),
+            Text(
+              '$_counter',
+              style: Theme.of(context).textTheme.display1,
+            ),
+          ],
+        ),
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: _incrementCounter,
+        tooltip: 'Increment',
+        child: Icon(Icons.add),
+      ),
+    );
+  }
+}
 ```
 
 Now inject a new snapshot, you'll see your view dynamically update:
 
 ```
-curl -d '{"accountID":"sandbox", "clientID":"c1", "clientViewResponse":{"clientView":{"foo":"baz", "hot": "dog"},"lastTransactionID":"0"}}' http://localhost:7001/inject
+curl -d @- http://localhost:7001/inject << EOF
+{
+  "accountID": "sandbox",
+  "clientID": "c1",
+  "clientViewResponse": {
+    "clientView": {
+      # Put any key/value pairs you like in here.
+      "firstKey": "originalValue"
+    },
+    # Must be zero for now. See mutation section below.
+    "lastTransactionID":"0"
+  }
+}
+EOF
 ```
 
 Nice!
