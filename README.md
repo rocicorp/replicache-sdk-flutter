@@ -12,7 +12,13 @@ Download the [Replicache SDK](https://github.com/rocicorp/replicache/releases/la
 tar xvzf replicache-sdk.tar.gz
 ```
 
-#### 2. Add the `replicache` dependency to your Flutter app's `pubspec.yaml`
+#### 2. Start a new, empty Flutter app
+
+```
+flutter create calendar
+```
+
+#### 3. Add the `replicache` dependency to your Flutter app's `pubspec.yaml`
 
 ```
 ...
@@ -26,7 +32,7 @@ tar xvzf replicache-sdk.tar.gz
 ...
 ```
 
-#### 3. Instantiate Replicache
+#### 4. Instantiate Replicache
 
 ```
 import 'package:replicache/replicache.dart';
@@ -34,62 +40,74 @@ import 'package:replicache/replicache.dart';
 ...
 var rep = Replicache(
   // The Replicache diff-server to talk to - we will start this in the next step.
-  'http://localhost:7000',
+  'http://localhost:7001',
   
   // Optional: pass an auth token to access /replicache-client-view on your server
   // This will be sent by Replicache in the Authorization header.
   clientViewAuth: yourAuthToken);
 ```
 
-#### 4. Start a development diff-server and put some sample data in it:
+#### 5. Start a development diff-server and put some sample data in it:
 
 Under normal circumstances, Replicache periodically pulls a snapshot of user data that should be persistent on the client (the *Client View*) from your service. Replicache computes a diff for each client and sends only the changes as part of downstream sync.
 
 You will need set up integration with your service later (see [server-side integration](https://github.com/rocicorp/replicache/blob/master/README.md)).
 
-But while you're working on the client side, it's easiest to just inject snapshots directly from the command line:
+But while you're working on the client side, it's easiest to just inject snapshots directly from the command line.
 
+First start a development `diffs` server:
+
+```bash
+/path/to/replicache-sdk/<platform>/diffs --db=/tmp/foo serve --enable-inject
 ```
-/path/to/replicache-sdk/<platform>/diffs --enable-inject
 
+Then inject a snapshot into it:
+
+```bash
 curl -d @- http://localhost:7001/inject << EOF
 {
-  # The account to modify. For development, use "sandbox".
   "accountID": "sandbox",
-  # The clientID of the cache to modify. diff-server tracks a unique cache for every unique client.
-  # TODO: How do we get this?
-  "clientID": "c1",
+  "clientID": <your-client-id>,
   "clientViewResponse": {
     "clientView": {
-      # Put any key/value pairs you like in here.
-      "firstKey": "originalValue"
-    },
-    # Must be zero for now. See mutation section below.
-    "lastTransactionID":"0"
+      "/event/1": {
+        "time": "20200412T1200-11",
+        "title": "Easter Day"
+      },
+      "/event/2": {
+        "time": "20200501T0900-11",
+        "title": "May Day"
+      },
+      "lastTransactionID":"0"
+    }
   }
 }
 EOF
-
 ```
 
-#### 5. Read Data
+Notes:
+
+* To get the `clientID` value search the log output of the Flutter app for `ClientID`. Replicache prints it out early in startup.
+* The `accountID` is your unique account ID on diff-server. During our early alpha testing, use "sandbox".
+* You'll setup `lastTransactionID` later in this tutorial. For now just return `0`.
+
+#### 6. Read Data
 
 ```
 class _MyHomePageState extends State<MyHomePage> {
-  List<String> _todos;
-  Replicache _rep;
+  List<Map<String, dynamic>> _events = [];
+  Replicache _replicache = new Replicache('http://localhost:7001');
 
   _MyHomePageState() {
-    ...
-    _rep.onChange = this._handleChange;
-    _handleChange();
+    _replicache.onChange = _handleChange;
+    _replicache.onChange();
   }
-
+  
   void _handleChange() async {
-    // TODO
-    let todos = await _rep.scan("/todo/")...
+    var events = List<Map<String, dynamic>>.from(
+      (await _replicache.scan(prefix: '/event/')).map((item) => item.value));
     setState(() {
-      _todos = todos;
+      _events = events;
     });
   }
 
@@ -101,44 +119,39 @@ class _MyHomePageState extends State<MyHomePage> {
       ),
       body: Center(
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            Text(
-              'You have pushed the button this many times:',
-            ),
-            Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.display1,
-            ),
-          ],
+          mainAxisAlignment: MainAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: List.from(
+            _events.map(
+              (Map m) => Text(m['time'] + ': ' + m['title']))),
         ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: Icon(Icons.add),
       ),
     );
   }
 }
 ```
 
-#### 6. Update Data
+#### 7. Update Data
 
 Now inject a new snapshot, you'll see your view dynamically update:
 
-```
+```bash
 curl -d @- http://localhost:7001/inject << EOF
 {
   "accountID": "sandbox",
-  "clientID": "c1",
+  "clientID": <your-client-id>,
   "clientViewResponse": {
     "clientView": {
-      # Put any key/value pairs you like in here.
-      "firstKey": "originalValue"
-    },
-    # Must be zero for now. See mutation section below.
-    "lastTransactionID":"0"
+      "/event/2": {
+        "time": "20200501T0900-11",
+        "title": "Lei Day, not May Day"
+      },
+      "/event/3": {
+        "time": "20201031T1800-11",
+        "title": "Halloween"
+      },
+      "lastTransactionID":"0"
+    }
   }
 }
 EOF
@@ -146,7 +159,7 @@ EOF
 
 Nice!
 
-#### 7. Write Data
+#### 8. Write Data
 
 TODO (this isn't implemented in the SDK yet)
 
