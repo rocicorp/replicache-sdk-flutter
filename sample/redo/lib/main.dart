@@ -52,8 +52,26 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   Future<String> _getAuthToken() async {
-    final user = await _loginPrefs.loggedInUser();
-    return user?.userId ?? '';
+    await showDialog<void>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Authentication failed'),
+          content: Text('Please login again'),
+          actions: <Widget>[
+            FlatButton(
+              child: Text('Ok'),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+        );
+      },
+    );
+
+    var loginResult = await _loginPrefs.login();
+    return loginResult.userId;
   }
 
   @override
@@ -100,7 +118,7 @@ class _MyHomePageState extends State<MyHomePage> {
     );
     _replicache.onChange = _load;
     _replicache.onSync = _handleSync;
-    _replicache.getAuthToken = _getAuthToken;
+    _replicache.getClientViewAuth = _getAuthToken;
 
     setState(() {
       _loginResult = loginResult;
@@ -113,7 +131,8 @@ class _MyHomePageState extends State<MyHomePage> {
     List<int> listIds = List.from((await _replicache.scan(prefix: '/list/'))
         .map((item) => int.parse(item.id.substring('/list/'.length))));
 
-    if (_selectedListId == null && listIds.length > 0) {
+    if ((_selectedListId == null || !listIds.contains(_selectedListId)) &&
+        listIds.length > 0) {
       setState(() {
         _selectedListId = listIds[0];
       });
@@ -159,6 +178,7 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   List<Todo> _activeTodos() {
+    if (_selectedListId == null) {}
     List<Todo> todos =
         List.from(_allTodos.where((todo) => todo.listId == _selectedListId));
     todos.sort((t1, t2) => (t1.order - t2.order).sign.toInt());

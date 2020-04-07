@@ -67,7 +67,7 @@ class Replicache {
   ChangeHandler onChange;
   SyncHandler onSync;
   SyncProgressHandler onSyncProgress;
-  AuthTokenGetter getAuthToken;
+  AuthTokenGetter getClientViewAuth;
 
   static bool logVerbosely = true;
 
@@ -81,7 +81,7 @@ class Replicache {
   Future<dynamic> _opened;
   Timer _timer;
   bool _closed = false;
-  String _authToken = "";
+  bool _reauthenticating = false;
   SyncProgress _syncProgress = SyncProgress._new(0, 0);
 
   /// Lists information about available local databases.
@@ -186,7 +186,7 @@ class Replicache {
     Timer progressTimer;
 
     final checkProgress = () async {
-      if (_closed) {
+      if (_closed || _reauthenticating) {
         progressTimer.cancel();
         return;
       }
@@ -216,12 +216,12 @@ class Replicache {
         Map<String, dynamic> result = await _invoke(_name, 'requestSync', {
           'remote': _remote,
           'clientViewAuth': _clientViewAuth,
-          'auth': _authToken,
         });
         if (result.containsKey('error') &&
             result['error'].containsKey('badAuth')) {
+          _reauthenticating = true;
           print('Auth error: ${result['error']['badAuth']}');
-          if (getAuthToken == null) {
+          if (getClientViewAuth == null) {
             print('Auth error: getAuthToken is null');
             break;
           }
@@ -229,7 +229,8 @@ class Replicache {
             break;
           }
           print('Refreshing auth token to try again...');
-          this._authToken = await getAuthToken();
+          this._clientViewAuth = await getClientViewAuth();
+          _reauthenticating = false;
         } else {
           await _checkChange(result);
           break;
