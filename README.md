@@ -100,7 +100,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
   _MyHomePageState() {
     _replicache.onChange = _handleChange;
-    _replicache.onChange();
+    _handleChange();
   }
   
   void _handleChange() async {
@@ -123,7 +123,7 @@ class _MyHomePageState extends State<MyHomePage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: List.from(
             _events.map(
-              (Map m) => Text(m['time'] + ': ' + m['title']))),
+              (Map m) => Text('${m['time']}: ${m['title']}'))),
         ),
       ),
     );
