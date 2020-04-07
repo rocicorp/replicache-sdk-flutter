@@ -23,7 +23,7 @@ public class ReplicachePlugin implements MethodCallHandler {
 
   private Handler uiThreadHandler;
   private Handler generalHandler;
-  private Handler syncHandler;
+  private Handler pullHandler;
 
   /** Plugin registration. */
   public static void registerWith(Registrar registrar) {
@@ -40,10 +40,10 @@ public class ReplicachePlugin implements MethodCallHandler {
     generalThread.start();
     generalHandler = new Handler(generalThread.getLooper());
 
-    // Sync shouldn't block the UI or other Replicache operations.
-    HandlerThread syncThread = new HandlerThread("replicache.dev/sync");
-    syncThread.start();
-    syncHandler = new Handler(syncThread.getLooper());
+    // Pull shouldn't block the UI or other Replicache operations.
+    HandlerThread pullThread = new HandlerThread("replicache.dev/pull");
+    pullThread.start();
+    pullHandler = new Handler(pullThread.getLooper());
 
     generalHandler.post(new Runnable() {
       public void run() {
@@ -55,8 +55,8 @@ public class ReplicachePlugin implements MethodCallHandler {
   @Override
   public void onMethodCall(final MethodCall call, final Result result) {
     Handler handler;
-    if (call.method.equals("requestSync")) {
-      handler = syncHandler;
+    if (call.method.equals("pull")) {
+      handler = pullHandler;
     } else {
       handler = generalHandler;
     }

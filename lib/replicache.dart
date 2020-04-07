@@ -8,15 +8,15 @@ import 'database_info.dart';
 const CHANNEL_NAME = 'replicache.dev';
 
 typedef void ChangeHandler();
-typedef void SyncHandler(bool syncing);
-typedef void SyncProgressHandler(SyncProgress progress);
+typedef void PullHandler(bool pulling);
+typedef void PullProgressHandler(PullProgress progress);
 typedef Future<String> AuthTokenGetter();
 
-class SyncProgress {
-  const SyncProgress._new(this.bytesReceived, this.bytesExpected);
+class PullProgress {
+  const PullProgress._new(this.bytesReceived, this.bytesExpected);
   final int bytesReceived;
   final int bytesExpected;
-  bool equals(SyncProgress other) {
+  bool equals(PullProgress other) {
     return other != null &&
         other.bytesExpected == bytesExpected &&
         other.bytesReceived == bytesReceived;
@@ -59,20 +59,20 @@ class ScanId {
 /// should be necessary.
 ///
 /// Replicache operations are serialized per-connection, with the sole exception of
-/// sync(), which runs concurrently with other operations (and might take awhile, since
+/// pull(), which runs concurrently with other operations (and might take awhile, since
 /// it attempts to go to the network).
 class Replicache {
   static MethodChannel _platform;
 
   ChangeHandler onChange;
-  SyncHandler onSync;
-  SyncProgressHandler onSyncProgress;
+  PullHandler onPull;
+  PullProgressHandler onPullProgress;
   AuthTokenGetter getClientViewAuth;
 
   static bool logVerbosely = true;
 
-  /// Gets the last sync progress for this repo.
-  SyncProgress get syncProgress => _syncProgress;
+  /// Gets the last pull progress for this repo.
+  PullProgress get pullProgress => _pullProgress;
 
   String _name;
   String _remote;
@@ -82,7 +82,7 @@ class Replicache {
   Timer _timer;
   bool _closed = false;
   bool _reauthenticating = false;
-  SyncProgress _syncProgress = SyncProgress._new(0, 0);
+  PullProgress _pullProgress = PullProgress._new(0, 0);
 
   /// Lists information about available local databases.
   static Future<List<DatabaseInfo>> list() async {
@@ -125,7 +125,7 @@ class Replicache {
     _opened = _invoke(this._name, 'open');
     _root = _opened.then((_) => _getRoot());
     _root.then((_) {
-      this._scheduleSync(0);
+      this._schedulePull(0);
     });
   }
 
@@ -169,19 +169,19 @@ class Replicache {
   }
 
   /// Synchronizes the database with the server. New local transactions that have been executed since the last
-  /// sync are sent to the server, and new remote transactions are received and replayed.
-  Future<void> sync() async {
+  /// pull are sent to the server, and new remote transactions are received and replayed.
+  Future<void> pull() async {
     await _opened;
     if (_closed) {
       return;
     }
 
     if (_timer == null) {
-      // Another call stack is already inside _sync();
+      // Another call stack is already inside pull();
       return;
     }
 
-    this._fireOnSync(true);
+    this._fireOnPull(true);
 
     Timer progressTimer;
 
@@ -190,7 +190,7 @@ class Replicache {
         progressTimer.cancel();
         return;
       }
-      final result = await _invoke(this._name, 'syncProgress', {});
+      final result = await _invoke(this._name, 'pullProgress', {});
       int r = result['bytesReceived'];
       int e = result['bytesExpected'];
       if (r == 0 && e == 0) {
@@ -199,10 +199,10 @@ class Replicache {
       if (e == 0) {
         e = r;
       }
-      this._fireOnSyncProgress(SyncProgress._new(r, e));
+      this._fireOnPullProgress(PullProgress._new(r, e));
     };
 
-    this._syncProgress = const SyncProgress._new(0, 0);
+    this._pullProgress = const PullProgress._new(0, 0);
 
     progressTimer = Timer.periodic(new Duration(milliseconds: 500), (Timer t) {
       checkProgress();
@@ -213,7 +213,7 @@ class Replicache {
       _timer = null;
 
       for (var i = 0;; i++) {
-        Map<String, dynamic> result = await _invoke(_name, 'requestSync', {
+        Map<String, dynamic> result = await _invoke(_name, 'pull', {
           'remote': _remote,
           'clientViewAuth': _clientViewAuth,
         });
@@ -236,22 +236,22 @@ class Replicache {
           break;
         }
       }
-      _scheduleSync(5);
+      _schedulePull(5);
     } catch (e) {
-      // We are seeing some consistency errors during sync -- we push commits,
+      // We are seeing some consistency errors during pull -- we push commits,
       // then turn around and fetch them and expect to see them, but don't.
       // that is bad, but for now, just retry.
-      print('Error syncing: ' + this._remote + ': ' + e.toString());
-      _scheduleSync(1);
+      print('Error pulling: ' + this._remote + ': ' + e.toString());
+      _schedulePull(1);
     } finally {
       progressTimer.cancel();
       await checkProgress();
-      this._fireOnSync(false);
+      this._fireOnPull(false);
     }
   }
 
-  void _scheduleSync(seconds) {
-    _timer = new Timer(new Duration(seconds: seconds), sync);
+  void _schedulePull(seconds) {
+    _timer = new Timer(new Duration(seconds: seconds), pull);
   }
 
   Future<void> close() async {
@@ -291,21 +291,21 @@ class Replicache {
     }
   }
 
-  void _fireOnSync(bool syncing) {
-    if (onSync != null) {
-      scheduleMicrotask(() => onSync(syncing));
+  void _fireOnPull(bool pulling) {
+    if (onPull != null) {
+      scheduleMicrotask(() => onPull(pulling));
     }
   }
 
-  void _fireOnSyncProgress(SyncProgress p) {
-    if (_syncProgress != null &&
-        p.bytesExpected == _syncProgress.bytesExpected &&
-        p.bytesReceived == _syncProgress.bytesReceived) {
+  void _fireOnPullProgress(PullProgress p) {
+    if (_pullProgress != null &&
+        p.bytesExpected == _pullProgress.bytesExpected &&
+        p.bytesReceived == _pullProgress.bytesReceived) {
       return;
     }
-    _syncProgress = p;
-    if (onSyncProgress != null) {
-      scheduleMicrotask(() => onSyncProgress(p));
+    _pullProgress = p;
+    if (onPullProgress != null) {
+      scheduleMicrotask(() => onPullProgress(p));
     }
   }
 
