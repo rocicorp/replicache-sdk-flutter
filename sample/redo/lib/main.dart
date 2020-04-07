@@ -53,7 +53,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
   Future<String> _getAuthToken() async {
     final user = await _loginPrefs.loggedInUser();
-    return user?.userId.toString() ?? '';
+    return user?.userId ?? '';
   }
 
   @override
@@ -89,11 +89,11 @@ class _MyHomePageState extends State<MyHomePage> {
   Future<void> _init() async {
     var loginResult = await _loginPrefs.login();
 
-    _replicache = Replicache(db, name: loginResult.userId.toString());
+    _replicache = Replicache(db, name: loginResult.userId);
     _replicache.onChange = _load;
     _replicache.onSync = _handleSync;
     _replicache.getAuthToken = _getAuthToken;
-    _replicache.clientViewAuth = loginResult.userId.toString();
+    _replicache.clientViewAuth = loginResult.userId;
 
     setState(() {
       _loginResult = loginResult;
