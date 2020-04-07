@@ -99,16 +99,16 @@ class _LoginPageState extends State<LoginPage> {
 
 class LoginResult {
   final String email;
-  final int userId;
+  final String userId;
   const LoginResult(this.email, this.userId);
 
-  Map<String, dynamic> toJson() {
+  Map<String, String> toJson() {
     return {'email': email, 'userId': userId};
   }
 
   LoginResult.fromJson(Map<String, dynamic> json)
       : email = json['email'],
-        userId = json['userId'].toInt();
+        userId = json['userId'];
 }
 
 class LoginPrefs {
@@ -151,7 +151,7 @@ class LoginPrefs {
 
     Map<String, dynamic> knownUsers =
         resJson != null ? json.decode(resJson) : {};
-    int userId = knownUsers[email];
+    String userId = knownUsers[email];
     if (userId == null) {
       userId = await _remoteLogin(email);
     }
@@ -171,11 +171,11 @@ class LoginPrefs {
     return user;
   }
 
-  Future<int> _remoteLogin(String email) async {
+  Future<String> _remoteLogin(String email) async {
     final resp = await http.put(loginUrl, body: json.encode({'email': email}));
     if (resp.statusCode == 200) {
       final val = json.decode(resp.body);
-      return val['id'];
+      return val['id'].toString();
     } else {
       throw Exception('Failed to login. Status code: ${resp.statusCode}.');
     }
