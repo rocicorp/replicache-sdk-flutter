@@ -93,7 +93,7 @@ Notes:
 
 #### 6. Read Data
 
-```
+```dart
 class _MyHomePageState extends State<MyHomePage> {
   List<Map<String, dynamic>> _events = [];
   Replicache _replicache = new Replicache('http://localhost:7001');
