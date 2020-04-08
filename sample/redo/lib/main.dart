@@ -40,7 +40,7 @@ class _MyHomePageState extends State<MyHomePage> {
   Replicache _replicache;
   List<int> _listIds = [];
   List<Todo> _allTodos = [];
-  bool _syncing = false;
+  bool _pulling = false;
   int _selectedListId;
 
   LoginResult _loginResult;
@@ -52,8 +52,26 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   Future<String> _getAuthToken() async {
-    final user = await _loginPrefs.loggedInUser();
-    return user?.userId ?? '';
+    await showDialog<void>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Authentication failed'),
+          content: Text('Please login again'),
+          actions: <Widget>[
+            FlatButton(
+              child: Text('Ok'),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+        );
+      },
+    );
+
+    var loginResult = await _loginPrefs.login();
+    return loginResult.userId;
   }
 
   @override
@@ -62,14 +80,15 @@ class _MyHomePageState extends State<MyHomePage> {
       key: _scaffoldKey,
       appBar: AppBar(
         title: Text('Todo List'),
-        actions: _syncing ? [Icon(Icons.sync)] : [],
+        actions: _pulling ? [Icon(Icons.sync)] : [],
       ),
       drawer: TodoDrawer(
         listIds: _listIds,
         selectedListId: _selectedListId,
         onSelectListId: _selectListId,
-        onSync: _replicache?.sync,
+        onPull: _replicache?.pull,
         onDrop: _dropDatabase,
+        onFakeId: _setFakeUserId,
         email: _loginResult?.email,
         logout: _logout,
       ),
@@ -88,12 +107,18 @@ class _MyHomePageState extends State<MyHomePage> {
 
   Future<void> _init() async {
     var loginResult = await _loginPrefs.login();
+    await _initWithLoginResult(loginResult);
+  }
 
-    _replicache = Replicache(db, name: loginResult.userId);
+  Future<void> _initWithLoginResult(LoginResult loginResult) async {
+    _replicache = Replicache(
+      db,
+      name: loginResult.userId,
+      clientViewAuth: loginResult.userId,
+    );
     _replicache.onChange = _load;
-    _replicache.onSync = _handleSync;
-    _replicache.getAuthToken = _getAuthToken;
-    _replicache.clientViewAuth = loginResult.userId;
+    _replicache.onPull = _handlePull;
+    _replicache.getClientViewAuth = _getAuthToken;
 
     setState(() {
       _loginResult = loginResult;
@@ -106,7 +131,8 @@ class _MyHomePageState extends State<MyHomePage> {
     List<int> listIds = List.from((await _replicache.scan(prefix: '/list/'))
         .map((item) => int.parse(item.id.substring('/list/'.length))));
 
-    if (_selectedListId == null && listIds.length > 0) {
+    if ((_selectedListId == null || !listIds.contains(_selectedListId)) &&
+        listIds.length > 0) {
       setState(() {
         _selectedListId = listIds[0];
       });
@@ -123,9 +149,9 @@ class _MyHomePageState extends State<MyHomePage> {
     });
   }
 
-  void _handleSync(bool syncing) {
+  void _handlePull(bool pulling) {
     setState(() {
-      _syncing = syncing;
+      _pulling = pulling;
     });
   }
 
@@ -152,6 +178,7 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   List<Todo> _activeTodos() {
+    if (_selectedListId == null) {}
     List<Todo> todos =
         List.from(_allTodos.where((todo) => todo.listId == _selectedListId));
     todos.sort((t1, t2) => (t1.order - t2.order).sign.toInt());
@@ -241,7 +268,11 @@ class _MyHomePageState extends State<MyHomePage> {
 
   void _logout() async {
     await _loginPrefs.logout();
+    await _clearState();
+    _init();
+  }
 
+  Future<void> _clearState() async {
     await _replicache.close();
     _replicache = null;
 
@@ -251,8 +282,13 @@ class _MyHomePageState extends State<MyHomePage> {
       _allTodos = [];
       _listIds = [];
     });
+  }
 
-    _init();
+  void _setFakeUserId() async {
+    await _loginPrefs.logout();
+    await _clearState();
+    _initWithLoginResult(LoginResult("fake@roci.dev", "11111111"));
+    Navigator.pop(context);
   }
 }
 
@@ -303,7 +339,7 @@ class TodoList extends StatelessWidget {
 }
 
 class TodoDrawer extends StatelessWidget {
-  final Future<void> Function() onSync;
+  final Future<void> Function() onPull;
   final Future<void> Function() onDrop;
   final void Function(int id) onSelectListId;
   final List<int> listIds;
@@ -311,11 +347,13 @@ class TodoDrawer extends StatelessWidget {
   final String email;
 
   final void Function() logout;
+  final void Function() onFakeId;
 
   TodoDrawer({
     this.listIds = const [],
-    this.onSync,
+    this.onPull,
     this.onDrop,
+    this.onFakeId,
     @required this.selectedListId,
     @required this.onSelectListId,
     @required this.logout,
@@ -360,7 +398,7 @@ class TodoDrawer extends StatelessWidget {
     children.add(
       ListTile(
         title: Text('Sync'),
-        onTap: onSync,
+        onTap: onPull,
       ),
     );
     if (onDrop != null) {
@@ -368,6 +406,14 @@ class TodoDrawer extends StatelessWidget {
         ListTile(
           title: Text('Delete local state'),
           onTap: onDrop,
+        ),
+      );
+    }
+    if (onFakeId != null) {
+      children.add(
+        ListTile(
+          title: Text('Change to invalid user ID'),
+          onTap: onFakeId,
         ),
       );
     }
