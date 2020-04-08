@@ -102,15 +102,12 @@ class _MyHomePageState extends State<MyHomePage> {
   Replicache _replicache = new Replicache('http://localhost:7001');
 
   _MyHomePageState() {
-    _replicache.onChange = _handleChange;
-    _handleChange();
-  }
-  
-  void _handleChange() async {
-    var events = List<Map<String, dynamic>>.from(
-      (await _replicache.scan(prefix: '/event/')).map((item) => item.value));
-    setState(() {
-      _events = events;
+    _replicache.subscribe((ReadTransaction tx) async {
+      return await tx.scan(prefix: '/event/');
+    }).listen((events) {
+      setState(() {
+        _events = events;
+      });
     });
   }
 
@@ -164,8 +161,44 @@ Nice!
 
 #### 8. Write Data
 
-TODO (this isn't implemented in the SDK yet)
+To be able to make mutations offline-first, you need to first register your mutation handlers:
 
+```dart
+final createTodo = rep.register('create-todo',
+  // The local handler update the local replicache cache to reflect the change. This is done immediately
+  // and instantaneously on the device.
+  local: (WriteTransaction tx, String id, String listID, String text, double order, bool complete) async {
+    const key = '/todo/' + id;
+    if (!await tx.has(key)) {
+      await rep.put('/list/' + listID, {
+        title: 'Untitled List',
+      });
+    }
+    await rep.put('/todo/' + id, {'text': text, 'order': order, 'complete': complete});
+  },
+  // The remote handler returns a payload to send to a remote server to reflect the change.
+  // Once Replicache sends this successfully and gets acknowledgement, it removes the queued local change
+  // from history.
+  remote: (String id, String listID, String text, double order, bool complete) {
+    // Returning a map this way implicitly JSON encodes the result.
+    // Could support other types, like raw bytes.
+    return ['/create-todo', {'title': text, 'order': order, ...}];
+  },
+);
+```
+
+Once you have your mutation handler registered, you can call it:
+
+```dart
+button.onClick.listen((_) {
+  createTodo(newid(), 42, 'Take out the trash', 0.5, false);
+});
+```
+
+Any subscriptions will automatically be fired if necessary. Later on during sync, the remote part of the mutation will happen
+and the local change will be removed.
+
+## All done
 
 Congratulations — you are done with the client setup 🎉. Time for a cup of coffee.
 

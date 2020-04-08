@@ -6,7 +6,7 @@ const NSString* CHANNEL_NAME = @"replicache.dev";
 
 @implementation ReplicachePlugin
   dispatch_queue_t generalQueue;
-  dispatch_queue_t syncQueue;
+  dispatch_queue_t pullQueue;
 
 + (void)registerWithRegistrar:(NSObject<FlutterPluginRegistrar>*)registrar {
   FlutterMethodChannel* channel = [FlutterMethodChannel
@@ -19,8 +19,8 @@ const NSString* CHANNEL_NAME = @"replicache.dev";
   // Most Replicache operations happen serially, but not blocking UI thread.
   generalQueue = dispatch_queue_create("dev.roci.Replicache", NULL);
 
-  // Sync uses a concurrent queue because we don't want it to block other Replicache operations.
-  syncQueue = dispatch_get_global_queue( DISPATCH_QUEUE_PRIORITY_DEFAULT, 0);
+  // Pull uses a concurrent queue because we don't want it to block other Replicache operations.
+  pullQueue = dispatch_get_global_queue( DISPATCH_QUEUE_PRIORITY_DEFAULT, 0);
 
   dispatch_async(generalQueue, ^(void){
     RepmInit([instance replicacheDir], @"", instance);
@@ -29,8 +29,8 @@ const NSString* CHANNEL_NAME = @"replicache.dev";
 
 - (void)handleMethodCall:(FlutterMethodCall*)call result:(FlutterResult)result {
   dispatch_queue_t queue;
-  if ([call.method isEqualToString:@"requestSync"]) {
-    queue = syncQueue;
+  if ([call.method isEqualToString:@"pull"]) {
+    queue = pullQueue;
   } else {
     queue = generalQueue;
   }
