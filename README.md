@@ -1,6 +1,6 @@
 # Replicache Flutter SDK - Quickstart
 
-Hi! This tutorial will walk you through setting up Replicache for Flutter as quickly as possible.
+Hi! This tutorial will walk you through integrating Replicache into your Flutter mobile app.
 
 If you have any problems working through this, or just have questions, please [join us on Slack](https://join.slack.com/t/rocicorp/shared_invite/zt-dcez2xsi-nAhW1Lt~32Y3~~y54pMV0g). We'd be happy to help.
 
