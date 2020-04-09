@@ -18,7 +18,7 @@ tar xvzf replicache-sdk.tar.gz
 #### 2. Start a new, empty Flutter app
 
 ```
-flutter create calendar
+flutter create todo
 ```
 
 #### 3. Add the `replicache` dependency to your Flutter app's `pubspec.yaml`
@@ -73,13 +73,16 @@ curl -d @- http://localhost:7001/inject << EOF
   "clientID": <your-client-id>,
   "clientViewResponse": {
     "clientView": {
-      "/event/1": {
-        "time": "20200412T1200-11",
-        "title": "Easter Day"
+      "/list/29597": {
+        "id": 29597,
+        "ownerUserID": 3
       },
-      "/event/2": {
-        "time": "20200501T0900-11",
-        "title": "May Day"
+      "/todo/14136": {
+        "complete": false,
+        "id": 14136,
+        "listId": 29597,
+        "order": 0.5,
+        "text": "Take out the trash",
       },
       "lastTransactionID":"0"
     }
@@ -108,7 +111,7 @@ class _MyHomePageState extends State<MyHomePage> {
   
   void _handleChange() async {
     var events = List<Map<String, dynamic>>.from(
-      (await _replicache.scan(prefix: '/event/')).map((item) => item.value));
+      (await _replicache.scan(prefix: '/todo/')).map((item) => item.value));
     setState(() {
       _events = events;
     });
@@ -126,7 +129,7 @@ class _MyHomePageState extends State<MyHomePage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: List.from(
             _events.map(
-              (Map m) => Text('${m['time']}: ${m['title']}'))),
+              (Map m) => CheckboxListTile(value: m['complete'], title: Text(m['text'])))),
         ),
       ),
     );
@@ -145,13 +148,23 @@ curl -d @- http://localhost:7001/inject << EOF
   "clientID": <your-client-id>,
   "clientViewResponse": {
     "clientView": {
-      "/event/2": {
-        "time": "20200501T0900-11",
-        "title": "Lei Day, not May Day"
+      "/list/29597": {
+        "id": 29597,
+        "ownerUserID": 3
       },
-      "/event/3": {
-        "time": "20201031T1800-11",
-        "title": "Halloween"
+      "/todo/14136": {
+        "complete": true,
+        "id": 14136,
+        "listId": 29597,
+        "order": 0.5,
+        "text": "Take out the trash",
+      },
+      "/todo/9081": {
+        "complete": false,
+        "id": 9081,
+        "listId": 29597,
+        "order": 0.75,
+        "text": "Walk the dog",
       },
       "lastTransactionID":"0"
     }
