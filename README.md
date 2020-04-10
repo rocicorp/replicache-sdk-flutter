@@ -37,18 +37,38 @@ flutter create todo
 
 #### 4. Instantiate Replicache
 
+In `main.dart`, import the Replicache library:
+
 ```
 import 'package:replicache/replicache.dart';
-
-...
-var rep = Replicache(
-  // The Replicache diff-server to talk to - we will start this in the next step.
-  'http://localhost:7001',
-  
-  // Optional: pass an auth token to access /replicache-client-view on your server
-  // This will be sent by Replicache in the Authorization header.
-  clientViewAuth: yourAuthToken);
 ```
+
+Then replace the generated `_MyHomePageState` class with:
+
+```
+class _MyHomePageState extends State<MyHomePage> {
+  Replicache _rep = Replicache(
+    'http://localhost:7001');
+
+  @override
+  Widget build(BuildContext context) {
+    return Text("Hello");
+  }
+}
+```
+
+Now launch the Flutter app:
+
+```bash
+cd todo
+flutter emulators --launch apple_ios_simulator
+flutter run
+```
+
+You will see Replicache start up and start trying to sync, but fail because no diff-server is running. That's OK! We'll fix that in the next step.
+
+For now, search for `ClientID` in the output and copy it down. Every device syncing with Replicache has a unique `ClientID` generated at first run. We'll need that value next.
+
 
 #### 5. Start a development diff-server and put some sample data in it:
 
@@ -58,19 +78,20 @@ You will need set up integration with your service later (see [server-side integ
 
 But while you're working on the client side, it's easiest to just inject snapshots directly from the command line.
 
-First start a development `diffs` server:
+In a new tab, start a development `diffs` server and leave it running:
 
 ```bash
 /path/to/replicache-sdk/<platform>/diffs --db=/tmp/foo serve --enable-inject
 ```
 
-Then inject a snapshot into it:
+Then, in a third tab, inject a snapshot into the diff server:
 
 ```bash
+CLIENT_ID=<your-client-id-from-step-4>
 curl -d @- http://localhost:7001/inject << EOF
 {
   "accountID": "sandbox",
-  "clientID": <your-client-id>,
+  "clientID": "$CLIENT_ID",
   "clientViewResponse": {
     "clientView": {
       "/list/29597": {
@@ -82,7 +103,7 @@ curl -d @- http://localhost:7001/inject << EOF
         "id": 14136,
         "listId": 29597,
         "order": 0.5,
-        "text": "Take out the trash",
+        "text": "Take out the trash"
       },
       "lastTransactionID":"0"
     }
@@ -98,6 +119,8 @@ Notes:
 * You'll setup `lastTransactionID` later in this tutorial. For now just return `0`.
 
 #### 6. Read Data
+
+Replace the `_MyHomePageState` class with:
 
 ```dart
 class _MyHomePageState extends State<MyHomePage> {
@@ -145,7 +168,7 @@ Now inject a new snapshot, you'll see your view dynamically update:
 curl -d @- http://localhost:7001/inject << EOF
 {
   "accountID": "sandbox",
-  "clientID": <your-client-id>,
+  "clientID": "$CLIENT_ID",
   "clientViewResponse": {
     "clientView": {
       "/list/29597": {
@@ -157,14 +180,14 @@ curl -d @- http://localhost:7001/inject << EOF
         "id": 14136,
         "listId": 29597,
         "order": 0.5,
-        "text": "Take out the trash",
+        "text": "Take out the trash"
       },
       "/todo/9081": {
         "complete": false,
         "id": 9081,
         "listId": 29597,
         "order": 0.75,
-        "text": "Walk the dog",
+        "text": "Walk the dog"
       },
       "lastTransactionID":"0"
     }
@@ -173,7 +196,7 @@ curl -d @- http://localhost:7001/inject << EOF
 EOF
 ```
 
-Nice!
+You will see the Flutter app update and display a new TODO and check off the previous one. Nice!
 
 #### 8. Write Data
 
