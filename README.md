@@ -30,7 +30,7 @@ flutter create todo
 
 +   replicache:
 +     path:
-+       /path/to/replicache-sdk/replicache-flutter-sdk/
++       /path/to/replicache-sdk/flutter/
 
 ...
 ```
