@@ -6,7 +6,7 @@ If you have any problems working through this, or just have questions, please [j
 
 **Note:** This document assumes you already know what Replicache is, why you might need it, and broadly how it works. If that's not true, see the [Replicache homepage](https://replicache.dev) for an overview, or the [design document](https://github.com/rocicorp/replicache/blob/master/design.md) for a detailed deep-dive.
 
-#### 1. Get the SDK
+### 1. Get the SDK
 
 Download the [Replicache SDK](https://github.com/rocicorp/replicache/releases/latest/download/replicache-sdk.tar.gz), then unzip it:
 
@@ -15,13 +15,13 @@ curl -o replicache-sdk.tar.gz -L https://github.com/rocicorp/replicache/releases
 tar xvzf replicache-sdk.tar.gz
 ```
 
-#### 2. Start a new, empty Flutter app
+### 2. Start a new, empty Flutter app
 
 ```
 flutter create todo
 ```
 
-#### 3. Add the `replicache` dependency to your Flutter app's `pubspec.yaml`
+### 3. Add the `replicache` dependency to your Flutter app's `pubspec.yaml`
 
 ```
 ...
@@ -35,7 +35,7 @@ flutter create todo
 ...
 ```
 
-#### 4. Instantiate Replicache
+### 4. Instantiate Replicache
 
 In `main.dart`, import the Replicache library:
 
@@ -70,7 +70,7 @@ You will see Replicache start up and start trying to sync, but fail because no d
 For now, search for `ClientID` in the output and copy it down. Every device syncing with Replicache has a unique `ClientID` generated at first run. We'll need that value next.
 
 
-#### 5. Start a development diff-server and put some sample data in it:
+### 5. Start a development diff-server and put some sample data in it:
 
 Under normal circumstances, Replicache periodically pulls a snapshot of user data that should be persistent on the client (the *Client View*) from your service. Replicache computes a diff for each client and sends only the changes as part of downstream sync.
 
@@ -118,7 +118,7 @@ Notes:
 * The `accountID` is your unique account ID on diff-server. During our early alpha testing, use "sandbox".
 * You'll setup `lastTransactionID` later in this tutorial. For now just return `0`.
 
-#### 6. Read Data
+### 6. Read Data
 
 Replace the `_MyHomePageState` class with:
 
@@ -160,7 +160,7 @@ class _MyHomePageState extends State<MyHomePage> {
 }
 ```
 
-#### 7. Update Data
+### 7. Update Data
 
 Now inject a new snapshot, you'll see your view dynamically update:
 
@@ -198,7 +198,7 @@ EOF
 
 You will see the Flutter app update and display a new TODO and check off the previous one. Nice!
 
-#### 8. Write Data
+### 8. Write Data
 
 TODO (this isn't implemented in the SDK yet)
 
