@@ -128,24 +128,29 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   Future<void> _load() async {
-    List<int> listIds = List.from((await _replicache.scan(prefix: '/list/'))
-        .map((item) => int.parse(item.id.substring('/list/'.length))));
+    await _replicache.query((tx) async {
+      final listIdScanItems = await tx.scan(prefix: '/list/');
 
-    if ((_selectedListId == null || !listIds.contains(_selectedListId)) &&
-        listIds.length > 0) {
+      List<int> listIds = List.from(listIdScanItems
+          .map((item) => int.parse(item.id.substring('/list/'.length))));
+
+      if ((_selectedListId == null || !listIds.contains(_selectedListId)) &&
+          listIds.length > 0) {
+        setState(() {
+          _selectedListId = listIds[0];
+        });
+      }
+
       setState(() {
-        _selectedListId = listIds[0];
+        _listIds = listIds;
       });
-    }
 
-    setState(() {
-      _listIds = listIds;
-    });
-
-    List<Todo> allTodos = List.from((await _replicache.scan(prefix: prefix))
-        .map((item) => Todo.fromJson(stripPrefix(item.id), item.value)));
-    setState(() {
-      _allTodos = allTodos;
+      final todosScanItems = await tx.scan(prefix: prefix);
+      List<Todo> allTodos = List.from(todosScanItems
+          .map((item) => Todo.fromJson(stripPrefix(item.id), item.value)));
+      setState(() {
+        _allTodos = allTodos;
+      });
     });
   }
 
@@ -155,26 +160,31 @@ class _MyHomePageState extends State<MyHomePage> {
     });
   }
 
-  Future<Todo> _read(String id) async {
-    final data = await _replicache.get(addPrefix(id));
+  Future<Todo> _read(ReadTransaction tx, String id) async {
+    final data = await tx.get(addPrefix(id));
     return data == null ? null : Todo.fromJson(id, data);
   }
 
-  Future<void> _write(String id, Todo todo) {
-    return _replicache.put(addPrefix(id), todo.toJson());
+  Future<void> _write(dynamic tx, String id, Todo todo) {
+    return Future.error('Not implemented');
+    // return _replicache.put(addPrefix(id), todo.toJson());
   }
 
-  Future<void> _del(String id) {
-    return _replicache.del(addPrefix(id));
+  Future<void> _del(dynamic tx, String id) {
+    throw UnimplementedError();
+    // return _replicache.del(addPrefix(id));
   }
 
   Future<void> _handleDone(String id, bool complete) async {
-    var todo = await _read(id);
-    if (todo == null) {
-      return;
-    }
-    todo.complete = complete;
-    _write(id, todo);
+    // TODO(arv): This should be mutate
+    _replicache.query((tx) async {
+      var todo = await _read(tx, id);
+      if (todo == null) {
+        return;
+      }
+      todo.complete = complete;
+      _write(tx, id, todo);
+    });
   }
 
   List<Todo> _activeTodos() {
@@ -189,16 +199,22 @@ class _MyHomePageState extends State<MyHomePage> {
     List<Todo> todos = _activeTodos();
     String id = todos[oldIndex].id;
     double order = _getNewOrder(newIndex);
-    var todo = await _read(id);
-    if (todo == null) {
-      return;
-    }
-    todo.order = order;
-    _write(id, todo);
+    // TODO(arv): Should be mutate
+    _replicache.query((tx) async {
+      var todo = await _read(tx, id);
+      if (todo == null) {
+        return;
+      }
+      todo.order = order;
+      _write(tx, id, todo);
+    });
   }
 
   Future<void> _handleRemove(String id) async {
-    await _del(id);
+    // TODO(arv): Should be mutate
+    _replicache.query((tx) async {
+      await _del(tx, id);
+    });
   }
 
   void _selectListId(int listId) {
@@ -208,12 +224,13 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   Future<void> _dropDatabase() async {
-    Navigator.pop(context);
-    var items = await _replicache.scan(prefix: prefix);
-    for (final ScanItem item in items) {
-      await _replicache.del(item.id);
-    }
-    await _init();
+    throw UnimplementedError();
+    // Navigator.pop(context);
+    // var items = await _replicache.scan(prefix: prefix);
+    // for (final ScanItem item in items) {
+    //   await _replicache.del(item.id);
+    // }
+    // await _init();
   }
 
   Future<void> _addTodoItem(String task) async {
@@ -224,7 +241,10 @@ class _MyHomePageState extends State<MyHomePage> {
       int index = todos.length == 0 ? 0 : todos.length;
       String id = uuid.v4();
       double order = _getNewOrder(index);
-      await _write(id, Todo(id, _selectedListId, task, false, order));
+      // TODO(arv): Should be mutate and maybe include _activeTodos.
+      _replicache.query((tx) async {
+        await _write(tx, id, Todo(id, _selectedListId, task, false, order));
+      });
     }
   }
 

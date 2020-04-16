@@ -31,10 +31,10 @@ class _MyHomePageState extends State<MyHomePage> {
     _replicache.onChange = _handleChange;
     _replicache.onChange();
   }
-  
+
   void _handleChange() async {
     var events = List<Map<String, dynamic>>.from(
-      (await _replicache.scan(prefix: '/event/')).map((item) => item.value));
+        (await _replicache.scan(prefix: '/event/')).map((item) => item.value));
     setState(() {
       _events = events;
     });
@@ -51,8 +51,7 @@ class _MyHomePageState extends State<MyHomePage> {
           mainAxisAlignment: MainAxisAlignment.start,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: List.from(
-            _events.map(
-              (Map m) => Text(m['time'] + ': ' + m['title']))),
+              _events.map((Map m) => Text(m['time'] + ': ' + m['title']))),
         ),
       ),
     );

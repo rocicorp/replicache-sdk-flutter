@@ -1,6 +1,7 @@
 import 'dart:core';
 import 'dart:async';
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
 import 'database_info.dart';
@@ -61,7 +62,7 @@ class ScanId {
 /// Replicache operations are serialized per-connection, with the sole exception of
 /// pull(), which runs concurrently with other operations (and might take awhile, since
 /// it attempts to go to the network).
-class Replicache {
+class Replicache implements ReadTransaction {
   static MethodChannel _platform;
 
   ChangeHandler onChange;
@@ -122,7 +123,7 @@ class Replicache {
 
     print('Using remote: ' + this._remote);
 
-    _opened = _invoke(this._name, 'open');
+    _opened = _invoke(_name, 'open');
     _root = _opened.then((_) => _getRoot());
     _root.then((_) {
       this._schedulePull(0);
@@ -134,39 +135,66 @@ class Replicache {
   String get clientViewAuth => _clientViewAuth;
 
   /// Puts a single value into the database in its own transaction.
-  Future<void> put(String id, dynamic value) async {
+  Future<void> _put(String id, dynamic value) async {
     await _opened;
     return _result(await _checkChange(
-        await _invoke(this._name, 'put', {'id': id, 'value': value})));
+        await _invoke(_name, 'put', {'id': id, 'value': value})));
+  }
+
+  Future<dynamic> _get(int transactionId, String id) async {
+    await _opened;
+    return _result(await _invoke(_name, 'get', {
+      'transactionId': transactionId,
+      'id': id,
+    }));
   }
 
   /// Get a single value from the database.
-  Future<dynamic> get(String id) async {
+  Future<dynamic> get(String id) => query((tx) => tx.get(id));
+
+  Future<bool> _has(int transactionId, String id) async {
     await _opened;
-    return _result(await _invoke(this._name, 'get', {'id': id}));
+    return _result(await _invoke(_name, 'has', {
+      'transactionId': transactionId,
+      'id': id,
+    }));
   }
+
+  /// Determines if a single key is present in the database.
+  Future<bool> has(String id) => query((tx) => tx.has(id));
 
   /// Deletes a single value from the database in its own transaction.
-  Future<void> del(String id) async {
+  Future<void> _del(String id) async {
     await _opened;
-    return _result(
-        await _checkChange(await _invoke(this._name, 'del', {'id': id})));
+    return _result(await _checkChange(await _invoke(_name, 'del', {'id': id})));
   }
 
-  /// Gets many values from the database.
-  Future<Iterable<ScanItem>> scan(
-      {prefix: '', ScanBound start, limit: 50}) async {
+  Future<Iterable<ScanItem>> _scan(
+    int transactionId, {
+    @required prefix,
+    @required ScanBound start,
+    @required limit,
+  }) async {
     var args = {
+      'transactionId': transactionId,
       'prefix': prefix,
       'limit': limit,
     };
     if (start != null) {
       args['start'] = start._json();
     }
-    List<dynamic> r = await _invoke(this._name, 'scan', args);
+    List<dynamic> r = await _invoke(_name, 'scan', args);
     await _opened;
     return r.map((e) => ScanItem.fromJson(e));
   }
+
+  /// Gets many values from the database.
+  Future<Iterable<ScanItem>> scan({
+    prefix,
+    ScanBound start,
+    limit,
+  }) =>
+      query((tx) => tx.scan(prefix: prefix, start: start, limit: limit));
 
   /// Synchronizes the database with the server. New local transactions that have been executed since the last
   /// pull are sent to the server, and new remote transactions are received and replayed.
@@ -190,7 +218,7 @@ class Replicache {
         progressTimer.cancel();
         return;
       }
-      final result = await _invoke(this._name, 'pullProgress', {});
+      final result = await _invoke(_name, 'pullProgress', {});
       int r = result['bytesReceived'];
       int e = result['bytesExpected'];
       if (r == 0 && e == 0) {
@@ -257,12 +285,12 @@ class Replicache {
   Future<void> close() async {
     _closed = true;
     await _opened;
-    await _invoke(this.name, 'close');
+    await _invoke(_name, 'close');
   }
 
   Future<String> _getRoot() async {
     await _opened;
-    var res = await _invoke(this._name, 'getRoot');
+    var res = await _invoke(_name, 'getRoot');
     return res['root'];
   }
 
@@ -314,6 +342,21 @@ class Replicache {
       scheduleMicrotask(onChange);
     }
   }
+
+  Future<R> query<R>(Future<R> callback(ReadTransaction tx)) async {
+    final res = await _invoke(_name, 'beginTransaction');
+    final txId = res['transactionId'];
+    bool ok = false;
+    try {
+      final tx = ReadTransactionImpl(this, txId);
+      final result = await callback(tx);
+      ok = true;
+      return result;
+    } finally {
+      await _invoke(_name, ok ? 'commitTransaction' : 'closeTransaction',
+          {'transactionId': txId});
+    }
+  }
 }
 
 class ScanItem {
@@ -322,4 +365,36 @@ class ScanItem {
         value = data['value'];
   String id;
   var value;
+}
+
+/// ReadTransactions are used with [Replicache.query] and allows read operations on the database.
+abstract class ReadTransaction {
+  /// Get a single value from the database.
+  Future<dynamic> get(String key);
+
+  /// Determines if a single key is present in the database.
+  Future<bool> has(String key);
+
+  /// Gets many values from the database.
+  Future<Iterable<ScanItem>> scan({String prefix, ScanBound start, int limit});
+}
+
+class ReadTransactionImpl implements ReadTransaction {
+  final Replicache _db;
+  final int _transactionId;
+
+  ReadTransactionImpl(this._db, this._transactionId);
+
+  Future<dynamic> get(String key) {
+    return _db._get(_transactionId, key);
+  }
+
+  Future<bool> has(String key) {
+    return _db._has(_transactionId, key);
+  }
+
+  Future<Iterable<ScanItem>> scan({prefix: '', ScanBound start, limit: 50}) {
+    return _db._scan(_transactionId,
+        prefix: prefix, start: start, limit: limit);
+  }
 }
