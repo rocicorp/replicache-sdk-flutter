@@ -211,7 +211,7 @@ In fact, while you're away, why not turn off the wifi and click around. Your app
 
 - Implement the [server-side of Replicache integration](https://github.com/rocicorp/replicache/)
 - See [`flutter/redo`](https://github.com/rocicorp/replicache-sdk-flutter/tree/master/sample/redo) a fully functioning TODO app built on Flutter and Replicache
-- Review the [Replicache Dart Reference](https://flutter.doc.replicate.to/replicache/replicache-library.html)
+- Review the [Replicache Dart Reference](https://replicache-sdk-flutter.now.sh/)
 - Inspect your Replicache databases using [the `repl` tool](https://github.com/rocicorp/replicache-server/blob/master/doc/cli.md)
 
 ## More questions?
