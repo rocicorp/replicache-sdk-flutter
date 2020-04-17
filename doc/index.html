@@ -55,16 +55,18 @@
   <div id="dartdoc-main-content" class="col-xs-12 col-sm-9 col-md-8 main-content">
       <section class="desc markdown">
         <h1 id="replicache-flutter-sdk---quickstart">Replicache Flutter SDK - Quickstart</h1>
-<p>Hi! This tutorial will walk you through setting up Replicache for Flutter as quickly as possible.</p>
+<p>Hi! This tutorial will walk you through integrating Replicache into your Flutter mobile app.</p>
+<p>If you have any problems working through this, or just have questions, please <a href="https://join.slack.com/t/rocicorp/shared_invite/zt-dcez2xsi-nAhW1Lt~32Y3~~y54pMV0g">join us on Slack</a>. We'd be happy to help.</p>
 <p><strong>Note:</strong> This document assumes you already know what Replicache is, why you might need it, and broadly how it works. If that's not true, see the <a href="https://replicache.dev">Replicache homepage</a> for an overview, or the <a href="https://github.com/rocicorp/replicache/blob/master/design.md">design document</a> for a detailed deep-dive.</p>
-<h4 id="1-get-the-sdk">1. Get the SDK</h4>
+<h3 id="1-get-the-sdk">1. Get the SDK</h3>
 <p>Download the <a href="https://github.com/rocicorp/replicache/releases/latest/download/replicache-sdk.tar.gz">Replicache SDK</a>, then unzip it:</p>
-<pre class="language-dart"><code>tar xvzf replicache-sdk.tar.gz
+<pre class="language-dart"><code>curl -o replicache-sdk.tar.gz -L https://github.com/rocicorp/replicache/releases/latest/download/replicache-sdk.tar.gz
+tar xvzf replicache-sdk.tar.gz
 </code></pre>
-<h4 id="2-start-a-new-empty-flutter-app">2. Start a new, empty Flutter app</h4>
-<pre class="language-dart"><code>flutter create calendar
+<h3 id="2-start-a-new-empty-flutter-app">2. Start a new, empty Flutter app</h3>
+<pre class="language-dart"><code>flutter create todo
 </code></pre>
-<h4 id="3-add-the-replicache-dependency-to-your-flutter-apps-pubspecyaml">3. Add the <code>replicache</code> dependency to your Flutter app's <code>pubspec.yaml</code></h4>
+<h3 id="3-add-the-replicache-dependency-to-your-flutter-apps-pubspecyaml">3. Add the <code>replicache</code> dependency to your Flutter app's <code>pubspec.yaml</code></h3>
 <pre class="language-dart"><code>...
 
   cupertino_icons: ^0.1.2
@@ -75,39 +77,53 @@
 
 ...
 </code></pre>
-<h4 id="4-instantiate-replicache">4. Instantiate Replicache</h4>
+<h3 id="4-instantiate-replicache">4. Instantiate Replicache</h3>
+<p>In <code>main.dart</code>, import the Replicache library:</p>
 <pre class="language-dart"><code>import 'package:replicache/replicache.dart';
-
-...
-var rep = Replicache(
-  // The Replicache diff-server to talk to - we will start this in the next step.
-  'http://localhost:7001',
-  
-  // Optional: pass an auth token to access /replicache-client-view on your server
-  // This will be sent by Replicache in the Authorization header.
-  clientViewAuth: yourAuthToken);
 </code></pre>
-<h4 id="5-start-a-development-diff-server-and-put-some-sample-data-in-it">5. Start a development diff-server and put some sample data in it:</h4>
+<p>Then replace the generated <code>_MyHomePageState</code> class with:</p>
+<pre class="language-dart"><code>class _MyHomePageState extends State&lt;MyHomePage&gt; {
+  Replicache _rep = Replicache(
+    'http://localhost:7001');
+
+  @override
+  Widget build(BuildContext context) {
+    return Text("Hello");
+  }
+}
+</code></pre>
+<p>Now launch the Flutter app:</p>
+<pre class="language-bash"><code class="language-bash">cd todo
+flutter emulators --launch apple_ios_simulator
+flutter run
+</code></pre>
+<p>You will see Replicache start up and start trying to sync, but fail because no diff-server is running. That's OK! We'll fix that in the next step.</p>
+<p>For now, search for <code>ClientID</code> in the output and copy it down. Every device syncing with Replicache has a unique <code>ClientID</code> generated at first run. We'll need that value next.</p>
+<h3 id="5-start-a-development-diff-server-and-put-some-sample-data-in-it">5. Start a development diff-server and put some sample data in it:</h3>
 <p>Under normal circumstances, Replicache periodically pulls a snapshot of user data that should be persistent on the client (the <em>Client View</em>) from your service. Replicache computes a diff for each client and sends only the changes as part of downstream sync.</p>
 <p>You will need set up integration with your service later (see <a href="https://github.com/rocicorp/replicache/blob/master/README.md">server-side integration</a>).</p>
 <p>But while you're working on the client side, it's easiest to just inject snapshots directly from the command line.</p>
-<p>First start a development <code>diffs</code> server:</p>
+<p>In a new tab, start a development <code>diffs</code> server and leave it running:</p>
 <pre class="language-bash"><code class="language-bash">/path/to/replicache-sdk/&lt;platform&gt;/diffs --db=/tmp/foo serve --enable-inject
 </code></pre>
-<p>Then inject a snapshot into it:</p>
-<pre class="language-bash"><code class="language-bash">curl -d @- http://localhost:7001/inject &lt;&lt; EOF
+<p>Then, in a third tab, inject a snapshot into the diff server:</p>
+<pre class="language-bash"><code class="language-bash">CLIENT_ID=&lt;your-client-id-from-step-4&gt;
+curl -d @- http://localhost:7001/inject &lt;&lt; EOF
 {
   "accountID": "sandbox",
-  "clientID": &lt;your-client-id&gt;,
+  "clientID": "$CLIENT_ID",
   "clientViewResponse": {
     "clientView": {
-      "/event/1": {
-        "time": "20200412T1200-11",
-        "title": "Easter Day"
+      "/list/29597": {
+        "id": 29597,
+        "ownerUserID": 3
       },
-      "/event/2": {
-        "time": "20200501T0900-11",
-        "title": "May Day"
+      "/todo/14136": {
+        "complete": false,
+        "id": 14136,
+        "listId": 29597,
+        "order": 0.5,
+        "text": "Take out the trash"
       },
       "lastTransactionID":"0"
     }
@@ -121,7 +137,8 @@ EOF
 <li>The <code>accountID</code> is your unique account ID on diff-server. During our early alpha testing, use "sandbox".</li>
 <li>You'll setup <code>lastTransactionID</code> later in this tutorial. For now just return <code>0</code>.</li>
 </ul>
-<h4 id="6-read-data">6. Read Data</h4>
+<h3 id="6-read-data">6. Read Data</h3>
+<p>Replace the <code>_MyHomePageState</code> class with:</p>
 <pre class="language-dart"><code class="language-dart">class _MyHomePageState extends State&lt;MyHomePage&gt; {
   List&lt;Map&lt;String, dynamic&gt;&gt; _events = [];
   Replicache _replicache = new Replicache('http://localhost:7001');
@@ -133,7 +150,7 @@ EOF
   
   void _handleChange() async {
     var events = List&lt;Map&lt;String, dynamic&gt;&gt;.from(
-      (await _replicache.scan(prefix: '/event/')).map((item) =&gt; item.value));
+      (await _replicache.scan(prefix: '/todo/')).map((item) =&gt; item.value));
     setState(() {
       _events = events;
     });
@@ -151,28 +168,38 @@ EOF
           crossAxisAlignment: CrossAxisAlignment.start,
           children: List.from(
             _events.map(
-              (Map m) =&gt; Text('${m['time']}: ${m['title']}'))),
+              (Map m) =&gt; CheckboxListTile(value: m['complete'], title: Text(m['text'])))),
         ),
       ),
     );
   }
 }
 </code></pre>
-<h4 id="7-update-data">7. Update Data</h4>
+<h3 id="7-update-data">7. Update Data</h3>
 <p>Now inject a new snapshot, you'll see your view dynamically update:</p>
 <pre class="language-bash"><code class="language-bash">curl -d @- http://localhost:7001/inject &lt;&lt; EOF
 {
   "accountID": "sandbox",
-  "clientID": &lt;your-client-id&gt;,
+  "clientID": "$CLIENT_ID",
   "clientViewResponse": {
     "clientView": {
-      "/event/2": {
-        "time": "20200501T0900-11",
-        "title": "Lei Day, not May Day"
+      "/list/29597": {
+        "id": 29597,
+        "ownerUserID": 3
       },
-      "/event/3": {
-        "time": "20201031T1800-11",
-        "title": "Halloween"
+      "/todo/14136": {
+        "complete": true,
+        "id": 14136,
+        "listId": 29597,
+        "order": 0.5,
+        "text": "Take out the trash"
+      },
+      "/todo/9081": {
+        "complete": false,
+        "id": 9081,
+        "listId": 29597,
+        "order": 0.75,
+        "text": "Walk the dog"
       },
       "lastTransactionID":"0"
     }
@@ -180,8 +207,8 @@ EOF
 }
 EOF
 </code></pre>
-<p>Nice!</p>
-<h4 id="8-write-data">8. Write Data</h4>
+<p>You will see the Flutter app update and display a new TODO and check off the previous one. Nice!</p>
+<h3 id="8-write-data">8. Write Data</h3>
 <p>TODO (this isn't implemented in the SDK yet)</p>
 <p>Congratulations — you are done with the client setup 🎉. Time for a cup of coffee.</p>
 <p>In fact, while you're away, why not turn off the wifi and click around. Your app will respond instantly with cached data and queue up the changes to replay, once you setup the server-side integration.</p>
@@ -189,7 +216,7 @@ EOF
 <ul>
 <li>Implement the <a href="https://github.com/rocicorp/replicache/">server-side of Replicache integration</a></li>
 <li>See <a href="https://github.com/rocicorp/replicache-sdk-flutter/tree/master/sample/redo"><code>flutter/redo</code></a> a fully functioning TODO app built on Flutter and Replicache</li>
-<li>Review the <a href="https://flutter.doc.replicate.to/replicache/replicache-library.html">Replicache Dart Reference</a></li>
+<li>Review the <a href="https://replicache-sdk-flutter.now.sh/">Replicache Dart Reference</a></li>
 <li>Inspect your Replicache databases using <a href="https://github.com/rocicorp/replicache-server/blob/master/doc/cli.md">the <code>repl</code> tool</a></li>
 </ul>
 <h2 id="more-questions">More questions?</h2>

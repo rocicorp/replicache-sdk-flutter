@@ -4,8 +4,8 @@
   <meta charset="utf-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, height=device-height, initial-scale=1, user-scalable=no">
-  <meta name="description" content="API docs for the toString method from the Replicache class, for the Dart programming language.">
-  <title>toString method - Replicache class - replicache library - Dart API</title>
+  <meta name="description" content="API docs for the has method from the Replicache class, for the Dart programming language.">
+  <title>has method - Replicache class - replicache library - Dart API</title>
   <!-- required because all the links are pseudo-absolute -->
   <base href="../..">
 
@@ -27,9 +27,9 @@
     <li><a href="index.html">replicache</a></li>
     <li><a href="replicache/replicache-library.html">replicache</a></li>
     <li><a href="replicache/Replicache-class.html">Replicache</a></li>
-    <li class="self-crumb">toString method</li>
+    <li class="self-crumb">has method</li>
   </ol>
-  <div class="self-name">toString</div>
+  <div class="self-name">has</div>
   <form class="search navbar-right" role="search">
     <input type="text" id="search-box" autocomplete="off" disabled class="form-control typeahead" placeholder="Loading search...">
   </form>
@@ -48,7 +48,7 @@
       <li><a href="index.html">replicache</a></li>
       <li><a href="replicache/replicache-library.html">replicache</a></li>
       <li><a href="replicache/Replicache-class.html">Replicache</a></li>
-      <li class="self-crumb">toString method</li>
+      <li class="self-crumb">has method</li>
     </ol>
     
     <h5>Replicache class</h5>
@@ -68,21 +68,21 @@
         <li><a href="replicache/Replicache/onPullProgress.html">onPullProgress</a></li>
         <li><a href="replicache/Replicache/pullProgress.html">pullProgress</a></li>
         <li><a href="replicache/Replicache/remote.html">remote</a></li>
-        <li class="inherited"><a href="replicache/Replicache/hashCode.html">hashCode</a></li>
-        <li class="inherited"><a href="replicache/Replicache/runtimeType.html">runtimeType</a></li>
+        <li class="inherited"><a href="replicache/ReadTransaction/hashCode.html">hashCode</a></li>
+        <li class="inherited"><a href="replicache/ReadTransaction/runtimeType.html">runtimeType</a></li>
     
         <li class="section-title"><a href="replicache/Replicache-class.html#instance-methods">Methods</a></li>
         <li><a href="replicache/Replicache/close.html">close</a></li>
-        <li><a href="replicache/Replicache/del.html">del</a></li>
         <li><a href="replicache/Replicache/get.html">get</a></li>
+        <li><a href="replicache/Replicache/has.html">has</a></li>
         <li><a href="replicache/Replicache/pull.html">pull</a></li>
-        <li><a href="replicache/Replicache/put.html">put</a></li>
+        <li><a href="replicache/Replicache/query.html">query</a></li>
         <li><a href="replicache/Replicache/scan.html">scan</a></li>
-        <li class="inherited"><a href="replicache/Replicache/noSuchMethod.html">noSuchMethod</a></li>
-        <li class="inherited"><a href="replicache/Replicache/toString.html">toString</a></li>
+        <li class="inherited"><a href="replicache/ReadTransaction/noSuchMethod.html">noSuchMethod</a></li>
+        <li class="inherited"><a href="replicache/ReadTransaction/toString.html">toString</a></li>
     
         <li class="section-title inherited"><a href="replicache/Replicache-class.html#operators">Operators</a></li>
-        <li class="inherited"><a href="replicache/Replicache/operator_equals.html">operator ==</a></li>
+        <li class="inherited"><a href="replicache/ReadTransaction/operator_equals.html">operator ==</a></li>
     
         <li class="section-title"><a href="replicache/Replicache-class.html#static-properties">Static properties</a></li>
         <li><a href="replicache/Replicache/logVerbosely.html">logVerbosely</a></li>
@@ -97,16 +97,16 @@
   </div><!--/.sidebar-offcanvas-->
 
   <div id="dartdoc-main-content" class="col-xs-12 col-sm-9 col-md-8 main-content">
-      <div><h1><span class="kind-method">toString</span> method</h1></div>
+      <div><h1><span class="kind-method">has</span> method</h1></div>
 
     <section class="multi-line-signature">
-      <span class="returntype">String</span>
-            <span class="name ">toString</span>
-(<wbr>)
-      <div class="features">inherited</div>
+      <span class="returntype">Future<span class="signature">&lt;<wbr><span class="type-parameter">bool</span>&gt;</span></span>
+            <span class="name ">has</span>
+(<wbr><span class="parameter" id="has-param-key"><span class="type-annotation">String</span> <span class="parameter-name">key</span></span>)
+      <div class="features">override</div>
     </section>
     <section class="desc markdown">
-      <p>Returns a string representation of this object.</p>
+      <p>Determines if a single key is present in the database.</p>
     </section>
     
     

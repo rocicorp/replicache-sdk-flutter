@@ -53,6 +53,7 @@
     <ol>
       <li class="section-title"><a href="replicache/replicache-library.html#classes">Classes</a></li>
       <li><a href="replicache/PullProgress-class.html">PullProgress</a></li>
+      <li><a href="replicache/ReadTransaction-class.html">ReadTransaction</a></li>
       <li><a href="replicache/Replicache-class.html">Replicache</a></li>
       <li><a href="replicache/ScanBound-class.html">ScanBound</a></li>
       <li><a href="replicache/ScanId-class.html">ScanId</a></li>
@@ -89,6 +90,21 @@ pull(), which runs concurrently with other operations (and might take awhile, si
 it attempts to go to the network).</p>
     </section>
     
+    <section>
+      <dl class="dl-horizontal">
+
+        <dt>Implemented types</dt>
+        <dd>
+          <ul class="comma-separated clazz-relationships">
+            <li><a href="replicache/ReadTransaction-class.html">ReadTransaction</a></li>
+          </ul>
+        </dd>
+
+
+
+
+      </dl>
+    </section>
 
     <section class="summary offset-anchor" id="constructors">
       <h2>Constructors</h2>
@@ -173,15 +189,15 @@ If <code>name</code> is omitted, it defaults to <code>remote</code>.
                   <div class="features">read-only</div>
 </dd>
         <dt id="hashCode" class="property inherited">
-          <span class="name"><a href="replicache/Replicache/hashCode.html">hashCode</a></span>
+          <span class="name"><a href="replicache/ReadTransaction/hashCode.html">hashCode</a></span>
           <span class="signature">&#8594; int</span>         
         </dt>
         <dd class="inherited">
-          The hash code for this object. <a href="replicache/Replicache/hashCode.html">[...]</a>
+          The hash code for this object. <a href="replicache/ReadTransaction/hashCode.html">[...]</a>
                   <div class="features">read-only, inherited</div>
 </dd>
         <dt id="runtimeType" class="property inherited">
-          <span class="name"><a href="replicache/Replicache/runtimeType.html">runtimeType</a></span>
+          <span class="name"><a href="replicache/ReadTransaction/runtimeType.html">runtimeType</a></span>
           <span class="signature">&#8594; Type</span>         
         </dt>
         <dd class="inherited">
@@ -203,23 +219,23 @@ If <code>name</code> is omitted, it defaults to <code>remote</code>.
           
                   
 </dd>
-        <dt id="del" class="callable">
-          <span class="name"><a href="replicache/Replicache/del.html">del</a></span><span class="signature">(<wbr><span class="parameter" id="del-param-id"><span class="type-annotation">String</span> <span class="parameter-name">id</span></span>)
-            <span class="returntype parameter">&#8594; Future<span class="signature">&lt;<wbr><span class="type-parameter">void</span>&gt;</span></span>
-          </span>
-                  </dt>
-        <dd>
-          Deletes a single value from the database in its own transaction.
-                  
-</dd>
         <dt id="get" class="callable">
-          <span class="name"><a href="replicache/Replicache/get.html">get</a></span><span class="signature">(<wbr><span class="parameter" id="get-param-id"><span class="type-annotation">String</span> <span class="parameter-name">id</span></span>)
+          <span class="name"><a href="replicache/Replicache/get.html">get</a></span><span class="signature">(<wbr><span class="parameter" id="get-param-key"><span class="type-annotation">String</span> <span class="parameter-name">key</span></span>)
             <span class="returntype parameter">&#8594; Future</span>
           </span>
                   </dt>
         <dd>
           Get a single value from the database.
-                  
+                  <div class="features">override</div>
+</dd>
+        <dt id="has" class="callable">
+          <span class="name"><a href="replicache/Replicache/has.html">has</a></span><span class="signature">(<wbr><span class="parameter" id="has-param-key"><span class="type-annotation">String</span> <span class="parameter-name">key</span></span>)
+            <span class="returntype parameter">&#8594; Future<span class="signature">&lt;<wbr><span class="type-parameter">bool</span>&gt;</span></span>
+          </span>
+                  </dt>
+        <dd>
+          Determines if a single key is present in the database.
+                  <div class="features">override</div>
 </dd>
         <dt id="pull" class="callable">
           <span class="name"><a href="replicache/Replicache/pull.html">pull</a></span><span class="signature">(<wbr>)
@@ -231,35 +247,37 @@ If <code>name</code> is omitted, it defaults to <code>remote</code>.
 pull are sent to the server, and new remote transactions are received and replayed.
                   
 </dd>
-        <dt id="put" class="callable">
-          <span class="name"><a href="replicache/Replicache/put.html">put</a></span><span class="signature">(<wbr><span class="parameter" id="put-param-id"><span class="type-annotation">String</span> <span class="parameter-name">id</span>, </span> <span class="parameter" id="put-param-value"><span class="type-annotation">dynamic</span> <span class="parameter-name">value</span></span>)
-            <span class="returntype parameter">&#8594; Future<span class="signature">&lt;<wbr><span class="type-parameter">void</span>&gt;</span></span>
+        <dt id="query" class="callable">
+          <span class="name"><a href="replicache/Replicache/query.html">query</a></span><span class="signature">&lt;<wbr><span class="type-parameter">R</span>&gt;</span><span class="signature">(<wbr><span class="parameter" id="query-param-callback"><span class="type-annotation">Future<span class="signature">&lt;<wbr><span class="type-parameter">R</span>&gt;</span></span> <span class="parameter-name">callback</span>(<span class="parameter" id="param-tx"><span class="type-annotation"><a href="replicache/ReadTransaction-class.html">ReadTransaction</a></span> <span class="parameter-name">tx</span></span>)</span>)
+            <span class="returntype parameter">&#8594; Future<span class="signature">&lt;<wbr><span class="type-parameter">R</span>&gt;</span></span>
           </span>
                   </dt>
         <dd>
-          Puts a single value into the database in its own transaction.
+          Query is used for read transactions. It is recommended to use transactions
+to ensure you get a consistent view across multiple calls to <a href="replicache/Replicache/get.html">get</a>, <a href="replicache/Replicache/has.html">has</a>
+and <a href="replicache/Replicache/scan.html">scan</a>.
                   
 </dd>
         <dt id="scan" class="callable">
-          <span class="name"><a href="replicache/Replicache/scan.html">scan</a></span><span class="signature">(<wbr>{<span class="parameter" id="scan-param-prefix"><span class="type-annotation">dynamic</span> <span class="parameter-name">prefix</span>: <span class="default-value">''</span></span> <span class="parameter" id="scan-param-start"><span class="type-annotation"><a href="replicache/ScanBound-class.html">ScanBound</a></span> <span class="parameter-name">start</span>, </span> <span class="parameter" id="scan-param-limit"><span class="type-annotation">dynamic</span> <span class="parameter-name">limit</span>: <span class="default-value">50</span></span> })
+          <span class="name"><a href="replicache/Replicache/scan.html">scan</a></span><span class="signature">(<wbr>{<span class="parameter" id="scan-param-prefix"><span class="type-annotation">String</span> <span class="parameter-name">prefix</span>: <span class="default-value">''</span>, </span> <span class="parameter" id="scan-param-start"><span class="type-annotation"><a href="replicache/ScanBound-class.html">ScanBound</a></span> <span class="parameter-name">start</span>, </span> <span class="parameter" id="scan-param-limit"><span class="type-annotation">int</span> <span class="parameter-name">limit</span>: <span class="default-value">50</span></span> })
             <span class="returntype parameter">&#8594; Future<span class="signature">&lt;<wbr><span class="type-parameter">Iterable<span class="signature">&lt;<wbr><span class="type-parameter"><a href="replicache/ScanItem-class.html">ScanItem</a></span>&gt;</span></span>&gt;</span></span>
           </span>
                   </dt>
         <dd>
           Gets many values from the database.
-                  
+                  <div class="features">override</div>
 </dd>
         <dt id="noSuchMethod" class="callable inherited">
-          <span class="name"><a href="replicache/Replicache/noSuchMethod.html">noSuchMethod</a></span><span class="signature">(<wbr><span class="parameter" id="noSuchMethod-param-invocation"><span class="type-annotation">Invocation</span> <span class="parameter-name">invocation</span></span>)
+          <span class="name"><a href="replicache/ReadTransaction/noSuchMethod.html">noSuchMethod</a></span><span class="signature">(<wbr><span class="parameter" id="noSuchMethod-param-invocation"><span class="type-annotation">Invocation</span> <span class="parameter-name">invocation</span></span>)
             <span class="returntype parameter">&#8594; dynamic</span>
           </span>
                   </dt>
         <dd class="inherited">
-          Invoked when a non-existent method or property is accessed. <a href="replicache/Replicache/noSuchMethod.html">[...]</a>
+          Invoked when a non-existent method or property is accessed. <a href="replicache/ReadTransaction/noSuchMethod.html">[...]</a>
                   <div class="features">inherited</div>
 </dd>
         <dt id="toString" class="callable inherited">
-          <span class="name"><a href="replicache/Replicache/toString.html">toString</a></span><span class="signature">(<wbr>)
+          <span class="name"><a href="replicache/ReadTransaction/toString.html">toString</a></span><span class="signature">(<wbr>)
             <span class="returntype parameter">&#8594; String</span>
           </span>
                   </dt>
@@ -274,12 +292,12 @@ pull are sent to the server, and new remote transactions are received and replay
       <h2>Operators</h2>
       <dl class="callables">
         <dt id="operator ==" class="callable inherited">
-          <span class="name"><a href="replicache/Replicache/operator_equals.html">operator ==</a></span><span class="signature">(<wbr><span class="parameter" id="==-param-other"><span class="type-annotation">dynamic</span> <span class="parameter-name">other</span></span>)
+          <span class="name"><a href="replicache/ReadTransaction/operator_equals.html">operator ==</a></span><span class="signature">(<wbr><span class="parameter" id="==-param-other"><span class="type-annotation">dynamic</span> <span class="parameter-name">other</span></span>)
             <span class="returntype parameter">&#8594; bool</span>
           </span>
                   </dt>
         <dd class="inherited">
-          The equality operator. <a href="replicache/Replicache/operator_equals.html">[...]</a>
+          The equality operator. <a href="replicache/ReadTransaction/operator_equals.html">[...]</a>
                   <div class="features">inherited</div>
 </dd>
       </dl>
@@ -344,21 +362,21 @@ pull are sent to the server, and new remote transactions are received and replay
       <li><a href="replicache/Replicache/onPullProgress.html">onPullProgress</a></li>
       <li><a href="replicache/Replicache/pullProgress.html">pullProgress</a></li>
       <li><a href="replicache/Replicache/remote.html">remote</a></li>
-      <li class="inherited"><a href="replicache/Replicache/hashCode.html">hashCode</a></li>
-      <li class="inherited"><a href="replicache/Replicache/runtimeType.html">runtimeType</a></li>
+      <li class="inherited"><a href="replicache/ReadTransaction/hashCode.html">hashCode</a></li>
+      <li class="inherited"><a href="replicache/ReadTransaction/runtimeType.html">runtimeType</a></li>
     
       <li class="section-title"><a href="replicache/Replicache-class.html#instance-methods">Methods</a></li>
       <li><a href="replicache/Replicache/close.html">close</a></li>
-      <li><a href="replicache/Replicache/del.html">del</a></li>
       <li><a href="replicache/Replicache/get.html">get</a></li>
+      <li><a href="replicache/Replicache/has.html">has</a></li>
       <li><a href="replicache/Replicache/pull.html">pull</a></li>
-      <li><a href="replicache/Replicache/put.html">put</a></li>
+      <li><a href="replicache/Replicache/query.html">query</a></li>
       <li><a href="replicache/Replicache/scan.html">scan</a></li>
-      <li class="inherited"><a href="replicache/Replicache/noSuchMethod.html">noSuchMethod</a></li>
-      <li class="inherited"><a href="replicache/Replicache/toString.html">toString</a></li>
+      <li class="inherited"><a href="replicache/ReadTransaction/noSuchMethod.html">noSuchMethod</a></li>
+      <li class="inherited"><a href="replicache/ReadTransaction/toString.html">toString</a></li>
     
       <li class="section-title inherited"><a href="replicache/Replicache-class.html#operators">Operators</a></li>
-      <li class="inherited"><a href="replicache/Replicache/operator_equals.html">operator ==</a></li>
+      <li class="inherited"><a href="replicache/ReadTransaction/operator_equals.html">operator ==</a></li>
     
       <li class="section-title"><a href="replicache/Replicache-class.html#static-properties">Static properties</a></li>
       <li><a href="replicache/Replicache/logVerbosely.html">logVerbosely</a></li>
