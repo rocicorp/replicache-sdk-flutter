@@ -12,7 +12,7 @@ void main() => runApp(MyApp());
 
 const prefix = '/todo/';
 
-String stripPrefix(String id) => id.substring(prefix.length);
+String stripPrefix(String key) => key.substring(prefix.length);
 
 String addPrefix(String id) => '$prefix$id';
 
@@ -137,9 +137,9 @@ class _MyHomePageState extends State<MyHomePage> {
     final todosScanItems = res[1];
 
     List<int> listIds = List.from(listIdScanItems
-        .map((item) => int.parse(item.id.substring('/list/'.length))));
+        .map((item) => int.parse(item.key.substring('/list/'.length))));
     List<Todo> allTodos = List.from(todosScanItems
-        .map((item) => Todo.fromJson(stripPrefix(item.id), item.value)));
+        .map((item) => Todo.fromJson(stripPrefix(item.key), item.value)));
 
     setState(() {
       if ((_selectedListId == null || !listIds.contains(_selectedListId)) &&
@@ -164,12 +164,12 @@ class _MyHomePageState extends State<MyHomePage> {
 
   Future<void> _write(dynamic tx, String id, Todo todo) {
     return Future.error('Not implemented');
-    // return _replicache.put(addPrefix(id), todo.toJson());
+    // return _replicache.put(addPrefix(key), todo.toJson());
   }
 
   Future<void> _del(dynamic tx, String id) {
     throw UnimplementedError();
-    // return _replicache.del(addPrefix(id));
+    // return _replicache.del(addPrefix(key));
   }
 
   Future<void> _handleDone(String id, bool complete) async {
@@ -225,7 +225,7 @@ class _MyHomePageState extends State<MyHomePage> {
     // Navigator.pop(context);
     // var items = await _replicache.scan(prefix: prefix);
     // for (final ScanItem item in items) {
-    //   await _replicache.del(item.id);
+    //   await _replicache.del(item.key);
     // }
     // await _init();
   }
