@@ -171,9 +171,9 @@ class Replicache implements ReadTransaction {
 
   Future<Iterable<ScanItem>> _scan(
     int transactionId, {
-    @required prefix,
+    @required String prefix,
     @required ScanBound start,
-    @required limit,
+    @required int limit,
   }) async {
     var args = {
       'transactionId': transactionId,
@@ -190,9 +190,9 @@ class Replicache implements ReadTransaction {
 
   /// Gets many values from the database.
   Future<Iterable<ScanItem>> scan({
-    prefix,
+    String prefix = '',
     ScanBound start,
-    limit,
+    int limit = 50,
   }) =>
       query((tx) => tx.scan(prefix: prefix, start: start, limit: limit));
 
@@ -393,7 +393,8 @@ class ReadTransactionImpl implements ReadTransaction {
     return _db._has(_transactionId, key);
   }
 
-  Future<Iterable<ScanItem>> scan({prefix: '', ScanBound start, limit: 50}) {
+  Future<Iterable<ScanItem>> scan(
+      {String prefix = '', ScanBound start, int limit = 50}) {
     return _db._scan(_transactionId,
         prefix: prefix, start: start, limit: limit);
   }
