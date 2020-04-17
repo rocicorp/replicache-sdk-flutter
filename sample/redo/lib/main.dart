@@ -128,29 +128,26 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   Future<void> _load() async {
-    await _replicache.query((tx) async {
-      final listIdScanItems = await tx.scan(prefix: '/list/');
+    final res = await _replicache.query((tx) async {
+      return await Future.wait(
+          [tx.scan(prefix: '/list/'), tx.scan(prefix: prefix)]);
+    });
 
-      List<int> listIds = List.from(listIdScanItems
-          .map((item) => int.parse(item.id.substring('/list/'.length))));
+    final listIdScanItems = res[0];
+    final todosScanItems = res[1];
 
+    List<int> listIds = List.from(listIdScanItems
+        .map((item) => int.parse(item.id.substring('/list/'.length))));
+    List<Todo> allTodos = List.from(todosScanItems
+        .map((item) => Todo.fromJson(stripPrefix(item.id), item.value)));
+
+    setState(() {
       if ((_selectedListId == null || !listIds.contains(_selectedListId)) &&
           listIds.length > 0) {
-        setState(() {
-          _selectedListId = listIds[0];
-        });
+        _selectedListId = listIds[0];
       }
-
-      setState(() {
-        _listIds = listIds;
-      });
-
-      final todosScanItems = await tx.scan(prefix: prefix);
-      List<Todo> allTodos = List.from(todosScanItems
-          .map((item) => Todo.fromJson(stripPrefix(item.id), item.value)));
-      setState(() {
-        _allTodos = allTodos;
-      });
+      _listIds = listIds;
+      _allTodos = allTodos;
     });
   }
 

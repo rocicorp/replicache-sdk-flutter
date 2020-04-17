@@ -315,7 +315,7 @@ class Replicache implements ReadTransaction {
       final r = await _platform.invokeMethod(rpc, [dbName, jsonEncode(args)]);
       return r == '' ? null : jsonDecode(r);
     } catch (e) {
-      throw new Exception('Error invoking "' + rpc + '": ' + e.toString());
+      throw Exception('Error invoking "$rpc": ${e.toString()}');
     }
   }
 
@@ -343,18 +343,26 @@ class Replicache implements ReadTransaction {
     }
   }
 
+  /// Query is used for read transactions. It is recommended to use transactions
+  /// to ensure you get a consistent view across multiple calls to [get], [has]
+  /// and [scan].
   Future<R> query<R>(Future<R> callback(ReadTransaction tx)) async {
     final res = await _invoke(_name, 'openTransaction');
     final txId = res['transactionId'];
-    bool ok = false;
     try {
-      final tx = ReadTransactionImpl(this, txId);
-      final result = await callback(tx);
-      ok = true;
-      return result;
+      final tx = _ReadTransactionImpl(this, txId);
+      return await callback(tx);
     } finally {
-      await _invoke(_name, ok ? 'commitTransaction' : 'closeTransaction',
-          {'transactionId': txId});
+      // No need to await the response.
+      _closeTransaction(txId);
+    }
+  }
+
+  Future<void> _closeTransaction(int txId) async {
+    try {
+      await _invoke(_name, 'closeTransaction', {'transactionId': txId});
+    } catch (ex) {
+      print('Failed to close transaction: $ex');
     }
   }
 }
@@ -379,11 +387,11 @@ abstract class ReadTransaction {
   Future<Iterable<ScanItem>> scan({String prefix, ScanBound start, int limit});
 }
 
-class ReadTransactionImpl implements ReadTransaction {
+class _ReadTransactionImpl implements ReadTransaction {
   final Replicache _db;
   final int _transactionId;
 
-  ReadTransactionImpl(this._db, this._transactionId);
+  _ReadTransactionImpl(this._db, this._transactionId);
 
   Future<dynamic> get(String key) {
     return _db._get(_transactionId, key);
