@@ -135,38 +135,39 @@ class Replicache implements ReadTransaction {
   String get clientViewAuth => _clientViewAuth;
 
   /// Puts a single value into the database in its own transaction.
-  Future<void> _put(String id, dynamic value) async {
+  Future<void> _put(String key, dynamic value) async {
     await _opened;
     return _result(await _checkChange(
-        await _invoke(_name, 'put', {'id': id, 'value': value})));
+        await _invoke(_name, 'put', {'key': key, 'value': value})));
   }
 
-  Future<dynamic> _get(int transactionId, String id) async {
+  Future<dynamic> _get(int transactionId, String key) async {
     await _opened;
     return _result(await _invoke(_name, 'get', {
       'transactionId': transactionId,
-      'id': id,
+      'key': key,
     }));
   }
 
   /// Get a single value from the database.
-  Future<dynamic> get(String id) => query((tx) => tx.get(id));
+  Future<dynamic> get(String key) => query((tx) => tx.get(key));
 
-  Future<bool> _has(int transactionId, String id) async {
+  Future<bool> _has(int transactionId, String key) async {
     await _opened;
     return _result(await _invoke(_name, 'has', {
       'transactionId': transactionId,
-      'id': id,
+      'key': key,
     }));
   }
 
   /// Determines if a single key is present in the database.
-  Future<bool> has(String id) => query((tx) => tx.has(id));
+  Future<bool> has(String key) => query((tx) => tx.has(key));
 
   /// Deletes a single value from the database in its own transaction.
-  Future<void> _del(String id) async {
+  Future<void> _del(String key) async {
     await _opened;
-    return _result(await _checkChange(await _invoke(_name, 'del', {'id': id})));
+    return _result(
+        await _checkChange(await _invoke(_name, 'del', {'key': key})));
   }
 
   Future<Iterable<ScanItem>> _scan(
@@ -369,10 +370,14 @@ class Replicache implements ReadTransaction {
 
 class ScanItem {
   ScanItem.fromJson(Map<String, dynamic> data)
-      : id = data['id'],
+      : key = data['key'],
         value = data['value'];
-  String id;
+  String key;
+
   var value;
+
+  @Deprecated('Use key instead')
+  get id => key;
 }
 
 /// ReadTransactions are used with [Replicache.query] and allows read operations on the database.
