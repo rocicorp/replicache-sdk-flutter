@@ -344,7 +344,7 @@ class Replicache implements ReadTransaction {
   }
 
   Future<R> query<R>(Future<R> callback(ReadTransaction tx)) async {
-    final res = await _invoke(_name, 'beginTransaction');
+    final res = await _invoke(_name, 'openTransaction');
     final txId = res['transactionId'];
     bool ok = false;
     try {
