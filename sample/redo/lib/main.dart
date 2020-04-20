@@ -40,7 +40,7 @@ class _MyHomePageState extends State<MyHomePage> {
   Replicache _replicache;
   List<int> _listIds = [];
   List<Todo> _allTodos = [];
-  bool _pulling = false;
+  bool _syncing = false;
   int _selectedListId;
 
   LoginResult _loginResult;
@@ -80,13 +80,13 @@ class _MyHomePageState extends State<MyHomePage> {
       key: _scaffoldKey,
       appBar: AppBar(
         title: Text('Todo List'),
-        actions: _pulling ? [Icon(Icons.sync)] : [],
+        actions: _syncing ? [Icon(Icons.sync)] : [],
       ),
       drawer: TodoDrawer(
         listIds: _listIds,
         selectedListId: _selectedListId,
         onSelectListId: _selectListId,
-        onPull: _replicache?.pull,
+        onSync: _replicache?.sync,
         onDrop: _dropDatabase,
         onFakeId: _setFakeUserId,
         email: _loginResult?.email,
@@ -117,7 +117,7 @@ class _MyHomePageState extends State<MyHomePage> {
       clientViewAuth: loginResult.userId,
     );
     _replicache.onChange = _load;
-    _replicache.onPull = _handlePull;
+    _replicache.onSync = _handleSync;
     _replicache.getClientViewAuth = _getAuthToken;
 
     setState(() {
@@ -151,9 +151,9 @@ class _MyHomePageState extends State<MyHomePage> {
     });
   }
 
-  void _handlePull(bool pulling) {
+  void _handleSync(bool syncing) {
     setState(() {
-      _pulling = pulling;
+      _syncing = syncing;
     });
   }
 
@@ -356,7 +356,7 @@ class TodoList extends StatelessWidget {
 }
 
 class TodoDrawer extends StatelessWidget {
-  final Future<void> Function() onPull;
+  final Future<void> Function() onSync;
   final Future<void> Function() onDrop;
   final void Function(int id) onSelectListId;
   final List<int> listIds;
@@ -368,7 +368,7 @@ class TodoDrawer extends StatelessWidget {
 
   TodoDrawer({
     this.listIds = const [],
-    this.onPull,
+    this.onSync,
     this.onDrop,
     this.onFakeId,
     @required this.selectedListId,
@@ -415,7 +415,7 @@ class TodoDrawer extends StatelessWidget {
     children.add(
       ListTile(
         title: Text('Sync'),
-        onTap: onPull,
+        onTap: onSync,
       ),
     );
     if (onDrop != null) {
