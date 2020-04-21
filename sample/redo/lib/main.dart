@@ -38,8 +38,8 @@ class _MyHomePageState extends State<MyHomePage> {
   final GlobalKey<ScaffoldState> _scaffoldKey = new GlobalKey<ScaffoldState>();
 
   Replicache _replicache;
-  List<int> _listIds = [];
-  List<Todo> _allTodos = [];
+  Iterable<int> _listIds = [];
+  Iterable<Todo> _allTodos = [];
   bool _syncing = false;
   int _selectedListId;
 
@@ -116,7 +116,6 @@ class _MyHomePageState extends State<MyHomePage> {
       name: loginResult.userId,
       clientViewAuth: loginResult.userId,
     );
-    _replicache.onChange = _load;
     _replicache.onSync = _handleSync;
     _replicache.getClientViewAuth = _getAuthToken;
 
@@ -124,32 +123,34 @@ class _MyHomePageState extends State<MyHomePage> {
       _loginResult = loginResult;
     });
 
-    await _load();
-  }
-
-  Future<void> _load() async {
-    final res = await _replicache.query((tx) async {
-      return await Future.wait(
-          [tx.scan(prefix: '/list/'), tx.scan(prefix: prefix)]);
+    _listIdStream().listen((listIds) {
+      setState(() {
+        if ((_selectedListId == null || !listIds.contains(_selectedListId)) &&
+            listIds.isNotEmpty) {
+          _selectedListId = listIds.first;
+        }
+        _listIds = listIds;
+      });
     });
 
-    final listIdScanItems = res[0];
-    final todosScanItems = res[1];
-
-    List<int> listIds = List.from(listIdScanItems
-        .map((item) => int.parse(item.key.substring('/list/'.length))));
-    List<Todo> allTodos = List.from(todosScanItems
-        .map((item) => Todo.fromJson(stripPrefix(item.key), item.value)));
-
-    setState(() {
-      if ((_selectedListId == null || !listIds.contains(_selectedListId)) &&
-          listIds.length > 0) {
-        _selectedListId = listIds[0];
-      }
-      _listIds = listIds;
-      _allTodos = allTodos;
+    _todoStream().listen((allTodos) {
+      setState(() {
+        _allTodos = allTodos;
+      });
     });
   }
+
+  Stream<Iterable<int>> _listIdStream() => _replicache.subscribe(
+        (tx) async => (await tx.scan(prefix: '/list/')).map(
+          (item) => int.parse(item.key.substring('/list/'.length)),
+        ),
+      );
+
+  Stream<Iterable<Todo>> _todoStream() => _replicache.subscribe(
+        (tx) async => (await tx.scan(prefix: prefix)).map(
+          (item) => Todo.fromJson(stripPrefix(item.key), item.value),
+        ),
+      );
 
   void _handleSync(bool syncing) {
     setState(() {
@@ -185,15 +186,14 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   List<Todo> _activeTodos() {
-    if (_selectedListId == null) {}
-    List<Todo> todos =
-        List.from(_allTodos.where((todo) => todo.listId == _selectedListId));
+    final todos =
+        _allTodos.where((todo) => todo.listId == _selectedListId).toList();
     todos.sort((t1, t2) => (t1.order - t2.order).sign.toInt());
     return todos;
   }
 
   Future<void> _handleReorder(int oldIndex, int newIndex) async {
-    List<Todo> todos = _activeTodos();
+    final todos = _activeTodos();
     String id = todos[oldIndex].id;
     double order = _getNewOrder(newIndex);
     // TODO(arv): Should be mutate
@@ -233,9 +233,9 @@ class _MyHomePageState extends State<MyHomePage> {
   Future<void> _addTodoItem(String task) async {
     var uuid = new Uuid();
     // Only add the task if the user actually entered something
-    if (task.length > 0) {
+    if (task.isNotEmpty) {
       List<Todo> todos = _activeTodos();
-      int index = todos.length == 0 ? 0 : todos.length;
+      int index = todos.isEmpty ? 0 : todos.length;
       String id = uuid.v4();
       double order = _getNewOrder(index);
       // TODO(arv): Should be mutate and maybe include _activeTodos.
@@ -359,7 +359,7 @@ class TodoDrawer extends StatelessWidget {
   final Future<void> Function() onSync;
   final Future<void> Function() onDrop;
   final void Function(int id) onSelectListId;
-  final List<int> listIds;
+  final Iterable<int> listIds;
   final int selectedListId;
   final String email;
 
