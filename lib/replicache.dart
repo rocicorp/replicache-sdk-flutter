@@ -8,7 +8,6 @@ import 'database_info.dart';
 
 const CHANNEL_NAME = 'replicache.dev';
 
-typedef void ChangeHandler();
 typedef void SyncHandler(bool syncing);
 typedef void SyncProgressHandler(SyncProgress progress);
 typedef Future<String> AuthTokenGetter();
@@ -83,8 +82,7 @@ class Replicache implements ReadTransaction {
   bool _closed = false;
   bool _reauthenticating = false;
   SyncProgress _syncProgress = SyncProgress._new(0, 0);
-  final StreamController<Null> _changeStreamController =
-      StreamController.broadcast();
+  Set<_Subscription> _subscriptions = Set();
 
   /// Lists information about available local databases.
   static Future<List<DatabaseInfo>> list() async {
@@ -286,7 +284,9 @@ class Replicache implements ReadTransaction {
 
   Future<void> close() async {
     _closed = true;
-    _changeStreamController.close();
+    for (final subscription in _subscriptions) {
+      subscription.streamController.close();
+    }
     await _opened;
     await _invoke(_name, 'close');
   }
@@ -340,10 +340,17 @@ class Replicache implements ReadTransaction {
     }
   }
 
-  void _fireOnChange() {
-    // TODO(arv): We should pass the ref of the current commit to ensure we get
-    // consistent results in all the subscribe callbacks.
-    _changeStreamController.add(null);
+  void _fireOnChange() async {
+    final List<_Subscription> subscriptions =
+        _subscriptions.toList(growable: false);
+    final results = await query((tx) async {
+      final futures =
+          subscriptions.map((subscription) => subscription.callback(tx));
+      return await Future.wait(futures);
+    });
+    for (int i = 0; i < subscriptions.length; i++) {
+      subscriptions[i].streamController.add(results[i]);
+    }
   }
 
   /// Subcribe to changes to the underlying data. This returns a stream that can
@@ -356,9 +363,17 @@ class Replicache implements ReadTransaction {
     // One initial call.
     yield await query(callback);
 
-    await for (final _ in _changeStreamController.stream) {
-      yield await query(callback);
-    }
+    _Subscription subscription;
+    // ignore: close_sinks
+    StreamController<R> streamController = StreamController(
+      onListen: () => _subscriptions.add(subscription),
+      onCancel: () => _subscriptions.remove(subscription),
+      onPause: () => _subscriptions.remove(subscription),
+      onResume: () => _subscriptions.add(subscription),
+    );
+    subscription = _Subscription(callback, streamController);
+
+    yield* subscription.streamController.stream;
   }
 
   /// Query is used for read transactions. It is recommended to use transactions
@@ -383,6 +398,12 @@ class Replicache implements ReadTransaction {
       print('Failed to close transaction: $ex');
     }
   }
+}
+
+class _Subscription<R> {
+  final Future<R> Function(ReadTransaction tx) callback;
+  final StreamController<R> streamController;
+  _Subscription(this.callback, this.streamController);
 }
 
 class ScanItem {
