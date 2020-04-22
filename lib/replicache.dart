@@ -285,8 +285,11 @@ class Replicache implements ReadTransaction {
   Future<void> close() async {
     _closed = true;
     for (final subscription in _subscriptions) {
-      subscription.streamController.close();
+      if (!subscription.streamController.isClosed) {
+        subscription.streamController.close();
+      }
     }
+    _subscriptions.clear();
     await _opened;
     await _invoke(_name, 'close');
   }
@@ -341,11 +344,11 @@ class Replicache implements ReadTransaction {
   }
 
   void _fireOnChange() async {
-    final List<_Subscription> subscriptions =
-        _subscriptions.toList(growable: false);
+    final List<_Subscription> subscriptions = _subscriptions
+        .where((s) => !s.streamController.isPaused)
+        .toList(growable: false);
     final results = await query((tx) async {
-      final futures =
-          subscriptions.map((subscription) => subscription.callback(tx));
+      final futures = subscriptions.map((s) => s.callback(tx));
       return await Future.wait(futures);
     });
     for (int i = 0; i < subscriptions.length; i++) {
@@ -368,11 +371,8 @@ class Replicache implements ReadTransaction {
     StreamController<R> streamController = StreamController(
       onListen: () => _subscriptions.add(subscription),
       onCancel: () => _subscriptions.remove(subscription),
-      onPause: () => _subscriptions.remove(subscription),
-      onResume: () => _subscriptions.add(subscription),
     );
     subscription = _Subscription(callback, streamController);
-
     yield* subscription.streamController.stream;
   }
 
