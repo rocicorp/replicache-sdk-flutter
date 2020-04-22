@@ -24,19 +24,17 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  List<Map<String, dynamic>> _events = [];
+  Iterable<Map<String, dynamic>> _events = [];
   Replicache _replicache = new Replicache('http://localhost:7001');
 
   _MyHomePageState() {
-    _replicache.onChange = _handleChange;
-    _replicache.onChange();
-  }
-
-  void _handleChange() async {
-    var events = List<Map<String, dynamic>>.from(
-        (await _replicache.scan(prefix: '/event/')).map((item) => item.value));
-    setState(() {
-      _events = events;
+    _replicache
+        .subscribe((tx) async =>
+            (await tx.scan(prefix: '/event/')).map((item) => item.value))
+        .listen((events) {
+      setState(() {
+        _events = events;
+      });
     });
   }
 
@@ -50,8 +48,8 @@ class _MyHomePageState extends State<MyHomePage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.start,
           crossAxisAlignment: CrossAxisAlignment.start,
-          children: List.from(
-              _events.map((Map m) => Text(m['time'] + ': ' + m['title']))),
+          children:
+              _events.map((m) => Text(m['time'] + ': ' + m['title'])).toList(),
         ),
       ),
     );

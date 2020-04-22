@@ -65,9 +65,6 @@ class ScanId {
 class Replicache implements ReadTransaction {
   static MethodChannel _platform;
 
-  @Deprecated('Use subscribe instead')
-  ChangeHandler onChange;
-
   SyncHandler onSync;
   SyncProgressHandler onSyncProgress;
   AuthTokenGetter getClientViewAuth;
@@ -344,10 +341,6 @@ class Replicache implements ReadTransaction {
   }
 
   void _fireOnChange() {
-    if (onChange != null) {
-      scheduleMicrotask(onChange);
-    }
-
     // TODO(arv): We should pass the ref of the current commit to ensure we get
     // consistent results in all the subscribe callbacks.
     _changeStreamController.add(null);
@@ -356,7 +349,9 @@ class Replicache implements ReadTransaction {
   /// Subcribe to changes to the underlying data. This returns a stream that can
   /// be listened to. Every time the underlying data changes the listener is
   /// invoked. The listener is also invoked once the first time the subscription
-  /// is added. There is no
+  /// is added. There is currently no guarantee that the result of this
+  /// subscription changes and it might get called with the same value over and
+  /// over.
   Stream<R> subscribe<R>(Future<R> callback(ReadTransaction tx)) async* {
     // One initial call.
     yield await query(callback);
