@@ -348,11 +348,23 @@ class Replicache implements ReadTransaction {
         .where((s) => !s.streamController.isPaused)
         .toList(growable: false);
     final results = await query((tx) async {
-      final futures = subscriptions.map((s) => s.callback(tx));
+      final futures = subscriptions.map((s) async {
+        // Tag the result so we can deal with success vs error below.
+        try {
+          return _SubscriptionSuccess(await s.callback(tx));
+        } catch (ex) {
+          return _SubscriptionError(ex);
+        }
+      });
       return await Future.wait(futures);
     });
     for (int i = 0; i < subscriptions.length; i++) {
-      subscriptions[i].streamController.add(results[i]);
+      final result = results[i];
+      if (result is _SubscriptionSuccess) {
+        subscriptions[i].streamController.add(result);
+      } else {
+        subscriptions[i].streamController.addError(result);
+      }
     }
   }
 
@@ -449,4 +461,14 @@ class _ReadTransactionImpl implements ReadTransaction {
     return _db._scan(_transactionId,
         prefix: prefix, start: start, limit: limit);
   }
+}
+
+class _SubscriptionSuccess<V> {
+  final V value;
+  _SubscriptionSuccess(this.value);
+}
+
+class _SubscriptionError<E> {
+  final E error;
+  _SubscriptionError(this.error);
 }
