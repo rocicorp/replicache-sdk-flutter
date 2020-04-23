@@ -1,9 +1,9 @@
 import 'dart:async';
+import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:redo/login.dart';
 import 'package:replicache/replicache.dart';
-import 'package:uuid/uuid.dart';
 
 import 'model.dart';
 import 'settings.dart';
@@ -12,9 +12,7 @@ void main() => runApp(MyApp());
 
 const prefix = '/todo/';
 
-String stripPrefix(String key) => key.substring(prefix.length);
-
-String addPrefix(String id) => '$prefix$id';
+String addPrefix(int id) => '$prefix$id';
 
 class MyApp extends StatelessWidget {
   @override
@@ -148,7 +146,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
   Stream<Iterable<Todo>> _todoStream() => _replicache.subscribe(
         (tx) async => (await tx.scan(prefix: prefix)).map(
-          (item) => Todo.fromJson(stripPrefix(item.key), item.value),
+          (item) => Todo.fromJson(item.value),
         ),
       );
 
@@ -158,22 +156,22 @@ class _MyHomePageState extends State<MyHomePage> {
     });
   }
 
-  Future<Todo> _read(ReadTransaction tx, String id) async {
+  Future<Todo> _read(ReadTransaction tx, int id) async {
     final data = await tx.get(addPrefix(id));
-    return data == null ? null : Todo.fromJson(id, data);
+    return data == null ? null : Todo.fromJson(data);
   }
 
-  Future<void> _write(dynamic tx, String id, Todo todo) {
+  Future<void> _write(dynamic tx, int id, Todo todo) {
     return Future.error('Not implemented');
     // return _replicache.put(addPrefix(key), todo.toJson());
   }
 
-  Future<void> _del(dynamic tx, String id) {
+  Future<void> _del(dynamic tx, int id) {
     throw UnimplementedError();
     // return _replicache.del(addPrefix(key));
   }
 
-  Future<void> _handleDone(String id, bool complete) async {
+  Future<void> _handleDone(int id, bool complete) async {
     // TODO(arv): This should be mutate
     _replicache.query((tx) async {
       var todo = await _read(tx, id);
@@ -194,7 +192,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
   Future<void> _handleReorder(int oldIndex, int newIndex) async {
     final todos = _activeTodos();
-    String id = todos[oldIndex].id;
+    int id = todos[oldIndex].id;
     double order = _getNewOrder(newIndex);
     // TODO(arv): Should be mutate
     _replicache.query((tx) async {
@@ -207,7 +205,7 @@ class _MyHomePageState extends State<MyHomePage> {
     });
   }
 
-  Future<void> _handleRemove(String id) async {
+  Future<void> _handleRemove(int id) async {
     // TODO(arv): Should be mutate
     _replicache.query((tx) async {
       await _del(tx, id);
@@ -236,7 +234,8 @@ class _MyHomePageState extends State<MyHomePage> {
     if (task.isNotEmpty) {
       List<Todo> todos = _activeTodos();
       int index = todos.isEmpty ? 0 : todos.length;
-      String id = uuid.v4();
+      Random r = Random.secure();
+      int id = r.nextInt(1 << 32);
       double order = _getNewOrder(index);
       // TODO(arv): Should be mutate and maybe include _activeTodos.
       _replicache.query((tx) async {
@@ -311,8 +310,8 @@ class _MyHomePageState extends State<MyHomePage> {
 
 class TodoList extends StatelessWidget {
   final List<Todo> _todos;
-  final Future<void> Function(String, bool) _handleDone;
-  final Future<void> Function(String) _handleRemove;
+  final Future<void> Function(int, bool) _handleDone;
+  final Future<void> Function(int) _handleRemove;
   final Future<void> Function(int, int) _handleReorder;
 
   TodoList(
@@ -334,7 +333,7 @@ class TodoList extends StatelessWidget {
         var todo = _todos[index];
         var id = todo.id;
         return Dismissible(
-          key: Key(id),
+          key: Key('$id'),
           onDismissed: (direction) {
             _handleRemove(id);
           },
