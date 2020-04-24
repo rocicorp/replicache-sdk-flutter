@@ -12,6 +12,10 @@ typedef void SyncHandler(bool syncing);
 typedef void SyncProgressHandler(SyncProgress progress);
 typedef Future<String> AuthTokenGetter();
 
+typedef Future<Return> Mutator<Return, Args>(Args args);
+typedef Future<Return> MutatorCallback<Return, Args>(
+    WriteTransaction tx, Args args);
+
 class SyncProgress {
   const SyncProgress._new(this.bytesReceived, this.bytesExpected);
   final int bytesReceived;
@@ -133,19 +137,25 @@ class Replicache implements ReadTransaction {
   String get remote => _remote;
   String get clientViewAuth => _clientViewAuth;
 
-  /// Puts a single value into the database in its own transaction.
-  Future<void> _put(String key, dynamic value) async {
+  Future<void> _put(int transactionId, String key, dynamic value) async {
     await _opened;
-    return _result(await _checkChange(
-        await _invoke(_name, 'put', {'key': key, 'value': value})));
+    await _invoke(_name, 'put', {
+      'transactionId': transactionId,
+      'key': key,
+      'value': value,
+    });
   }
 
   Future<dynamic> _get(int transactionId, String key) async {
     await _opened;
-    return _result(await _invoke(_name, 'get', {
+    final result = await _invoke(_name, 'get', {
       'transactionId': transactionId,
       'key': key,
-    }));
+    });
+    if (!result['has']) {
+      return null;
+    }
+    return result['value'];
   }
 
   /// Get a single value from the database.
@@ -153,20 +163,23 @@ class Replicache implements ReadTransaction {
 
   Future<bool> _has(int transactionId, String key) async {
     await _opened;
-    return _result(await _invoke(_name, 'has', {
+    final result = await _invoke(_name, 'has', {
       'transactionId': transactionId,
       'key': key,
-    }));
+    });
+    return result['has'];
   }
 
   /// Determines if a single key is present in the database.
   Future<bool> has(String key) => query((tx) => tx.has(key));
 
-  /// Deletes a single value from the database in its own transaction.
-  Future<void> _del(String key) async {
+  Future<bool> _del(int transactionId, String key) async {
     await _opened;
-    return _result(
-        await _checkChange(await _invoke(_name, 'del', {'key': key})));
+    final result = await _invoke(_name, 'del', {
+      'transactionId': transactionId,
+      'key': key,
+    });
+    return result['ok'];
   }
 
   Future<Iterable<ScanItem>> _scan(
@@ -260,7 +273,7 @@ class Replicache implements ReadTransaction {
           this._clientViewAuth = await getClientViewAuth();
           _reauthenticating = false;
         } else {
-          await _checkChange(result);
+          await _checkChange(result['root']);
           break;
         }
       }
@@ -300,25 +313,18 @@ class Replicache implements ReadTransaction {
     return res['root'];
   }
 
-  dynamic _result(Map<String, dynamic> m) {
-    return m == null ? null : m['result'];
-  }
-
-  Future<Map<String, dynamic>> _checkChange(Map<String, dynamic> result) async {
+  Future<void> _checkChange(String root) async {
     var currentRoot = await _root; // instantaneous except maybe first time
-    if (result != null &&
-        result['root'] != null &&
-        result['root'] != currentRoot) {
-      _root = Future.value(result['root']);
+    if (root != null && root != currentRoot) {
+      _root = Future.value(root);
       _fireOnChange();
     }
-    return result;
   }
 
   static Future<dynamic> _invoke(String dbName, String rpc,
-      [Map<String, dynamic> args = const {}]) async {
+      [dynamic args = const {}]) async {
     try {
-      final r = await _platform.invokeMethod(rpc, [dbName, jsonEncode(args)]);
+      final r = await _platform.invokeMethod(rpc, [dbName, json.encode(args)]);
       return r == '' ? null : jsonDecode(r);
     } catch (e) {
       throw Exception('Error invoking "$rpc": ${e.toString()}');
@@ -405,12 +411,49 @@ class Replicache implements ReadTransaction {
     }
   }
 
+  /// Registers a function to be used for write transactions. This function is
+  /// referred to as a mutator. The function may be called to mutate the data
+  /// but it will also be called when we synchronize mutations from the server.
+  Mutator<Return, Args> register<Return, Args>(
+    String name,
+    MutatorCallback<Return, Args> callback,
+  ) =>
+      (Args args) => _mutate(name, callback, args);
+
+  Future<R> _mutate<R, A>(
+      String name, MutatorCallback<R, A> callback, A args) async {
+    final res =
+        await _invoke(_name, 'openTransaction', {'name': name, 'args': args});
+    final txId = res['transactionId'];
+    bool ok = false;
+    try {
+      final tx = _WriteTransactionImpl(this, txId);
+      final rv = await Function.apply(callback, [tx, args]);
+      ok = true;
+      return rv;
+    } finally {
+      if (ok) {
+        // TODO(arv): Deal with failures.
+        await _commitTransaction(txId);
+      } else {
+        // No need to await the response.
+        _closeTransaction(txId);
+      }
+    }
+  }
+
   Future<void> _closeTransaction(int txId) async {
     try {
       await _invoke(_name, 'closeTransaction', {'transactionId': txId});
     } catch (ex) {
       print('Failed to close transaction: $ex');
     }
+  }
+
+  Future<void> _commitTransaction(txId) async {
+    final res =
+        await _invoke(_name, 'commitTransaction', {'transactionId': txId});
+    _checkChange(res['ref']);
   }
 }
 
@@ -444,6 +487,18 @@ abstract class ReadTransaction {
   Future<Iterable<ScanItem>> scan({String prefix, ScanBound start, int limit});
 }
 
+/// ReadTransactions are used with [Replicache.query] and allows read operations
+/// on the database.
+abstract class WriteTransaction extends ReadTransaction {
+  /// Sets a single value in the database. The [value] will be encoded using
+  /// [json.encode].
+  Future<dynamic> put(String key, dynamic value);
+
+  /// Removes a key and its value from the database. Returns true if there was a
+  /// key to remove.
+  Future<bool> del(String key);
+}
+
 class _ReadTransactionImpl implements ReadTransaction {
   final Replicache _db;
   final int _transactionId;
@@ -473,4 +528,17 @@ class _SubscriptionSuccess<V> {
 class _SubscriptionError<E> {
   final E error;
   _SubscriptionError(this.error);
+}
+
+class _WriteTransactionImpl extends _ReadTransactionImpl
+    implements WriteTransaction {
+  _WriteTransactionImpl(db, transactionId) : super(db, transactionId);
+
+  Future<void> put(String key, dynamic value) {
+    return _db._put(_transactionId, key, value);
+  }
+
+  Future<bool> del(String key) {
+    return _db._del(_transactionId, key);
+  }
 }
