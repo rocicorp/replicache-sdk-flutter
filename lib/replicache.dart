@@ -411,7 +411,28 @@ class Replicache implements ReadTransaction {
     }
   }
 
-  /// Registers a function to be used for write transactions. This function is
+  /// Registers a *mutator*, which is used to make changes to the data.
+  ///
+  /// Replays
+  /// Mutators run once when they are initially invoked, but they might also be
+  /// *replayed* multiple times during sync. As such mutators should not
+  /// modify application state directly. Also, it is important that the set of
+  /// registered mutator names only grows over time. If Replicache syncs and
+  /// cannot a needed mutator is not registered, it will substitute a no-op
+  /// mutator, but this might be a poor user experience.
+  ///
+  /// Server application
+  /// During sync, a description of each mutation is sent to the server's [batch
+  /// endpoint](...) where it is applied. Once the mutation has been applied
+  /// successfully, as indicated by the [client view](...)'s `lastMutationID` field,
+  /// the local version of the mutation is removed. See the [design doc](...) for
+  /// additional details on the sync protocol.
+  ///
+  /// Transactionality
+  /// Mutators are atomic: all their changes are applied together, or none are.
+  /// Throwing an exception aborts the transaction. Otherwise, it is committed.
+  /// As with query() and subscribe() all reads will see a consistent view of the
+  /// cache while they run.
   /// referred to as a mutator. The function may be called to mutate the data
   /// but it will also be called when we synchronize mutations from the server.
   Mutator<Return, Args> register<Return, Args>(
