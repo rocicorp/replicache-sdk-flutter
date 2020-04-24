@@ -229,7 +229,6 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   Future<void> _addTodoItem(String task) async {
-    var uuid = new Uuid();
     // Only add the task if the user actually entered something
     if (task.isNotEmpty) {
       List<Todo> todos = _activeTodos();
