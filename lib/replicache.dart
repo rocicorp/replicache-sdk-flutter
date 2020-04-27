@@ -323,8 +323,9 @@ class Replicache implements ReadTransaction {
 
   static Future<dynamic> _invoke(String dbName, String rpc,
       [dynamic args = const {}]) async {
+    final enc = JsonUtf8Encoder();
     try {
-      final r = await _platform.invokeMethod(rpc, [dbName, json.encode(args)]);
+      final r = await _platform.invokeMethod(rpc, [dbName, enc.convert(args)]);
       return r == '' ? null : jsonDecode(r);
     } catch (e) {
       throw Exception('Error invoking "$rpc": ${e.toString()}');
