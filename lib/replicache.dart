@@ -13,7 +13,7 @@ typedef void SyncProgressHandler(SyncProgress progress);
 typedef Future<String> AuthTokenGetter();
 
 typedef Future<Return> Mutator<Return, Args>(Args args);
-typedef Future<Return> MutatorCallback<Return, Args>(
+typedef Future<Return> MutatorImpl<Return, Args>(
     WriteTransaction tx, Args args);
 
 class SyncProgress {
@@ -413,54 +413,56 @@ class Replicache implements ReadTransaction {
 
   /// Registers a *mutator*, which is used to make changes to the data.
   ///
-  /// Replays
-  /// Mutators run once when they are initially invoked, but they might also be
-  /// *replayed* multiple times during sync. As such mutators should not
-  /// modify application state directly. Also, it is important that the set of
-  /// registered mutator names only grows over time. If Replicache syncs and
-  /// cannot a needed mutator is not registered, it will substitute a no-op
-  /// mutator, but this might be a poor user experience.
+  /// ## Replays
   ///
-  /// Server application
+  /// Mutators run once when they are initially invoked, but they might also be
+  /// *replayed* multiple times during sync. As such mutators should not modify
+  /// application state directly. Also, it is important that the set of
+  /// registered mutator names only grows over time. If Replicache syncs and
+  /// needed mutator is not registered, it will substitute a no-op mutator, but
+  /// this might be a poor user experience.
+  ///
+  /// ## Server application
+  ///
   /// During sync, a description of each mutation is sent to the server's [batch
-  /// endpoint](...) where it is applied. Once the mutation has been applied
-  /// successfully, as indicated by the [client view](...)'s `lastMutationID` field,
-  /// the local version of the mutation is removed. See the [design doc](...) for
+  /// endpoint](https://github.com/rocicorp/replicache/blob/master/README.md#step-5-upstream-sync)
+  /// where it is applied. Once the mutation has been applied successfully, as
+  /// indicated by the [client
+  /// view](https://github.com/rocicorp/replicache/blob/master/README.md#step-2-downstream-sync)'s
+  /// `lastMutationId` field, the local version of the mutation is removed. See
+  /// the [design
+  /// doc](https://github.com/rocicorp/replicache/blob/master/design.md) for
   /// additional details on the sync protocol.
   ///
-  /// Transactionality
+  /// ## Transactionality
+  ///
   /// Mutators are atomic: all their changes are applied together, or none are.
   /// Throwing an exception aborts the transaction. Otherwise, it is committed.
-  /// As with query() and subscribe() all reads will see a consistent view of the
-  /// cache while they run.
-  /// referred to as a mutator. The function may be called to mutate the data
-  /// but it will also be called when we synchronize mutations from the server.
+  /// As with [query] and [subscribe] all reads will see a consistent view of
+  /// the cache while they run.
   Mutator<Return, Args> register<Return, Args>(
     String name,
-    MutatorCallback<Return, Args> callback,
+    MutatorImpl<Return, Args> callback,
   ) =>
       (Args args) => _mutate(name, callback, args);
 
   Future<R> _mutate<R, A>(
-      String name, MutatorCallback<R, A> callback, A args) async {
+      String name, MutatorImpl<R, A> callback, A args) async {
     final res =
         await _invoke(_name, 'openTransaction', {'name': name, 'args': args});
     final txId = res['transactionId'];
-    bool ok = false;
+    R rv;
     try {
-      final tx = _WriteTransactionImpl(this, txId);
-      final rv = await Function.apply(callback, [tx, args]);
-      ok = true;
-      return rv;
-    } finally {
-      if (ok) {
-        // TODO(arv): Deal with failures.
-        await _commitTransaction(txId);
-      } else {
-        // No need to await the response.
-        _closeTransaction(txId);
-      }
+      final tx = WriteTransaction._new(this, txId);
+      rv = await Function.apply(callback, [tx, args]);
+    } catch (ex) {
+      // No need to await the response.
+      _closeTransaction(txId);
+      rethrow;
     }
+    // TODO(arv): Deal with failures.
+    _commitTransaction(txId);
+    return rv;
   }
 
   Future<void> _closeTransaction(int txId) async {
@@ -508,18 +510,6 @@ abstract class ReadTransaction {
   Future<Iterable<ScanItem>> scan({String prefix, ScanBound start, int limit});
 }
 
-/// ReadTransactions are used with [Replicache.query] and allows read operations
-/// on the database.
-abstract class WriteTransaction extends ReadTransaction {
-  /// Sets a single value in the database. The [value] will be encoded using
-  /// [json.encode].
-  Future<dynamic> put(String key, dynamic value);
-
-  /// Removes a key and its value from the database. Returns true if there was a
-  /// key to remove.
-  Future<bool> del(String key);
-}
-
 class _ReadTransactionImpl implements ReadTransaction {
   final Replicache _db;
   final int _transactionId;
@@ -551,14 +541,19 @@ class _SubscriptionError<E> {
   _SubscriptionError(this.error);
 }
 
-class _WriteTransactionImpl extends _ReadTransactionImpl
-    implements WriteTransaction {
-  _WriteTransactionImpl(db, transactionId) : super(db, transactionId);
+/// WriteTransactions are used with [Replicache.register] and allows read and
+/// write operations on the database.
+class WriteTransaction extends _ReadTransactionImpl {
+  WriteTransaction._new(db, transactionId) : super(db, transactionId);
 
+  /// Sets a single value in the database. The [value] will be encoded using
+  /// [json.encode].
   Future<void> put(String key, dynamic value) {
     return _db._put(_transactionId, key, value);
   }
 
+  /// Removes a key and its value from the database. Returns true if there was a
+  /// key to remove.
   Future<bool> del(String key) {
     return _db._del(_transactionId, key);
   }

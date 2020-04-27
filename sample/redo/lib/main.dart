@@ -195,9 +195,7 @@ class _MyHomePageState extends State<MyHomePage> {
       String text = args['text'];
       int listId = args['listId'];
       Iterable<Todo> todos = await todosInListFromTx(tx, listId);
-      int index = todos.isEmpty ? 0 : todos.length;
-
-      final order = getNewOrder(index, todos);
+      final order = newOrderBetween(todos.last, null);
       await _write(tx, Todo(id, listId, text, false, order));
     });
 
@@ -220,14 +218,11 @@ class _MyHomePageState extends State<MyHomePage> {
 
     _todoReorderMutator =
         _replicache.register('todo-reorder', (tx, args) async {
-      int listId = args['listId'];
-      int oldIndex = args['oldIndex'];
-      int newIndex = args['newIndex'];
-      List<Todo> todos = (await todosInListFromTx(tx, listId)).toList();
-      int id = todos[oldIndex].id;
-      double order = getNewOrder(newIndex, todos);
+      int id = args['id'];
+      double order = args['order'];
       final todo = await _read(tx, id);
       if (todo == null) {
+        print('Warning: The Todo item does not exist');
         return;
       }
       todo.order = order;
@@ -252,12 +247,31 @@ class _MyHomePageState extends State<MyHomePage> {
 
   Future<void> _handleRemove(int id) => _todoRemoveMutator({'id': id});
 
-  Future<void> _handleReorder(int oldIndex, int newIndex) =>
-      _todoReorderMutator({
-        'listId': _selectedListId,
-        'oldIndex': oldIndex,
-        'newIndex': newIndex,
-      });
+  Future<void> _handleReorder(int oldIndex, int newIndex) async {
+    if (oldIndex == newIndex) {
+      return;
+    }
+
+    final todos = todosInList(_allTodos, _selectedListId).toList();
+    if (newIndex == todos.length && oldIndex == todos.length - 1) {
+      return;
+    }
+
+    int id = todos[oldIndex].id;
+    Todo left;
+    Todo right;
+    if (newIndex == 0) {
+      right = todos.first;
+    } else if (newIndex == todos.length) {
+      left = todos.last;
+    } else {
+      left = newIndex > 0 ? todos[newIndex - 1] : null;
+      right = newIndex < todos.length ? todos[newIndex] : null;
+    }
+
+    double order = newOrderBetween(left, right);
+    await _todoReorderMutator({'id': id, 'order': order});
+  }
 
   void _pushAddTodoScreen() {
     // Push this page onto the stack
@@ -445,21 +459,6 @@ class TodoDrawer extends StatelessWidget {
   }
 }
 
-// calculates the order field by halving the distance between the left and right neighbor orders.
-// min default value = -minPositive
-// max default value = double.maxFinite
-double getNewOrder(int index, List<Todo> todos) {
-  double minOrderValue = 0;
-  double maxOrderValue = double.maxFinite;
-  double leftNeighborOrder =
-      index == 0 ? minOrderValue : todos[index - 1].order.toDouble();
-  double rightNeighborOrder =
-      index == todos.length ? maxOrderValue : todos[index].order.toDouble();
-  double order =
-      leftNeighborOrder + ((rightNeighborOrder - leftNeighborOrder) / 2);
-  return order;
-}
-
 Future<Iterable<Todo>> allTodosInTx(ReadTransaction tx) async =>
     (await tx.scan(prefix: prefix))
         .map((scanItem) => Todo.fromJson(scanItem.value));
@@ -473,3 +472,25 @@ List<Todo> todosInList(Iterable<Todo> allTodos, int listId) {
 Future<Iterable<Todo>> todosInListFromTx(
         ReadTransaction tx, int listId) async =>
     todosInList(await allTodosInTx(tx), listId);
+
+double newOrder(double before, double after) {
+  const double minOrderValue = 0;
+  const double maxOrderValue = double.maxFinite;
+  if (before == null) {
+    before = minOrderValue;
+  }
+  if (after == null) {
+    after = maxOrderValue;
+  }
+  return before + (after - before) / 2;
+}
+
+/// calculates the order field by halving the distance between the left and right
+/// neighbor orders.
+/// min default value = -minPositive
+/// max default value = double.maxFinite
+double newOrderBetween(Todo left, Todo right) {
+  final leftOrder = left?.order?.toDouble();
+  final rightOrder = right?.order?.toDouble();
+  return newOrder(leftOrder, rightOrder);
+}
