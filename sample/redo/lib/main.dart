@@ -222,7 +222,8 @@ class _MyHomePageState extends State<MyHomePage> {
       double order = args['order'];
       final todo = await _read(tx, id);
       if (todo == null) {
-        print('Warning: The Todo item does not exist');
+        print('Warning: Possible conflict - Specified Todo $id is not present.'
+            ' Skipping reorder.');
         return;
       }
       todo.order = order;
