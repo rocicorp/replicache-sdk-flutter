@@ -361,9 +361,11 @@ class Replicache implements ReadTransaction {
     for (int i = 0; i < subscriptions.length; i++) {
       final result = results[i];
       if (result is _SubscriptionSuccess) {
-        subscriptions[i].streamController.add(result);
+        subscriptions[i].streamController.add(result.value);
       } else {
-        subscriptions[i].streamController.addError(result);
+        subscriptions[i]
+            .streamController
+            .addError((result as _SubscriptionError).error);
       }
     }
   }
