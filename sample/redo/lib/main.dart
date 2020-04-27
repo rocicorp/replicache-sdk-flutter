@@ -91,7 +91,7 @@ class _MyHomePageState extends State<MyHomePage> {
         logout: _logout,
       ),
       body: TodoList(
-        _activeTodos(),
+        todosInList(_allTodos, _selectedListId),
         _handleDone,
         _handleRemove,
         _handleReorder,
@@ -117,6 +117,8 @@ class _MyHomePageState extends State<MyHomePage> {
     _replicache.onSync = _handleSync;
     _replicache.getClientViewAuth = _getAuthToken;
 
+    _registerMutations();
+
     setState(() {
       _loginResult = loginResult;
     });
@@ -140,15 +142,11 @@ class _MyHomePageState extends State<MyHomePage> {
 
   Stream<Iterable<int>> _listIdStream() => _replicache.subscribe(
         (tx) async => (await tx.scan(prefix: '/list/')).map(
-          (item) => int.parse(item.key.substring('/list/'.length)),
+          (item) => item.value['id'],
         ),
       );
 
-  Stream<Iterable<Todo>> _todoStream() => _replicache.subscribe(
-        (tx) async => (await tx.scan(prefix: prefix)).map(
-          (item) => Todo.fromJson(item.value),
-        ),
-      );
+  Stream<Iterable<Todo>> _todoStream() => _replicache.subscribe(allTodosInTx);
 
   void _handleSync(bool syncing) {
     setState(() {
@@ -156,61 +154,18 @@ class _MyHomePageState extends State<MyHomePage> {
     });
   }
 
-  Future<Todo> _read(ReadTransaction tx, int id) async {
+  static Future<Todo> _read(ReadTransaction tx, int id) async {
     final data = await tx.get(addPrefix(id));
     return data == null ? null : Todo.fromJson(data);
   }
 
-  Future<void> _write(dynamic tx, int id, Todo todo) {
-    return Future.error('Not implemented');
-    // return _replicache.put(addPrefix(key), todo.toJson());
+  static Future<void> _write(WriteTransaction tx, Todo todo) {
+    final key = addPrefix(todo.id);
+    return tx.put(key, todo);
   }
 
-  Future<void> _del(dynamic tx, int id) {
-    throw UnimplementedError();
-    // return _replicache.del(addPrefix(key));
-  }
-
-  Future<void> _handleDone(int id, bool complete) async {
-    // TODO(arv): This should be mutate
-    _replicache.query((tx) async {
-      var todo = await _read(tx, id);
-      if (todo == null) {
-        return;
-      }
-      todo.complete = complete;
-      _write(tx, id, todo);
-    });
-  }
-
-  List<Todo> _activeTodos() {
-    final todos =
-        _allTodos.where((todo) => todo.listId == _selectedListId).toList();
-    todos.sort((t1, t2) => (t1.order - t2.order).sign.toInt());
-    return todos;
-  }
-
-  Future<void> _handleReorder(int oldIndex, int newIndex) async {
-    final todos = _activeTodos();
-    int id = todos[oldIndex].id;
-    double order = _getNewOrder(newIndex);
-    // TODO(arv): Should be mutate
-    _replicache.query((tx) async {
-      var todo = await _read(tx, id);
-      if (todo == null) {
-        return;
-      }
-      todo.order = order;
-      _write(tx, id, todo);
-    });
-  }
-
-  Future<void> _handleRemove(int id) async {
-    // TODO(arv): Should be mutate
-    _replicache.query((tx) async {
-      await _del(tx, id);
-    });
-  }
+  static Future<bool> _del(WriteTransaction tx, int id) =>
+      tx.del(addPrefix(id));
 
   void _selectListId(int listId) {
     setState(() {
@@ -228,35 +183,95 @@ class _MyHomePageState extends State<MyHomePage> {
     // await _init();
   }
 
-  Future<void> _addTodoItem(String task) async {
-    // Only add the task if the user actually entered something
-    if (task.isNotEmpty) {
-      List<Todo> todos = _activeTodos();
-      int index = todos.isEmpty ? 0 : todos.length;
-      Random r = Random.secure();
-      int id = r.nextInt(1 << 32);
-      double order = _getNewOrder(index);
-      // TODO(arv): Should be mutate and maybe include _activeTodos.
-      _replicache.query((tx) async {
-        await _write(tx, id, Todo(id, _selectedListId, task, false, order));
-      });
-    }
+  Mutator<void, Map<String, dynamic>> _todoCreateMutator;
+  Mutator<void, Map<String, dynamic>> _todoDoneMutator;
+  Mutator<void, Map<String, dynamic>> _todoRemoveMutator;
+  Mutator<void, Map<String, dynamic>> _todoReorderMutator;
+
+  _registerMutations() {
+    _todoCreateMutator = _replicache.register('todo-create',
+        (tx, Map<String, dynamic> args) async {
+      int id = args['id'];
+      String text = args['text'];
+      int listId = args['listId'];
+      Iterable<Todo> todos = await todosInListFromTx(tx, listId);
+      final order = newOrderBetween(todos.last, null);
+      await _write(tx, Todo(id, listId, text, false, order));
+    });
+
+    _todoDoneMutator = _replicache.register('todo-done',
+        (tx, Map<String, dynamic> args) async {
+      int id = args['id'];
+      bool complete = args['complete'];
+      final todo = await _read(tx, id);
+      if (todo == null) {
+        return;
+      }
+      todo.complete = complete;
+      await _write(tx, todo);
+    });
+
+    _todoRemoveMutator = _replicache.register('todo-remove', (tx, args) async {
+      int id = args['id'];
+      await _del(tx, id);
+    });
+
+    _todoReorderMutator =
+        _replicache.register('todo-reorder', (tx, args) async {
+      int id = args['id'];
+      double order = args['order'];
+      final todo = await _read(tx, id);
+      if (todo == null) {
+        print('Warning: Possible conflict - Specified Todo $id is not present.'
+            ' Skipping reorder.');
+        return;
+      }
+      todo.order = order;
+      await _write(tx, todo);
+    });
   }
 
-  // calculates the order field by halving the distance between the left and right neighbor orders.
-  // min default value = -minPositive
-  // max default value = double.maxFinite
-  double _getNewOrder(int index) {
-    List<Todo> todos = _activeTodos();
-    double minOrderValue = 0;
-    double maxOrderValue = double.maxFinite;
-    double leftNeighborOrder =
-        index == 0 ? minOrderValue : todos[index - 1].order.toDouble();
-    double rightNeighborOrder =
-        index == todos.length ? maxOrderValue : todos[index].order.toDouble();
-    double order =
-        leftNeighborOrder + ((rightNeighborOrder - leftNeighborOrder) / 2);
-    return order;
+  Future<void> _addTodoItem(String text) async {
+    // Only add the task if the user actually entered something
+    if (text.isEmpty) {
+      return;
+    }
+
+    Random r = Random.secure();
+    int id = r.nextInt(1 << 32);
+    await _todoCreateMutator(
+        {'id': id, 'text': text, 'listId': _selectedListId});
+  }
+
+  Future<void> _handleDone(int id, bool complete) =>
+      _todoDoneMutator({'id': id, 'complete': complete});
+
+  Future<void> _handleRemove(int id) => _todoRemoveMutator({'id': id});
+
+  Future<void> _handleReorder(int oldIndex, int newIndex) async {
+    if (oldIndex == newIndex) {
+      return;
+    }
+
+    final todos = todosInList(_allTodos, _selectedListId).toList();
+    if (newIndex == todos.length && oldIndex == todos.length - 1) {
+      return;
+    }
+
+    int id = todos[oldIndex].id;
+    Todo left;
+    Todo right;
+    if (newIndex == 0) {
+      right = todos.first;
+    } else if (newIndex == todos.length) {
+      left = todos.last;
+    } else {
+      left = newIndex > 0 ? todos[newIndex - 1] : null;
+      right = newIndex < todos.length ? todos[newIndex] : null;
+    }
+
+    double order = newOrderBetween(left, right);
+    await _todoReorderMutator({'id': id, 'order': order});
   }
 
   void _pushAddTodoScreen() {
@@ -302,7 +317,7 @@ class _MyHomePageState extends State<MyHomePage> {
   void _setFakeUserId() async {
     await _loginPrefs.logout();
     await _clearState();
-    _initWithLoginResult(LoginResult("fake@roci.dev", "11111111"));
+    _initWithLoginResult(LoginResult('fake@roci.dev', '11111111'));
     Navigator.pop(context);
   }
 }
@@ -393,7 +408,7 @@ class TodoDrawer extends StatelessWidget {
       ),
       ListTile(
         title: Text(
-          "LISTS",
+          'LISTS',
           style: TextStyle(
             letterSpacing: 3,
             fontWeight: FontWeight.normal,
@@ -443,4 +458,40 @@ class TodoDrawer extends StatelessWidget {
     );
     return Drawer(child: ListView(children: children));
   }
+}
+
+Future<Iterable<Todo>> allTodosInTx(ReadTransaction tx) async =>
+    (await tx.scan(prefix: prefix))
+        .map((scanItem) => Todo.fromJson(scanItem.value));
+
+List<Todo> todosInList(Iterable<Todo> allTodos, int listId) {
+  final todos = allTodos.where((todo) => todo.listId == listId).toList();
+  todos.sort((t1, t2) => (t1.order - t2.order).sign.toInt());
+  return todos;
+}
+
+Future<Iterable<Todo>> todosInListFromTx(
+        ReadTransaction tx, int listId) async =>
+    todosInList(await allTodosInTx(tx), listId);
+
+double newOrder(double before, double after) {
+  const double minOrderValue = 0;
+  const double maxOrderValue = double.maxFinite;
+  if (before == null) {
+    before = minOrderValue;
+  }
+  if (after == null) {
+    after = maxOrderValue;
+  }
+  return before + (after - before) / 2;
+}
+
+/// calculates the order field by halving the distance between the left and right
+/// neighbor orders.
+/// min default value = -minPositive
+/// max default value = double.maxFinite
+double newOrderBetween(Todo left, Todo right) {
+  final leftOrder = left?.order?.toDouble();
+  final rightOrder = right?.order?.toDouble();
+  return newOrder(leftOrder, rightOrder);
 }

@@ -12,6 +12,10 @@ typedef void SyncHandler(bool syncing);
 typedef void SyncProgressHandler(SyncProgress progress);
 typedef Future<String> AuthTokenGetter();
 
+typedef Future<Return> Mutator<Return, Args>(Args args);
+typedef Future<Return> MutatorImpl<Return, Args>(
+    WriteTransaction tx, Args args);
+
 class SyncProgress {
   const SyncProgress._new(this.bytesReceived, this.bytesExpected);
   final int bytesReceived;
@@ -133,19 +137,25 @@ class Replicache implements ReadTransaction {
   String get remote => _remote;
   String get clientViewAuth => _clientViewAuth;
 
-  /// Puts a single value into the database in its own transaction.
-  Future<void> _put(String key, dynamic value) async {
+  Future<void> _put(int transactionId, String key, dynamic value) async {
     await _opened;
-    return _result(await _checkChange(
-        await _invoke(_name, 'put', {'key': key, 'value': value})));
+    await _invoke(_name, 'put', {
+      'transactionId': transactionId,
+      'key': key,
+      'value': value,
+    });
   }
 
   Future<dynamic> _get(int transactionId, String key) async {
     await _opened;
-    return _result(await _invoke(_name, 'get', {
+    final result = await _invoke(_name, 'get', {
       'transactionId': transactionId,
       'key': key,
-    }));
+    });
+    if (!result['has']) {
+      return null;
+    }
+    return result['value'];
   }
 
   /// Get a single value from the database.
@@ -153,20 +163,23 @@ class Replicache implements ReadTransaction {
 
   Future<bool> _has(int transactionId, String key) async {
     await _opened;
-    return _result(await _invoke(_name, 'has', {
+    final result = await _invoke(_name, 'has', {
       'transactionId': transactionId,
       'key': key,
-    }));
+    });
+    return result['has'];
   }
 
   /// Determines if a single key is present in the database.
   Future<bool> has(String key) => query((tx) => tx.has(key));
 
-  /// Deletes a single value from the database in its own transaction.
-  Future<void> _del(String key) async {
+  Future<bool> _del(int transactionId, String key) async {
     await _opened;
-    return _result(
-        await _checkChange(await _invoke(_name, 'del', {'key': key})));
+    final result = await _invoke(_name, 'del', {
+      'transactionId': transactionId,
+      'key': key,
+    });
+    return result['ok'];
   }
 
   Future<Iterable<ScanItem>> _scan(
@@ -260,7 +273,7 @@ class Replicache implements ReadTransaction {
           this._clientViewAuth = await getClientViewAuth();
           _reauthenticating = false;
         } else {
-          await _checkChange(result);
+          await _checkChange(result['root']);
           break;
         }
       }
@@ -300,25 +313,18 @@ class Replicache implements ReadTransaction {
     return res['root'];
   }
 
-  dynamic _result(Map<String, dynamic> m) {
-    return m == null ? null : m['result'];
-  }
-
-  Future<Map<String, dynamic>> _checkChange(Map<String, dynamic> result) async {
+  Future<void> _checkChange(String root) async {
     var currentRoot = await _root; // instantaneous except maybe first time
-    if (result != null &&
-        result['root'] != null &&
-        result['root'] != currentRoot) {
-      _root = Future.value(result['root']);
+    if (root != null && root != currentRoot) {
+      _root = Future.value(root);
       _fireOnChange();
     }
-    return result;
   }
 
   static Future<dynamic> _invoke(String dbName, String rpc,
-      [Map<String, dynamic> args = const {}]) async {
+      [dynamic args = const {}]) async {
     try {
-      final r = await _platform.invokeMethod(rpc, [dbName, jsonEncode(args)]);
+      final r = await _platform.invokeMethod(rpc, [dbName, json.encode(args)]);
       return r == '' ? null : jsonDecode(r);
     } catch (e) {
       throw Exception('Error invoking "$rpc": ${e.toString()}');
@@ -405,12 +411,72 @@ class Replicache implements ReadTransaction {
     }
   }
 
+  /// Registers a *mutator*, which is used to make changes to the data.
+  ///
+  /// ## Replays
+  ///
+  /// Mutators run once when they are initially invoked, but they might also be
+  /// *replayed* multiple times during sync. As such mutators should not modify
+  /// application state directly. Also, it is important that the set of
+  /// registered mutator names only grows over time. If Replicache syncs and
+  /// needed mutator is not registered, it will substitute a no-op mutator, but
+  /// this might be a poor user experience.
+  ///
+  /// ## Server application
+  ///
+  /// During sync, a description of each mutation is sent to the server's [batch
+  /// endpoint](https://github.com/rocicorp/replicache/blob/master/README.md#step-5-upstream-sync)
+  /// where it is applied. Once the mutation has been applied successfully, as
+  /// indicated by the [client
+  /// view](https://github.com/rocicorp/replicache/blob/master/README.md#step-2-downstream-sync)'s
+  /// `lastMutationId` field, the local version of the mutation is removed. See
+  /// the [design
+  /// doc](https://github.com/rocicorp/replicache/blob/master/design.md) for
+  /// additional details on the sync protocol.
+  ///
+  /// ## Transactionality
+  ///
+  /// Mutators are atomic: all their changes are applied together, or none are.
+  /// Throwing an exception aborts the transaction. Otherwise, it is committed.
+  /// As with [query] and [subscribe] all reads will see a consistent view of
+  /// the cache while they run.
+  Mutator<Return, Args> register<Return, Args>(
+    String name,
+    MutatorImpl<Return, Args> callback,
+  ) =>
+      (Args args) => _mutate(name, callback, args);
+
+  Future<R> _mutate<R, A>(
+      String name, MutatorImpl<R, A> callback, A args) async {
+    final res =
+        await _invoke(_name, 'openTransaction', {'name': name, 'args': args});
+    final txId = res['transactionId'];
+    R rv;
+    try {
+      final tx = WriteTransaction._new(this, txId);
+      rv = await Function.apply(callback, [tx, args]);
+    } catch (ex) {
+      // No need to await the response.
+      _closeTransaction(txId);
+      rethrow;
+    }
+    // TODO(arv): Deal with failures.
+    _commitTransaction(txId);
+    return rv;
+  }
+
   Future<void> _closeTransaction(int txId) async {
     try {
       await _invoke(_name, 'closeTransaction', {'transactionId': txId});
     } catch (ex) {
       print('Failed to close transaction: $ex');
     }
+  }
+
+  Future<void> _commitTransaction(txId) async {
+    final res =
+        await _invoke(_name, 'commitTransaction', {'transactionId': txId});
+    _checkChange(res['ref']);
   }
 }
 
@@ -473,4 +539,22 @@ class _SubscriptionSuccess<V> {
 class _SubscriptionError<E> {
   final E error;
   _SubscriptionError(this.error);
+}
+
+/// WriteTransactions are used with [Replicache.register] and allows read and
+/// write operations on the database.
+class WriteTransaction extends _ReadTransactionImpl {
+  WriteTransaction._new(db, transactionId) : super(db, transactionId);
+
+  /// Sets a single value in the database. The [value] will be encoded using
+  /// [json.encode].
+  Future<void> put(String key, dynamic value) {
+    return _db._put(_transactionId, key, value);
+  }
+
+  /// Removes a key and its value from the database. Returns true if there was a
+  /// key to remove.
+  Future<bool> del(String key) {
+    return _db._del(_transactionId, key);
+  }
 }
