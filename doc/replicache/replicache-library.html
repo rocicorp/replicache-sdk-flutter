@@ -14,7 +14,7 @@
   <link rel="stylesheet" href="static-assets/github.css">
   <link rel="stylesheet" href="static-assets/styles.css">
   <link rel="icon" href="static-assets/favicon.png">
-  <!-- header placeholder -->
+  
 </head>
 
 <body>
@@ -63,12 +63,6 @@
       <h2>Classes</h2>
 
       <dl>
-        <dt id="PullProgress">
-          <span class="name "><a href="replicache/PullProgress-class.html">PullProgress</a></span>         
-        </dt>
-        <dd>
-          
-        </dd>
         <dt id="ReadTransaction">
           <span class="name "><a href="replicache/ReadTransaction-class.html">ReadTransaction</a></span>         
         </dt>
@@ -100,9 +94,21 @@ connections to the same database. <a href="replicache/Replicache-class.html">[..
         <dd>
           
         </dd>
+        <dt id="SyncProgress">
+          <span class="name "><a href="replicache/SyncProgress-class.html">SyncProgress</a></span>         
+        </dt>
+        <dd>
+          
+        </dd>
+        <dt id="WriteTransaction">
+          <span class="name "><a href="replicache/WriteTransaction-class.html">WriteTransaction</a></span>         
+        </dt>
+        <dd>
+          WriteTransactions are used with <a href="replicache/Replicache/register.html">Replicache.register</a> and allows read and
+write operations on the database.
+        </dd>
       </dl>
     </section>
-
 
 
     <section class="summary offset-anchor" id="constants">
@@ -139,8 +145,26 @@ connections to the same database. <a href="replicache/Replicache-class.html">[..
           
                   
 </dd>
-        <dt id="ChangeHandler" class="callable">
-          <span class="name"><a href="replicache/ChangeHandler.html">ChangeHandler</a></span><span class="signature">(<wbr>)
+        <dt id="Mutator" class="callable">
+          <span class="name"><a href="replicache/Mutator.html">Mutator</a></span><span class="signature">&lt;<wbr><span class="type-parameter">Return</span>, <span class="type-parameter">Args</span>&gt;</span><span class="signature">(<wbr><span class="parameter" id="Mutator-param-args"><span class="type-annotation">Args</span> <span class="parameter-name">args</span></span>)
+            <span class="returntype parameter">&#8594; Future<span class="signature">&lt;<wbr><span class="type-parameter">Return</span>&gt;</span></span>
+          </span>
+                  </dt>
+        <dd>
+          
+                  
+</dd>
+        <dt id="MutatorImpl" class="callable">
+          <span class="name"><a href="replicache/MutatorImpl.html">MutatorImpl</a></span><span class="signature">&lt;<wbr><span class="type-parameter">Return</span>, <span class="type-parameter">Args</span>&gt;</span><span class="signature">(<wbr><span class="parameter" id="MutatorImpl-param-tx"><span class="type-annotation"><a href="replicache/WriteTransaction-class.html">WriteTransaction</a></span> <span class="parameter-name">tx</span>, </span> <span class="parameter" id="MutatorImpl-param-args"><span class="type-annotation">Args</span> <span class="parameter-name">args</span></span>)
+            <span class="returntype parameter">&#8594; Future<span class="signature">&lt;<wbr><span class="type-parameter">Return</span>&gt;</span></span>
+          </span>
+                  </dt>
+        <dd>
+          
+                  
+</dd>
+        <dt id="SyncHandler" class="callable">
+          <span class="name"><a href="replicache/SyncHandler.html">SyncHandler</a></span><span class="signature">(<wbr><span class="parameter" id="SyncHandler-param-syncing"><span class="type-annotation">bool</span> <span class="parameter-name">syncing</span></span>)
             <span class="returntype parameter">&#8594; void</span>
           </span>
                   </dt>
@@ -148,17 +172,8 @@ connections to the same database. <a href="replicache/Replicache-class.html">[..
           
                   
 </dd>
-        <dt id="PullHandler" class="callable">
-          <span class="name"><a href="replicache/PullHandler.html">PullHandler</a></span><span class="signature">(<wbr><span class="parameter" id="PullHandler-param-pulling"><span class="type-annotation">bool</span> <span class="parameter-name">pulling</span></span>)
-            <span class="returntype parameter">&#8594; void</span>
-          </span>
-                  </dt>
-        <dd>
-          
-                  
-</dd>
-        <dt id="PullProgressHandler" class="callable">
-          <span class="name"><a href="replicache/PullProgressHandler.html">PullProgressHandler</a></span><span class="signature">(<wbr><span class="parameter" id="PullProgressHandler-param-progress"><span class="type-annotation"><a href="replicache/PullProgress-class.html">PullProgress</a></span> <span class="parameter-name">progress</span></span>)
+        <dt id="SyncProgressHandler" class="callable">
+          <span class="name"><a href="replicache/SyncProgressHandler.html">SyncProgressHandler</a></span><span class="signature">(<wbr><span class="parameter" id="SyncProgressHandler-param-progress"><span class="type-annotation"><a href="replicache/SyncProgress-class.html">SyncProgress</a></span> <span class="parameter-name">progress</span></span>)
             <span class="returntype parameter">&#8594; void</span>
           </span>
                   </dt>
@@ -176,13 +191,13 @@ connections to the same database. <a href="replicache/Replicache-class.html">[..
     <h5>replicache library</h5>
     <ol>
       <li class="section-title"><a href="replicache/replicache-library.html#classes">Classes</a></li>
-      <li><a href="replicache/PullProgress-class.html">PullProgress</a></li>
       <li><a href="replicache/ReadTransaction-class.html">ReadTransaction</a></li>
       <li><a href="replicache/Replicache-class.html">Replicache</a></li>
       <li><a href="replicache/ScanBound-class.html">ScanBound</a></li>
       <li><a href="replicache/ScanId-class.html">ScanId</a></li>
       <li><a href="replicache/ScanItem-class.html">ScanItem</a></li>
-    
+      <li><a href="replicache/SyncProgress-class.html">SyncProgress</a></li>
+      <li><a href="replicache/WriteTransaction-class.html">WriteTransaction</a></li>
     
     
       <li class="section-title"><a href="replicache/replicache-library.html#constants">Constants</a></li>
@@ -193,9 +208,10 @@ connections to the same database. <a href="replicache/Replicache-class.html">[..
     
       <li class="section-title"><a href="replicache/replicache-library.html#typedefs">Typedefs</a></li>
       <li><a href="replicache/AuthTokenGetter.html">AuthTokenGetter</a></li>
-      <li><a href="replicache/ChangeHandler.html">ChangeHandler</a></li>
-      <li><a href="replicache/PullHandler.html">PullHandler</a></li>
-      <li><a href="replicache/PullProgressHandler.html">PullProgressHandler</a></li>
+      <li><a href="replicache/Mutator.html">Mutator</a></li>
+      <li><a href="replicache/MutatorImpl.html">MutatorImpl</a></li>
+      <li><a href="replicache/SyncHandler.html">SyncHandler</a></li>
+      <li><a href="replicache/SyncProgressHandler.html">SyncProgressHandler</a></li>
     
     </ol>
   </div><!--/sidebar-offcanvas-right-->
@@ -204,11 +220,10 @@ connections to the same database. <a href="replicache/Replicache-class.html">[..
 
 <footer>
   <span class="no-break">
-    replicache
-      0.0.0+dev
+    replicache 0.0.0+dev
   </span>
 
-  <!-- footer-text placeholder -->
+  
 </footer>
 
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
@@ -216,7 +231,7 @@ connections to the same database. <a href="replicache/Replicache-class.html">[..
 <script src="static-assets/highlight.pack.js"></script>
 <script src="static-assets/URI.js"></script>
 <script src="static-assets/script.js"></script>
-<!-- footer placeholder -->
+
 
 </body>
 
