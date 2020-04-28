@@ -69,8 +69,7 @@ public class ReplicachePlugin implements MethodCallHandler {
         ArrayList args = (ArrayList) call.arguments;
 
         String dbName = (String) args.get(0);
-        // TODO: Avoid conversion here - can dart just send as bytes?
-        byte[] argData = ((String) args.get(1)).getBytes();
+        byte[] argData = (byte[]) args.get(1);
 
         byte[] resultData = null;
         Exception exception = null;
