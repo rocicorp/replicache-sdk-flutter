@@ -195,7 +195,7 @@ class _MyHomePageState extends State<MyHomePage> {
       String text = args['text'];
       int listId = args['listId'];
       Iterable<Todo> todos = await todosInListFromTx(tx, listId);
-      final order = newOrderBetween(todos.last, null);
+      final order = newOrderBetween(todos.isEmpty ? null : todos.last, null);
       await _write(tx, Todo(id, listId, text, false, order));
     });
 
