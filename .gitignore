@@ -10,4 +10,5 @@ pubspec.lock
 .packages
 **/ios/Flutter/Flutter.podspec
 **/android/.project
+**/android/app/.project
 **/android/.settings/org.eclipse.buildship.core.prefs
