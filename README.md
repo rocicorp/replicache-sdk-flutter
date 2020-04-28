@@ -10,20 +10,20 @@ If you have any problems working through this, or just have questions, please [j
 
 Download the [Replicache SDK](https://github.com/rocicorp/replicache/releases/latest/download/replicache-sdk.tar.gz), then unzip it:
 
-```
+```bash
 curl -o replicache-sdk.tar.gz -L https://github.com/rocicorp/replicache/releases/latest/download/replicache-sdk.tar.gz
 tar xvzf replicache-sdk.tar.gz
 ```
 
 ### 2. Start a new, empty Flutter app
 
-```
+```bash
 flutter create todo
 ```
 
 ### 3. Add the `replicache` dependency to your Flutter app's `pubspec.yaml`
 
-```
+```yaml
 ...
 
   cupertino_icons: ^0.1.2
@@ -35,24 +35,61 @@ flutter create todo
 ...
 ```
 
-### 4. Instantiate Replicache
+### 4. Read Data
 
-In `main.dart`, import the Replicache library:
+Replace the contents of `main.dart` with the following:
 
-```
+```dart
+import 'package:flutter/material.dart';
 import 'package:replicache/replicache.dart';
-```
 
-Then replace the generated `_MyHomePageState` class with:
+void main() => runApp(MyApp());
 
-```
-class _MyHomePageState extends State<MyHomePage> {
-  Replicache _rep = Replicache(
-    'http://localhost:7001');
+class MyApp extends StatelessWidget {
+  final String _title = 'Replicache Demo';
 
   @override
   Widget build(BuildContext context) {
-    return Text("Hello");
+    return MaterialApp(
+      title: _title,
+      theme: ThemeData(
+        primarySwatch: Colors.blue,
+      ),
+      home: MyHomePage(title: _title),
+    );
+  }
+}
+
+class MyHomePage extends StatelessWidget {
+  MyHomePage({Key key, this.title}) : super(key: key);
+
+  final String title;
+  final Replicache _replicache = new Replicache('http://localhost:7001');
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(title),
+      ),
+      body: Center(
+        child: StreamBuilder(
+          stream: _replicache.subscribe((ReadTransaction tx) async {
+            Iterable<ScanItem> res = await tx.scan(prefix: '/todo/');
+            return res.map((event) => event.value as Map<String, dynamic>);
+          }),
+          builder:  (BuildContext context, AsyncSnapshot<Iterable<Map<String, dynamic>>> snapshot) {
+            return Column(
+              mainAxisAlignment: MainAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: List.from(
+                (snapshot.data ?? []).map(
+                  (Map m) => CheckboxListTile(value: m['complete'], title: Text(m['text'])))),
+            );
+          },
+        ),
+      ),
+    );
   }
 }
 ```
@@ -118,49 +155,7 @@ Notes:
 * The `accountID` is your unique account ID on diff-server. During our early alpha testing, use "sandbox".
 * You'll setup `lastTransactionID` later in this tutorial. For now just return `0`.
 
-### 6. Read Data
-
-Replace the `_MyHomePageState` class with:
-
-```dart
-class _MyHomePageState extends State<MyHomePage> {
-  List<Map<String, dynamic>> _events = [];
-  Replicache _replicache = new Replicache('http://localhost:7001');
-
-  _MyHomePageState() {
-    _replicache.onChange = _handleChange;
-    _handleChange();
-  }
-  
-  void _handleChange() async {
-    var events = List<Map<String, dynamic>>.from(
-      (await _replicache.scan(prefix: '/todo/')).map((item) => item.value));
-    setState(() {
-      _events = events;
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.title),
-      ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.start,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: List.from(
-            _events.map(
-              (Map m) => CheckboxListTile(value: m['complete'], title: Text(m['text'])))),
-        ),
-      ),
-    );
-  }
-}
-```
-
-### 7. Update Data
+### 6. Update Data
 
 Now inject a new snapshot, you'll see your view dynamically update:
 
@@ -198,7 +193,7 @@ EOF
 
 You will see the Flutter app update and display a new TODO and check off the previous one. Nice!
 
-### 8. Write Data
+### 7. Write Data
 
 TODO (this isn't implemented in the SDK yet)
 
