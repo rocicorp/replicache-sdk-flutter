@@ -390,8 +390,12 @@ class Replicache implements ReadTransaction {
     _Subscription subscription;
     // ignore: close_sinks
     StreamController<R> streamController = StreamController(
-      onListen: () => _subscriptions.add(subscription),
-      onCancel: () => _subscriptions.remove(subscription),
+      onListen: () {
+        _subscriptions.add(subscription);
+      },
+      onCancel: () {
+        _subscriptions.remove(subscription);
+      },
     );
     subscription = _Subscription(callback, streamController);
     yield* subscription.streamController.stream;
