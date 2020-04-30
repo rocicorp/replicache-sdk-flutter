@@ -172,7 +172,7 @@ class LoginPrefs {
   }
 
   Future<String> _remoteLogin(String email) async {
-    final resp = await http.put(loginUrl, body: json.encode({'email': email}));
+    final resp = await http.post(loginUrl, body: json.encode({'email': email}));
     if (resp.statusCode == 200) {
       final val = json.decode(resp.body);
       return val['id'].toString();
