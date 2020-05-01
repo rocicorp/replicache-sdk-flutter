@@ -85,8 +85,8 @@ void main() {
     final rep = Replicache('def');
 
     t(ReadTransaction tx) async {
-      expect(await rep.get('key'), isNull);
-      expect(await rep.has('key'), isFalse);
+      expect(await tx.get('key'), isNull);
+      expect(await tx.has('key'), isFalse);
 
       final scanItems = await tx.scan();
       expect(scanItems.isEmpty, isTrue);
