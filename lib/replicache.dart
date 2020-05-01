@@ -121,16 +121,21 @@ class Replicache implements ReadTransaction {
 
     print('Using remote: $_remote');
 
+    _open();
+  }
+
+  Future<void> _open() async {
     _opened = _invoke(_name, 'open');
-    _root = _opened.then((_) => _getRoot());
-    _root.then((_) {
-      _scheduleSync(0);
-    });
+    _root = _getRoot();
+    await _root;
+    _scheduleSync(0);
   }
 
   String get name => _name;
   String get remote => _remote;
   String get clientViewAuth => _clientViewAuth;
+
+  bool get closed => _closed;
 
   Future<void> _put(int transactionId, String key, dynamic value) async {
     await _opened;
@@ -304,6 +309,9 @@ class Replicache implements ReadTransaction {
 
   Future<String> _getRoot() async {
     await _opened;
+    if (_closed) {
+      return null;
+    }
     var res = await _invoke(_name, 'getRoot');
     return res['root'];
   }

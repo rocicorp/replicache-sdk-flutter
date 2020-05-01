@@ -52,9 +52,21 @@ void main() {
     }
   });
 
+  Replicache rep, rep2;
+  tearDown(() async {
+    if (rep != null && !rep.closed) {
+      await rep.close();
+      rep = null;
+    }
+    if (rep2 != null && !rep2.closed) {
+      await rep2.close();
+      rep2 = null;
+    }
+  });
+
   test('list and drop', () async {
-    final rep = Replicache('def');
-    final rep2 = Replicache('abc');
+    rep = Replicache('def');
+    rep2 = Replicache('abc');
 
     // There is no way to wait for the implicit open in the constructor.
     await Future.delayed(Duration(seconds: 1));
@@ -76,13 +88,10 @@ void main() {
             equalsDatabaseInfo('def'),
           ]));
     }
-
-    await rep.close();
-    await rep2.close();
   });
 
   test('get, has, scan on empty db', () async {
-    final rep = Replicache('def');
+    rep = Replicache('def');
 
     t(ReadTransaction tx) async {
       expect(await tx.get('key'), isNull);
@@ -94,12 +103,10 @@ void main() {
 
     await t(rep);
     await rep.query(t);
-
-    await rep.close();
   });
 
   test('put, get, has, del inside tx', () async {
-    final rep = Replicache('def');
+    rep = Replicache('def');
     final mut = rep.register('mut', (tx, Map<String, dynamic> args) async {
       final key = args['key'];
       final value = args['value'];
@@ -125,12 +132,10 @@ void main() {
     }.entries) {
       await mut({'key': e.key, 'value': e.value});
     }
-
-    await rep.close();
   });
 
   test('scan', () async {
-    final rep = Replicache('def');
+    rep = Replicache('def');
     final add = rep.register('add-data', addData);
     await add({
       'a/0': 0,
@@ -210,12 +215,10 @@ void main() {
           equalsScanItem('a/1', 1),
           equalsScanItem('a/2', 2),
         ]));
-
-    await rep.close();
   });
 
   test('subscribe', () async {
-    final rep = Replicache('subscribe');
+    rep = Replicache('subscribe');
     final repSub = rep.subscribe((tx) async => (await tx.scan(prefix: 'a/')));
 
     final log = [];
@@ -228,62 +231,60 @@ void main() {
     expect(log, isEmpty);
 
     final add = rep.register('add-data', addData);
-    await add({"a/0": 0});
+    await add({'a/0': 0});
     await nextMicrotask();
     expect(
         log,
         orderedEquals([
-          equalsScanItem("a/0", 0),
+          equalsScanItem('a/0', 0),
         ]));
 
     // We might potentially remove this entry if we start checking equality.
     log.clear();
-    await add({"a/0": 0});
+    await add({'a/0': 0});
     await nextMicrotask();
     expect(
         log,
         orderedEquals([
-          equalsScanItem("a/0", 0),
+          equalsScanItem('a/0', 0),
         ]));
 
     log.clear();
-    await add({"a/1": 1});
+    await add({'a/1': 1});
     await nextMicrotask();
     expect(
         log,
         orderedEquals([
-          equalsScanItem("a/0", 0),
-          equalsScanItem("a/1", 1),
+          equalsScanItem('a/0', 0),
+          equalsScanItem('a/1', 1),
         ]));
 
     log.clear();
     sub.pause();
-    await add({"a/1": 1});
+    await add({'a/1': 1});
     await nextMicrotask();
     expect(log, isEmpty);
 
     log.clear();
     sub.resume();
-    await add({"a/1": 11});
+    await add({'a/1': 11});
     await nextMicrotask();
     expect(
         log,
         orderedEquals([
-          equalsScanItem("a/0", 0),
-          equalsScanItem("a/1", 11),
+          equalsScanItem('a/0', 0),
+          equalsScanItem('a/1', 11),
         ]));
 
     log.clear();
     sub.cancel();
-    await add({"a/1": 11});
+    await add({'a/1': 11});
     await nextMicrotask();
     expect(log, isEmpty);
-
-    await rep.close();
   });
 
   test('subscribe close', () async {
-    final rep = Replicache('subscribe2');
+    rep = Replicache('subscribe2');
     final repSub = rep.subscribe((tx) async => (await tx.get('k')));
 
     final log = [];
@@ -294,7 +295,7 @@ void main() {
     expect(log, isEmpty);
 
     final add = rep.register('add-data', addData);
-    await add({"k": 0});
+    await add({'k': 0});
     await nextMicrotask();
     expect(log, orderedEquals([null, 0]));
 
@@ -323,5 +324,60 @@ void main() {
 
     await repA.close();
     await repB.close();
+  });
+
+  test('register with error', () async {
+    rep = Replicache('regerr');
+
+    final doErr = rep.register('err', (tx, args) async {
+      throw args;
+    });
+
+    try {
+      await doErr(42);
+      fail('Should have thrown');
+    } catch (ex) {
+      expect(ex, 42);
+    }
+  });
+
+  test('subscribe with error', () async {
+    rep = Replicache('suberr');
+
+    final add = rep.register('add-data', addData);
+
+    final repSub = rep.subscribe((tx) async {
+      final v = await tx.get('k');
+      print('v: $v');
+      if (v != null) {
+        throw v;
+      }
+    });
+    await nextMicrotask();
+
+    int gottenValue = 0;
+    final sub = repSub.listen((x) {
+      gottenValue++;
+    });
+
+    var error;
+    sub.onError((e) {
+      error = e;
+    });
+
+    expect(error, isNull);
+    expect(gottenValue, 0);
+
+    await add({'k': 'throw'});
+    expect(gottenValue, 1);
+    await nextMicrotask();
+    expect(error, 'throw');
+
+    await add({'k': null});
+
+    await nextMicrotask();
+    expect(gottenValue, 2);
+
+    await sub.cancel();
   });
 }
