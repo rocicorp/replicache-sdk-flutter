@@ -502,11 +502,6 @@ class ScanItem {
 
   @Deprecated('Use key instead')
   get id => key;
-
-  @override
-  String toString() {
-    return 'ScanItem($key, ${json.encode(value)})';
-  }
 }
 
 /// ReadTransactions are used with [Replicache.query] and allows read operations on the database.
