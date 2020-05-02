@@ -32,7 +32,7 @@ class ScanBound {
   final ScanId id;
   final int index;
   Map<String, dynamic> _json() {
-    var r = {};
+    final Map<String, dynamic> r = {};
     if (this.id != null) {
       r['id'] = this.id._json();
     }
@@ -111,31 +111,31 @@ class Replicache implements ReadTransaction {
   /// If `name` is omitted, it defaults to `remote`.
   Replicache(this._remote, {String name = "", String clientViewAuth = ""})
       : _clientViewAuth = clientViewAuth {
-    if (_platform == null) {
-      _platform = MethodChannel(CHANNEL_NAME);
-      _platform.setMethodCallHandler(_methodChannelHandler);
-    }
-
-    if (this._remote == "") {
+    if (_remote == "") {
       throw new Exception("remote must be non-empty");
     }
     if (name == "") {
-      name = this._remote;
+      name = _remote;
     }
-    this._name = name;
+    _name = name;
 
-    print('Using remote: ' + this._remote);
+    print('Using remote: $_remote');
 
+    _open();
+  }
+
+  Future<void> _open() async {
     _opened = _invoke(_name, 'open');
-    _root = _opened.then((_) => _getRoot());
-    _root.then((_) {
-      this._scheduleSync(0);
-    });
+    _root = _getRoot();
+    await _root;
+    _scheduleSync(0);
   }
 
   String get name => _name;
   String get remote => _remote;
   String get clientViewAuth => _clientViewAuth;
+
+  bool get closed => _closed;
 
   Future<void> _put(int transactionId, String key, dynamic value) async {
     await _opened;
@@ -309,6 +309,9 @@ class Replicache implements ReadTransaction {
 
   Future<String> _getRoot() async {
     await _opened;
+    if (_closed) {
+      return null;
+    }
     var res = await _invoke(_name, 'getRoot');
     return res['root'];
   }
@@ -317,13 +320,17 @@ class Replicache implements ReadTransaction {
     var currentRoot = await _root; // instantaneous except maybe first time
     if (root != null && root != currentRoot) {
       _root = Future.value(root);
-      _fireOnChange();
+      await _fireOnChange();
     }
   }
 
   static Future<dynamic> _invoke(String dbName, String rpc,
       [dynamic args = const {}]) async {
     final enc = JsonUtf8Encoder();
+    if (_platform == null) {
+      _platform = MethodChannel(CHANNEL_NAME);
+      _platform.setMethodCallHandler(_methodChannelHandler);
+    }
     try {
       final r = await _platform.invokeMethod(rpc, [dbName, enc.convert(args)]);
       return r == '' ? null : jsonDecode(r);
@@ -350,7 +357,7 @@ class Replicache implements ReadTransaction {
     }
   }
 
-  void _fireOnChange() async {
+  Future<void> _fireOnChange() async {
     final List<_Subscription> subscriptions = _subscriptions
         .where((s) => !s.streamController.isPaused)
         .toList(growable: false);
@@ -405,6 +412,7 @@ class Replicache implements ReadTransaction {
   /// to ensure you get a consistent view across multiple calls to [get], [has]
   /// and [scan].
   Future<R> query<R>(Future<R> callback(ReadTransaction tx)) async {
+    await _opened;
     final res = await _invoke(_name, 'openTransaction');
     final txId = res['transactionId'];
     try {
@@ -453,6 +461,7 @@ class Replicache implements ReadTransaction {
 
   Future<R> _mutate<R, A>(
       String name, MutatorImpl<R, A> callback, A args) async {
+    await _opened;
     final res =
         await _invoke(_name, 'openTransaction', {'name': name, 'args': args});
     final txId = res['transactionId'];
@@ -466,7 +475,7 @@ class Replicache implements ReadTransaction {
       rethrow;
     }
     // TODO(arv): Deal with failures.
-    _commitTransaction(txId);
+    await _commitTransaction(txId);
     return rv;
   }
 
@@ -481,7 +490,7 @@ class Replicache implements ReadTransaction {
   Future<void> _commitTransaction(txId) async {
     final res =
         await _invoke(_name, 'commitTransaction', {'transactionId': txId});
-    _checkChange(res['ref']);
+    await _checkChange(res['ref']);
   }
 }
 
@@ -495,9 +504,9 @@ class ScanItem {
   ScanItem.fromJson(Map<String, dynamic> data)
       : key = data['key'],
         value = data['value'];
-  String key;
+  final String key;
 
-  var value;
+  final dynamic value;
 
   @Deprecated('Use key instead')
   get id => key;
