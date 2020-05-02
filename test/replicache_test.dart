@@ -8,7 +8,14 @@ import 'package:replicache/database_info.dart';
 import 'package:replicache/replicache.dart';
 import 'package:http/http.dart';
 
-void main() {
+Future<void> main() async {
+  const testServerUrl = 'http://localhost:7002';
+
+  final resp = await get('$testServerUrl/statusz');
+  if (resp.statusCode != 200) {
+    throw Exception('Test server not running');
+  }
+
   Future<void> addData(WriteTransaction tx, Map<String, dynamic> data) async {
     for (final entry in data.entries) {
       await tx.put(entry.key, entry.value);
@@ -35,8 +42,8 @@ void main() {
     final method = methodCall.method;
     final String dbName = methodCall.arguments[0];
     final Uint8List data = methodCall.arguments[1];
-    final resp = await post('http://localhost:7002/?dbname=$dbName&rpc=$method',
-        body: data);
+    final resp =
+        await post('$testServerUrl/?dbname=$dbName&rpc=$method', body: data);
     if (resp.statusCode == 200) {
       return resp.body;
     }
