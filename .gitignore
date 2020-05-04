@@ -12,3 +12,4 @@ pubspec.lock
 **/android/.project
 **/android/app/.project
 **/android/.settings/org.eclipse.buildship.core.prefs
+coverage/**
