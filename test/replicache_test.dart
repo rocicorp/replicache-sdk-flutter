@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
@@ -386,5 +387,36 @@ Future<void> main() async {
     expect(gottenValue, 2);
 
     await sub.cancel();
+  });
+
+  test('conflicting commits', () async {
+    // This test does not use pure functions in the mutations. This is of course
+    // not a good practice but it makes testing easier.
+    final ac = Completer();
+    final bc = Completer();
+
+    rep = Replicache('conflict');
+    final mutA = rep.register('mutA', (tx, v) async {
+      await tx.put('k', v);
+      await ac.future;
+    });
+    final mutB = rep.register('mutB', (tx, v) async {
+      await tx.put('k', v);
+      await bc.future;
+    });
+
+    // Start A and B at the same commit.
+    final resAFuture = mutA('a');
+    final resBFuture = mutB('b');
+
+    // Finish A.
+    ac.complete();
+    await resAFuture;
+    expect(await rep.get('k'), 'a');
+
+    // Finish B. B will conflict and retry!
+    bc.complete();
+    await resBFuture;
+    expect(await rep.get('k'), 'b');
   });
 }
