@@ -474,8 +474,13 @@ class Replicache implements ReadTransaction {
       _closeTransaction(txId);
       rethrow;
     }
-    // TODO(arv): Deal with failures.
-    await _commitTransaction(txId);
+    final commitRes =
+        await _invoke(_name, 'commitTransaction', {'transactionId': txId});
+    if (commitRes['retryCommit'] == true) {
+      return await _mutate(name, callback, args);
+    }
+
+    await _checkChange(commitRes['ref']);
     return rv;
   }
 
@@ -485,12 +490,6 @@ class Replicache implements ReadTransaction {
     } catch (ex) {
       print('Failed to close transaction: $ex');
     }
-  }
-
-  Future<void> _commitTransaction(txId) async {
-    final res =
-        await _invoke(_name, 'commitTransaction', {'transactionId': txId});
-    await _checkChange(res['ref']);
   }
 }
 
