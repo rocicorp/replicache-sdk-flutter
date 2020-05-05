@@ -183,50 +183,32 @@ class _MyHomePageState extends State<MyHomePage> {
     // await _init();
   }
 
-  Mutator<void, Map<String, dynamic>> _todoCreateMutator;
-  Mutator<void, Map<String, dynamic>> _todoDoneMutator;
-  Mutator<void, Map<String, dynamic>> _todoRemoveMutator;
-  Mutator<void, Map<String, dynamic>> _todoReorderMutator;
+  Mutator<void, Map<String, dynamic>> _createTodo;
+  Mutator<void, Map<String, dynamic>> _removeTodo;
+  Mutator<void, Map<String, dynamic>> _updateTodo;
 
   _registerMutations() {
-    _todoCreateMutator = _replicache.register('todo-create',
+    _createTodo = _replicache.register('createTodo',
         (tx, Map<String, dynamic> args) async {
-      int id = args['id'];
-      String text = args['text'];
-      int listId = args['listId'];
-      Iterable<Todo> todos = await todosInListFromTx(tx, listId);
-      final order = newOrderBetween(todos.isEmpty ? null : todos.last, null);
-      await _write(tx, Todo(id, listId, text, false, order));
+      await _write(tx, Todo.fromJson(args));
     });
 
-    _todoDoneMutator = _replicache.register('todo-done',
-        (tx, Map<String, dynamic> args) async {
-      int id = args['id'];
-      bool complete = args['complete'];
-      final todo = await _read(tx, id);
-      if (todo == null) {
-        return;
-      }
-      todo.complete = complete;
-      await _write(tx, todo);
-    });
-
-    _todoRemoveMutator = _replicache.register('todo-remove', (tx, args) async {
+    _removeTodo = _replicache.register('removeTodo', (tx, args) async {
       int id = args['id'];
       await _del(tx, id);
     });
 
-    _todoReorderMutator =
-        _replicache.register('todo-reorder', (tx, args) async {
+    _updateTodo = _replicache.register('updateTodo', (tx, args) async {
       int id = args['id'];
-      double order = args['order'];
       final todo = await _read(tx, id);
       if (todo == null) {
         print('Warning: Possible conflict - Specified Todo $id is not present.'
             ' Skipping reorder.');
         return;
       }
-      todo.order = order;
+      todo.text ??= args['text'] ?? todo.text;
+      todo.complete = args['complete'] ?? todo.complete;
+      todo.order = args['order'] ?? todo.order;
       await _write(tx, todo);
     });
   }
@@ -239,14 +221,23 @@ class _MyHomePageState extends State<MyHomePage> {
 
     Random r = Random.secure();
     int id = r.nextInt(1 << 32);
-    await _todoCreateMutator(
-        {'id': id, 'text': text, 'listId': _selectedListId});
+
+    Iterable<Todo> todos = todosInList(_allTodos, _selectedListId);
+    final order = newOrderBetween(todos.isEmpty ? null : todos.last, null);
+
+    await _createTodo({
+      'id': id,
+      'listId': _selectedListId,
+      'text': text,
+      'complete': false,
+      'order': order,
+    });
   }
 
   Future<void> _handleDone(int id, bool complete) =>
-      _todoDoneMutator({'id': id, 'complete': complete});
+      _updateTodo({'id': id, 'complete': complete});
 
-  Future<void> _handleRemove(int id) => _todoRemoveMutator({'id': id});
+  Future<void> _handleRemove(int id) => _removeTodo({'id': id});
 
   Future<void> _handleReorder(int oldIndex, int newIndex) async {
     if (oldIndex == newIndex) {
@@ -271,7 +262,7 @@ class _MyHomePageState extends State<MyHomePage> {
     }
 
     double order = newOrderBetween(left, right);
-    await _todoReorderMutator({'id': id, 'order': order});
+    await _updateTodo({'id': id, 'order': order});
   }
 
   void _pushAddTodoScreen() {
