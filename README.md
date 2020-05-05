@@ -42,6 +42,7 @@ Replace the contents of `main.dart` with the following:
 ```dart
 import 'package:flutter/material.dart';
 import 'package:replicache/replicache.dart';
+import 'dart:io';
 
 void main() => runApp(MyApp());
 
@@ -64,7 +65,9 @@ class MyHomePage extends StatelessWidget {
   MyHomePage({Key key, this.title}) : super(key: key);
 
   final String title;
-  final Replicache _replicache = new Replicache('http://localhost:7001');
+  // Android emulator cannot use localhost.
+  final db = 'http://${Platform.isAndroid ? '10.0.2.2' : 'localhost'}:7001';
+  final Replicache _replicache = Replicache(db);
 
   @override
   Widget build(BuildContext context) {
