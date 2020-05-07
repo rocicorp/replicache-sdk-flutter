@@ -35,7 +35,7 @@ flutter create todo
 ...
 ```
 
-### 4. Read Data
+### 4. Add main.dart
 
 Replace the contents of `main.dart` with the following:
 
@@ -220,10 +220,12 @@ You will see the Flutter app update and display a new TODO and check off the pre
 
 ### 7. Write Data
 
-TODO (this isn't implemented in the SDK yet)
+Add a Todo by pressing the "+" button in the top-right corner of the app. Periodically the client will attempt to sync and push this change to the server.
 
 
-Congratulations — you are done with the client setup 🎉. Time for a cup of coffee.
+### 8. 🎉
+
+Congratulations — you are done with the client setup! Time for a cup of coffee.
 
 In fact, while you're away, why not turn off the wifi and click around. Your app will respond instantly with cached data and queue up the changes to replay, once you setup the server-side integration.
 
