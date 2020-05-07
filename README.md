@@ -43,6 +43,7 @@ Replace the contents of `main.dart` with the following:
 import 'package:flutter/material.dart';
 import 'package:replicache/replicache.dart';
 import 'dart:io';
+import 'dart:math';
 
 void main() => runApp(MyApp());
 
@@ -62,18 +63,39 @@ class MyApp extends StatelessWidget {
 }
 
 class MyHomePage extends StatelessWidget {
-  MyHomePage({Key key, this.title}) : super(key: key);
-
   final String title;
   // Android emulator cannot use localhost.
   final db = 'http://${Platform.isAndroid ? '10.0.2.2' : 'localhost'}:7001';
-  final Replicache _replicache = Replicache(db);
+  final _random = Random();
+  Replicache _replicache;
+  Mutator _createTodo;
+
+  MyHomePage({Key key, this.title}) : super(key: key) {
+    _replicache = Replicache(db);
+    _createTodo = _replicache.register("createTodo", (tx, args) async {
+      tx.put(args["id"], args);
+    });
+  }
+
+  void _handleAddTodo() {
+    var id = _random.nextInt(2^32-1);
+    _createTodo({"id": id, "text": "Todo $id", "order": 1.0, "complete": false});
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: Text(title),
+        actions: <Widget>[
+          IconButton(
+            icon: const Icon(Icons.add),
+            tooltip: 'Add Todo',
+            onPressed: () {
+              _handleAddTodo();
+            },
+          ),
+        ],
       ),
       body: Center(
         child: StreamBuilder(
