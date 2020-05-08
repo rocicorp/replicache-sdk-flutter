@@ -83,7 +83,6 @@ class _MyHomePageState extends State<MyHomePage> {
         actions: _syncing ? [Icon(Icons.sync)] : [],
       ),
       drawer: TodoDrawer(
-        listIds: _listIds,
         selectedListId: _selectedListId,
         onSelectListId: _selectListId,
         onSync: _replicache?.sync,
@@ -364,7 +363,6 @@ class TodoDrawer extends StatelessWidget {
   final Future<void> Function() onSync;
   final Future<void> Function() onDrop;
   final void Function(int id) onSelectListId;
-  final Iterable<int> listIds;
   final int selectedListId;
   final String email;
 
@@ -372,7 +370,6 @@ class TodoDrawer extends StatelessWidget {
   final void Function() onFakeId;
 
   TodoDrawer({
-    this.listIds = const [],
     this.onSync,
     this.onDrop,
     this.onFakeId,
@@ -399,30 +396,10 @@ class TodoDrawer extends StatelessWidget {
         ),
       ),
       ListTile(
-        title: Text(
-          'LISTS',
-          style: TextStyle(
-            letterSpacing: 3,
-            fontWeight: FontWeight.normal,
-            color: Colors.grey,
-          ),
-        ),
-      ),
-    ];
-    children.addAll(listIds.map((id) => ListTile(
-        title: Text('List #$id'),
-        selected: selectedListId == id,
-        onTap: () {
-          onSelectListId(id);
-          Navigator.pop(context);
-        })));
-    children.add(Divider());
-    children.add(
-      ListTile(
         title: Text('Sync'),
         onTap: onSync,
       ),
-    );
+    ];
     if (onDrop != null) {
       children.add(
         ListTile(
