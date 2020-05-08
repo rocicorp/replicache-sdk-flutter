@@ -44,6 +44,8 @@ class _MyHomePageState extends State<MyHomePage> {
   LoginResult _loginResult;
   LoginPrefs _loginPrefs;
 
+  final Random _random = Random.secure();
+
   _MyHomePageState() {
     _loginPrefs = LoginPrefs(() => context);
     _init();
@@ -219,8 +221,7 @@ class _MyHomePageState extends State<MyHomePage> {
       return;
     }
 
-    Random r = Random.secure();
-    int id = r.nextInt(1 << 32);
+    int id = _random.nextInt(1 << 32);
 
     Iterable<Todo> todos = todosInList(_allTodos, _selectedListId);
     final order = newOrderBetween(todos.isEmpty ? null : todos.last, null);
