@@ -524,22 +524,23 @@ abstract class ReadTransaction {
 }
 
 class _ReadTransactionImpl implements ReadTransaction {
-  final Replicache _db;
+  final Replicache _rep;
   final int _transactionId;
 
-  _ReadTransactionImpl(this._db, this._transactionId);
+  _ReadTransactionImpl(this._rep, this._transactionId);
 
   Future<dynamic> get(String key) {
-    return _db._get(_transactionId, key);
+    // TODO(arv): Move implementations to the TX.
+    return _rep._get(_transactionId, key);
   }
 
   Future<bool> has(String key) {
-    return _db._has(_transactionId, key);
+    return _rep._has(_transactionId, key);
   }
 
   Future<Iterable<ScanItem>> scan(
       {String prefix = '', ScanBound start, int limit = 50}) {
-    return _db._scan(_transactionId,
+    return _rep._scan(_transactionId,
         prefix: prefix, start: start, limit: limit);
   }
 }
@@ -557,17 +558,19 @@ class _SubscriptionError<E> {
 /// WriteTransactions are used with [Replicache.register] and allows read and
 /// write operations on the database.
 class WriteTransaction extends _ReadTransactionImpl {
-  WriteTransaction._new(db, transactionId) : super(db, transactionId);
+  WriteTransaction._new(Replicache rep, int transactionId)
+      : super(rep, transactionId);
 
   /// Sets a single value in the database. The [value] will be encoded using
   /// [json.encode].
   Future<void> put(String key, dynamic value) {
-    return _db._put(_transactionId, key, value);
+    return _rep._put(_transactionId, key, value);
   }
 
   /// Removes a key and its value from the database. Returns true if there was a
   /// key to remove.
   Future<bool> del(String key) {
-    return _db._del(_transactionId, key);
+    return _rep._del(_transactionId, key);
   }
+}
 }
