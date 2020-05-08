@@ -57,13 +57,15 @@ class Replicache implements ReadTransaction {
   static MethodChannel _platform;
 
   SyncHandler onSync;
-  AuthTokenGetter getClientViewAuth;
+  AuthTokenGetter getDataLayerAuth;
 
   static bool logVerbosely = true;
 
-  String _name;
-  String _remote;
-  String _clientViewAuth;
+  final Map<String, MutatorImpl> _mutatorRegistry = {};
+  final String _name;
+  final String _diffServerUrl;
+  String _dataLayerAuth;
+  final String _batchUrl;
   Future<String> _root;
   Future<dynamic> _opened;
   Timer _timer;
@@ -92,31 +94,66 @@ class Replicache implements ReadTransaction {
 
   /// Create or open a local Replicache database with named `name` synchronizing with `remote`.
   /// If `name` is omitted, it defaults to `remote`.
-  Replicache(this._remote, {String name = "", String clientViewAuth = ""})
-      : _clientViewAuth = clientViewAuth {
-    if (_remote == "") {
-      throw new Exception("remote must be non-empty");
-    }
-    if (name == "") {
-      name = _remote;
-    }
-    _name = name;
-
-    print('Using remote: $_remote');
-
-    _open();
+  factory Replicache(
+    String diffServerUrl, {
+    String name = '',
+    String dataLayerAuth = '',
+    String batchUrl = '',
+  }) {
+    final rep = Replicache._new(
+      diffServerUrl,
+      name: name,
+      dataLayerAuth: dataLayerAuth,
+      batchUrl: batchUrl,
+      startSync: true,
+    );
+    rep._open(true);
+    return rep;
   }
 
-  Future<void> _open() async {
+  Replicache._new(
+    this._diffServerUrl, {
+    String name = '',
+    String dataLayerAuth = '',
+    String batchUrl = '',
+    bool startSync,
+  })  : _dataLayerAuth = dataLayerAuth,
+        _batchUrl = batchUrl,
+        _name = name.isEmpty ? _diffServerUrl : name {
+    if (_diffServerUrl.isEmpty) {
+      throw Exception("remote must be non-empty");
+    }
+    _open(startSync);
+  }
+
+  static Future<Replicache> forTesting(
+    String remote, {
+    String name = '',
+    String dataLayerAuth = '',
+    String batchUrl = '',
+  }) async {
+    final rep = _ReplicacheTest._new(
+      remote,
+      name: name,
+      dataLayerAuth: dataLayerAuth,
+      batchUrl: batchUrl,
+    );
+    await rep._opened;
+    return rep;
+  }
+
+  Future<void> _open(bool startSync) async {
     _opened = _invoke(_name, 'open');
     _root = _getRoot();
     await _root;
-    _scheduleSync(0);
+    if (startSync) {
+      _scheduleSync(0);
+    }
   }
 
   String get name => _name;
-  String get remote => _remote;
-  String get clientViewAuth => _clientViewAuth;
+  String get remote => _diffServerUrl;
+  String get dataLayerAuth => _dataLayerAuth;
 
   bool get closed => _closed;
 
@@ -192,8 +229,104 @@ class Replicache implements ReadTransaction {
   }) =>
       query((tx) => tx.scan(prefix: prefix, start: start, limit: limit));
 
-  /// Synchronizes the database with the server. New local transactions that have been executed since the last
-  /// sync are sent to the server, and new remote transactions are received and replayed.
+  Future<void> _sync() async {
+    await _opened;
+    if (_closed) {
+      return;
+    }
+    final syncHead = await _beginSync();
+    await _maybeEndSync(syncHead);
+  }
+
+  Future<String> _beginSync() async {
+    await _opened;
+    final beginSyncResult = await _invoke(_name, 'beginSync', {
+      'batchPushURL': _batchUrl,
+      'diffServerURL': _diffServerUrl,
+      'dataLayerAuth': _dataLayerAuth,
+    });
+
+    final syncInfo = beginSyncResult['syncInfo'];
+
+    void checkStatus(Map<String, dynamic> data, String serverName) {
+      final httpStatusCode = data['httpStatusCode'];
+      if (data['errorMessage'] != '') {
+        print(
+            'Got error response from $serverName server: $httpStatusCode: ${data['errorMessage']}');
+      }
+      // TODO: Reauth
+    }
+
+    final batchPushInfo = syncInfo['batchPushInfo'];
+    if (batchPushInfo != null) {
+      checkStatus(batchPushInfo, 'batch');
+      final mutationInfos = batchPushInfo['batchPushResponse']['mutationInfos'];
+      if (mutationInfos != null) {
+        for (final mutationInfo in mutationInfos) {
+          print(
+              'MutationInfo: ID: ${mutationInfo['id']}, Error: ${mutationInfo['error']}');
+        }
+      }
+    }
+
+    checkStatus(syncInfo['clientViewInfo'], 'client view');
+
+    return beginSyncResult['syncHead'];
+  }
+
+  Future<void> _maybeEndSync(String syncHead) async {
+    await _opened;
+    if (_closed) {
+      return;
+    }
+    final res = await _invoke(_name, 'maybeEndSync', {'syncHead': syncHead});
+    final replayMutations = res['replayMutations'];
+    if (replayMutations == null || replayMutations.isEmpty) {
+      // All done.
+      await _checkChange(syncHead);
+      return;
+    }
+
+    // Replay.
+    for (final Map<String, dynamic> mutation in replayMutations) {
+      syncHead = await _replay(
+        syncHead,
+        mutation['original'],
+        mutation['name'],
+        mutation['args'],
+      );
+    }
+
+    await _maybeEndSync(syncHead);
+  }
+
+  Future<String> _replay<R, A>(
+    String basis,
+    String original,
+    String name,
+    A args,
+  ) async {
+    final mutatorImpl = _mutatorRegistry[name];
+    final res = await _mutate(
+      name,
+      mutatorImpl,
+      args,
+      invokeArgs: {
+        'rebaseOpts': {
+          'basis': basis,
+          'original': original,
+        }
+      },
+      shouldCheckChange: false,
+    );
+    return res.ref;
+  }
+
+  /// Synchronizes this cache with the server. New local mutations are sent to
+  /// the server, and the latest server state is applied to the cache. Any local
+  /// mutations not included in the new server state are replayed. See the
+  /// Replicache design document for more information on sync:
+  /// https://github.com/rocicorp/replicache/blob/master/design.md
   Future<void> sync() async {
     await _opened;
     if (_closed) {
@@ -210,40 +343,10 @@ class Replicache implements ReadTransaction {
     try {
       _timer.cancel();
       _timer = null;
-
-      for (var i = 0;; i++) {
-        Map<String, dynamic> result = await _invoke(_name, 'pull', {
-          'remote': _remote,
-          'clientViewAuth': _clientViewAuth,
-        });
-        if (result.containsKey('error') &&
-            result['error'].containsKey('badAuth')) {
-          _reauthenticating = true;
-          print('Auth error: ${result['error']['badAuth']}');
-          if (getClientViewAuth == null) {
-            print('Auth error: getAuthToken is null');
-            break;
-          }
-          if (i == 2) {
-            break;
-          }
-          print('Refreshing auth token to try again...');
-          this._clientViewAuth = await getClientViewAuth();
-          _reauthenticating = false;
-        } else {
-          await _checkChange(result['root']);
-          break;
-        }
-      }
-      _scheduleSync(5);
-    } catch (e) {
-      // We are seeing some consistency errors during sync -- we push commits,
-      // then turn around and fetch them and expect to see them, but don't.
-      // that is bad, but for now, just retry.
-      print('Error syncing: ' + this._remote + ': ' + e.toString());
-      _scheduleSync(1);
+      await _sync();
     } finally {
       this._fireOnSync(false);
+      _scheduleSync(5);
     }
   }
 
@@ -399,20 +502,37 @@ class Replicache implements ReadTransaction {
   /// the cache while they run.
   Mutator<Return, Args> register<Return, Args>(
     String name,
-    MutatorImpl<Return, Args> callback,
-  ) =>
-      (Args args) => _mutate(name, callback, args);
+    MutatorImpl<Return, Args> mutatorImpl,
+  ) {
+    _mutatorRegistry[name] = mutatorImpl as MutatorImpl;
+    return (Args args) async => (await _mutate(
+          name,
+          mutatorImpl,
+          args,
+          shouldCheckChange: true,
+        ))
+            .result;
+  }
 
-  Future<R> _mutate<R, A>(
-      String name, MutatorImpl<R, A> callback, A args) async {
+  Future<_MutateResult<R>> _mutate<R, A>(
+    String name,
+    MutatorImpl<R, A> mutatorImpl,
+    A args, {
+    Map<String, dynamic> invokeArgs,
+    @required bool shouldCheckChange,
+  }) async {
     await _opened;
-    final res =
-        await _invoke(_name, 'openTransaction', {'name': name, 'args': args});
+    final actualInvokeArgs = {'args': args, 'name': name};
+    if (invokeArgs != null) {
+      actualInvokeArgs.addAll(invokeArgs);
+    }
+
+    final res = await _invoke(_name, 'openTransaction', actualInvokeArgs);
     final txId = res['transactionId'];
     R rv;
     try {
       final tx = WriteTransaction._new(this, txId);
-      rv = await Function.apply(callback, [tx, args]);
+      rv = await Function.apply(mutatorImpl, [tx, args]);
     } catch (ex) {
       // No need to await the response.
       _closeTransaction(txId);
@@ -421,11 +541,20 @@ class Replicache implements ReadTransaction {
     final commitRes =
         await _invoke(_name, 'commitTransaction', {'transactionId': txId});
     if (commitRes['retryCommit'] == true) {
-      return await _mutate(name, callback, args);
+      return await _mutate(
+        name,
+        mutatorImpl,
+        args,
+        invokeArgs: invokeArgs,
+        shouldCheckChange: shouldCheckChange,
+      );
     }
 
-    await _checkChange(commitRes['ref']);
-    return rv;
+    final ref = commitRes['ref'];
+    if (shouldCheckChange) {
+      await _checkChange(ref);
+    }
+    return _MutateResult(rv, ref);
   }
 
   Future<void> _closeTransaction(int txId) async {
@@ -435,6 +564,25 @@ class Replicache implements ReadTransaction {
       print('Failed to close transaction: $ex');
     }
   }
+}
+
+class _ReplicacheTest extends Replicache {
+  _ReplicacheTest._new(
+    String remote, {
+    String name = '',
+    String dataLayerAuth = '',
+    String batchUrl = '',
+  }) : super._new(remote,
+            name: name,
+            dataLayerAuth: dataLayerAuth,
+            batchUrl: batchUrl,
+            startSync: false);
+
+  Future<String> beginSync() => super._beginSync();
+
+  Future<void> maybeEndSync(String syncHead) => super._maybeEndSync(syncHead);
+
+  Future<void> syncNow() => super._sync();
 }
 
 class _Subscription<R> {
@@ -516,4 +664,10 @@ class WriteTransaction extends _ReadTransactionImpl {
   Future<bool> del(String key) {
     return _rep._del(_transactionId, key);
   }
+}
+
+class _MutateResult<R> {
+  final R result;
+  final String ref;
+  _MutateResult(this.result, this.ref);
 }

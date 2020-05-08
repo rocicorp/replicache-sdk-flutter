@@ -111,12 +111,13 @@ class _MyHomePageState extends State<MyHomePage> {
 
   Future<void> _initWithLoginResult(LoginResult loginResult) async {
     _replicache = Replicache(
-      db,
+      diffServerUrl,
       name: loginResult.userId,
-      clientViewAuth: loginResult.userId,
+      dataLayerAuth: loginResult.userId,
+      batchUrl: batchUrl,
     );
     _replicache.onSync = _handleSync;
-    _replicache.getClientViewAuth = _getAuthToken;
+    _replicache.getDataLayerAuth = _getAuthToken;
 
     _registerMutations();
 
@@ -184,13 +185,12 @@ class _MyHomePageState extends State<MyHomePage> {
     // await _init();
   }
 
-  Mutator<void, Map<String, dynamic>> _createTodo;
-  Mutator<void, Map<String, dynamic>> _removeTodo;
-  Mutator<void, Map<String, dynamic>> _updateTodo;
+  Mutator _createTodo;
+  Mutator _removeTodo;
+  Mutator _updateTodo;
 
   _registerMutations() {
-    _createTodo = _replicache.register('createTodo',
-        (tx, Map<String, dynamic> args) async {
+    _createTodo = _replicache.register('createTodo', (tx, args) async {
       await _write(tx, Todo.fromJson(args));
     });
 
@@ -220,7 +220,7 @@ class _MyHomePageState extends State<MyHomePage> {
       return;
     }
 
-    int id = _random.nextInt(1 << 32);
+    int id = _random.nextInt(1 << 31);
 
     Iterable<Todo> todos = todosInList(_allTodos, _selectedListId);
     final order = newOrderBetween(todos.isEmpty ? null : todos.last, null);
