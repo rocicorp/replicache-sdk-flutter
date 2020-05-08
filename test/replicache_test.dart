@@ -3,11 +3,51 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:replicache/database_info.dart';
 import 'package:replicache/replicache.dart';
 import 'package:http/http.dart';
+
+class Replay {
+  final String dbName;
+  final String method;
+  final Uint8List data;
+  final String responseBody;
+
+  Replay(this.dbName, this.method, this.data, this.responseBody);
+
+  @override
+  operator ==(dynamic other) =>
+      other is Replay &&
+      other.dbName == dbName &&
+      other.method == method &&
+      listEquals(other.data, data) &&
+      other.responseBody == responseBody;
+
+  @override
+  int get hashCode =>
+      dbName.hashCode ^ method.hashCode ^ data.hashCode ^ responseBody.hashCode;
+
+  Map<String, dynamic> toJson() => {
+        'dbName': dbName,
+        'method': method,
+        'data': utf8.decode(data),
+        'responseBody': responseBody,
+      };
+
+  Replay.fromJson(Map<String, dynamic> data)
+      : dbName = data['dbName'],
+        method = data['method'],
+        data = utf8.encode(data['data']),
+        responseBody = data['responseBody'];
+
+  bool matches(dbName, method, data) =>
+      dbName == this.dbName &&
+      method == this.method &&
+      listEquals(data, this.data);
+}
 
 Future<void> main() async {
   const testServerUrl = 'http://localhost:7002';
@@ -38,14 +78,38 @@ Future<void> main() async {
 
   // TODO(arv): Start the test server from here!
 
+  List replays = [];
+  String recordPath;
+
+  Future<void> useReplay(String path) async {
+    final replaysString = await File(path).readAsString();
+    replays = json
+        .decode(replaysString)
+        .toList()
+        .map((data) => Replay.fromJson(data))
+        .toList();
+  }
+
   const MethodChannel(CHANNEL_NAME)
       .setMockMethodCallHandler((methodCall) async {
     final method = methodCall.method;
     final String dbName = methodCall.arguments[0];
     final Uint8List data = methodCall.arguments[1];
+
+    if (recordPath == null && replays.isNotEmpty) {
+      final i = replays.indexWhere((r) => r.matches(dbName, method, data));
+      expect(i, isNot(-1));
+      final replay = replays[i];
+      replays.removeAt(i);
+      return replay.responseBody;
+    }
+
     final resp =
         await post('$testServerUrl/?dbname=$dbName&rpc=$method', body: data);
     if (resp.statusCode == 200) {
+      if (recordPath != null) {
+        replays.add(Replay(dbName, method, data, resp.body));
+      }
       return resp.body;
     }
     throw Exception(
@@ -54,6 +118,8 @@ Future<void> main() async {
 
   setUp(() async {
     HttpOverrides.global = null;
+    recordPath = null;
+    replays = [];
     final dbs = await Replicache.list();
     for (final DatabaseInfo info in dbs) {
       await Replicache.drop(info.name);
@@ -70,14 +136,19 @@ Future<void> main() async {
       await rep2.close();
       rep2 = null;
     }
+
+    if (recordPath != null) {
+      JsonEncoder encoder = new JsonEncoder.withIndent('  ');
+      await File(recordPath).writeAsString(encoder.convert(replays));
+    }
+
+    recordPath = null;
+    replays = [];
   });
 
   test('list and drop', () async {
-    rep = Replicache('def');
-    rep2 = Replicache('abc');
-
-    // There is no way to wait for the implicit open in the constructor.
-    await Future.delayed(Duration(seconds: 1));
+    rep = await Replicache.forTesting('def');
+    rep2 = await Replicache.forTesting('abc');
 
     final List<DatabaseInfo> dbs = await Replicache.list();
     expect(
@@ -99,7 +170,7 @@ Future<void> main() async {
   });
 
   test('get, has, scan on empty db', () async {
-    rep = Replicache('def');
+    rep = await Replicache.forTesting('def');
 
     t(ReadTransaction tx) async {
       expect(await tx.get('key'), isNull);
@@ -114,7 +185,7 @@ Future<void> main() async {
   });
 
   test('put, get, has, del inside tx', () async {
-    rep = Replicache('def');
+    rep = await Replicache.forTesting('def');
     final mut = rep.register('mut', (tx, Map<String, dynamic> args) async {
       final key = args['key'];
       final value = args['value'];
@@ -143,7 +214,7 @@ Future<void> main() async {
   });
 
   test('scan', () async {
-    rep = Replicache('def');
+    rep = await Replicache.forTesting('def');
     final add = rep.register('add-data', addData);
     await add({
       'a/0': 0,
@@ -226,7 +297,7 @@ Future<void> main() async {
   });
 
   test('subscribe', () async {
-    rep = Replicache('subscribe');
+    rep = await Replicache.forTesting('subscribe');
     final repSub = rep.subscribe((tx) async => (await tx.scan(prefix: 'a/')));
 
     final log = [];
@@ -292,7 +363,7 @@ Future<void> main() async {
   });
 
   test('subscribe close', () async {
-    rep = Replicache('subscribe2');
+    rep = await Replicache.forTesting('subscribe2');
     final repSub = rep.subscribe((tx) async => (await tx.get('k')));
 
     final log = [];
@@ -318,8 +389,8 @@ Future<void> main() async {
   });
 
   test('name', () async {
-    final repA = Replicache('name', name: 'a');
-    final repB = Replicache('name', name: 'b');
+    final repA = await Replicache.forTesting('name', name: 'a');
+    final repB = await Replicache.forTesting('name', name: 'b');
 
     final addA = repA.register('add-data', addData);
     final addB = repB.register('add-data', addData);
@@ -335,7 +406,7 @@ Future<void> main() async {
   });
 
   test('register with error', () async {
-    rep = Replicache('regerr');
+    rep = await Replicache.forTesting('regerr');
 
     final doErr = rep.register('err', (tx, args) async {
       throw args;
@@ -350,7 +421,7 @@ Future<void> main() async {
   });
 
   test('subscribe with error', () async {
-    rep = Replicache('suberr');
+    rep = await Replicache.forTesting('suberr');
 
     final add = rep.register('add-data', addData);
 
@@ -395,7 +466,7 @@ Future<void> main() async {
     final ac = Completer();
     final bc = Completer();
 
-    rep = Replicache('conflict');
+    rep = await Replicache.forTesting('conflict');
     final mutA = rep.register('mutA', (tx, v) async {
       await tx.put('k', v);
       await ac.future;
@@ -418,5 +489,99 @@ Future<void> main() async {
     bc.complete();
     await resBFuture;
     expect(await rep.get('k'), 'b');
+  });
+
+  test('sync', () async {
+    recordPath = './sync_replay.json';
+    // await useReplay('./sync_replay.json');
+
+    rep = await Replicache.forTesting(
+      'http://localhost:7001/pull',
+      name: 'sync',
+      batchUrl: 'https://replicache-sample-todo.now.sh/serve/replicache-batch',
+      dataLayerAuth: '1',
+    );
+
+    Completer c = Completer();
+    c.complete();
+
+    int count = 0;
+
+    final createTodo = rep.register('createTodo', (tx, args) async {
+      count++;
+      await tx.put('/todo/${args['id']}', args);
+      await c.future;
+    });
+
+    final deleteTodo = rep.register('deleteTodo', (tx, args) async {
+      count++;
+      await tx.del('/todo/${args['id']}');
+    });
+
+    final syncHead = await (rep as dynamic).beginSync();
+
+    final id1 = 14323534;
+    final id2 = 22354345;
+    final id3 = 34645673;
+
+    await createTodo({
+      'id': id1,
+      'listId': 1,
+      'text': 'Test',
+      'complete': false,
+      'order': 10000,
+    });
+    expect(count, 1);
+    expect((await rep.get('/todo/$id1'))['text'], 'Test');
+
+    await createTodo({
+      'id': id2,
+      'listId': 1,
+      'text': 'Test 2',
+      'complete': false,
+      'order': 20000,
+    });
+    expect(count, 2);
+    expect((await rep.get('/todo/$id2'))['text'], 'Test 2');
+
+    c = Completer();
+
+    final f = (rep as dynamic).maybeEndSync(syncHead);
+
+    final f2 = createTodo({
+      'id': id3,
+      'listId': 1,
+      'text': 'Test 3',
+      'complete': false,
+      'order': 30000,
+    });
+
+    c.complete();
+
+    await f2;
+    expect((await rep.get('/todo/$id3'))['text'], 'Test 3');
+
+    await f;
+    expect(count, 6);
+
+    {
+      await Future.delayed(Duration(seconds: 1));
+      final syncHead = await (rep as dynamic).beginSync();
+      await (rep as dynamic).maybeEndSync(syncHead);
+      expect(count, 6);
+    }
+
+    {
+      await Future.delayed(Duration(seconds: 1));
+      final syncHead = await (rep as dynamic).beginSync();
+      await (rep as dynamic).maybeEndSync(syncHead);
+      expect(count, 6);
+    }
+
+    await deleteTodo({'id': id1});
+    await deleteTodo({'id': id2});
+    await deleteTodo({'id': id3});
+
+    await (rep as dynamic).syncNow();
   });
 }
