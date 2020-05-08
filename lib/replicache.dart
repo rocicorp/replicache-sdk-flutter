@@ -31,10 +31,10 @@ class ScanBound {
   ScanBound(this.id, this.index);
   final ScanId id;
   final int index;
-  Map<String, dynamic> _json() {
+  Map<String, dynamic> toJson() {
     final Map<String, dynamic> r = {};
     if (this.id != null) {
-      r['id'] = this.id._json();
+      r['id'] = this.id;
     }
     if (this.index != null) {
       r['index'] = this.index;
@@ -47,7 +47,7 @@ class ScanId {
   ScanId(this.value, this.exclusive);
   final String value;
   final bool exclusive;
-  Map<String, dynamic> _json() {
+  Map<String, dynamic> toJson() {
     return {
       'value': value ?? '',
       'exclusive': exclusive ?? false,
@@ -194,7 +194,7 @@ class Replicache implements ReadTransaction {
       'limit': limit,
     };
     if (start != null) {
-      args['start'] = start._json();
+      args['start'] = start;
     }
     List<dynamic> r = await _invoke(_name, 'scan', args);
     await _opened;
@@ -572,5 +572,4 @@ class WriteTransaction extends _ReadTransactionImpl {
   Future<bool> del(String key) {
     return _rep._del(_transactionId, key);
   }
-}
 }
