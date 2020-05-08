@@ -9,23 +9,11 @@ import 'database_info.dart';
 const CHANNEL_NAME = 'replicache.dev';
 
 typedef void SyncHandler(bool syncing);
-typedef void SyncProgressHandler(SyncProgress progress);
 typedef Future<String> AuthTokenGetter();
 
 typedef Future<Return> Mutator<Return, Args>(Args args);
 typedef Future<Return> MutatorImpl<Return, Args>(
     WriteTransaction tx, Args args);
-
-class SyncProgress {
-  const SyncProgress._new(this.bytesReceived, this.bytesExpected);
-  final int bytesReceived;
-  final int bytesExpected;
-  bool equals(SyncProgress other) {
-    return other != null &&
-        other.bytesExpected == bytesExpected &&
-        other.bytesReceived == bytesReceived;
-  }
-}
 
 class ScanBound {
   ScanBound(this.id, this.index);
@@ -69,13 +57,9 @@ class Replicache implements ReadTransaction {
   static MethodChannel _platform;
 
   SyncHandler onSync;
-  SyncProgressHandler onSyncProgress;
   AuthTokenGetter getClientViewAuth;
 
   static bool logVerbosely = true;
-
-  /// Gets the last sync progress for this repo.
-  SyncProgress get syncProgress => _syncProgress;
 
   String _name;
   String _remote;
@@ -85,7 +69,6 @@ class Replicache implements ReadTransaction {
   Timer _timer;
   bool _closed = false;
   bool _reauthenticating = false;
-  SyncProgress _syncProgress = SyncProgress._new(0, 0);
   Set<_Subscription> _subscriptions = Set();
 
   /// Lists information about available local databases.
@@ -224,31 +207,6 @@ class Replicache implements ReadTransaction {
 
     _fireOnSync(true);
 
-    Timer progressTimer;
-
-    final checkProgress = () async {
-      if (_closed || _reauthenticating) {
-        progressTimer.cancel();
-        return;
-      }
-      final result = await _invoke(_name, 'pullProgress', {});
-      int r = result['bytesReceived'];
-      int e = result['bytesExpected'];
-      if (r == 0 && e == 0) {
-        return;
-      }
-      if (e == 0) {
-        e = r;
-      }
-      _fireOnSyncProgress(SyncProgress._new(r, e));
-    };
-
-    _syncProgress = const SyncProgress._new(0, 0);
-
-    progressTimer = Timer.periodic(new Duration(milliseconds: 500), (Timer t) {
-      checkProgress();
-    });
-
     try {
       _timer.cancel();
       _timer = null;
@@ -285,8 +243,6 @@ class Replicache implements ReadTransaction {
       print('Error syncing: ' + this._remote + ': ' + e.toString());
       _scheduleSync(1);
     } finally {
-      progressTimer.cancel();
-      await checkProgress();
       this._fireOnSync(false);
     }
   }
@@ -342,18 +298,6 @@ class Replicache implements ReadTransaction {
   void _fireOnSync(bool syncing) {
     if (onSync != null) {
       scheduleMicrotask(() => onSync(syncing));
-    }
-  }
-
-  void _fireOnSyncProgress(SyncProgress p) {
-    if (_syncProgress != null &&
-        p.bytesExpected == _syncProgress.bytesExpected &&
-        p.bytesReceived == _syncProgress.bytesReceived) {
-      return;
-    }
-    _syncProgress = p;
-    if (onSyncProgress != null) {
-      scheduleMicrotask(() => onSyncProgress(p));
     }
   }
 
