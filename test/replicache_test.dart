@@ -57,7 +57,7 @@ Future<void> main() async {
     throw Exception('Test server not running');
   }
 
-  Future<void> addData(WriteTransaction tx, Map<String, dynamic> data) async {
+  Future<void> addData(WriteTransaction tx, dynamic data) async {
     for (final entry in data.entries) {
       await tx.put(entry.key, entry.value);
     }
@@ -186,7 +186,7 @@ Future<void> main() async {
 
   test('put, get, has, del inside tx', () async {
     rep = await Replicache.forTesting('def');
-    final mut = rep.register('mut', (tx, Map<String, dynamic> args) async {
+    final mut = rep.register('mut', (tx, args) async {
       final key = args['key'];
       final value = args['value'];
       await tx.put(key, value);
