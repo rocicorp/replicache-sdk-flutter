@@ -186,7 +186,7 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   Mutator _createTodo;
-  Mutator _removeTodo;
+  Mutator _deleteTodo;
   Mutator _updateTodo;
 
   _registerMutations() {
@@ -194,7 +194,7 @@ class _MyHomePageState extends State<MyHomePage> {
       await _write(tx, Todo.fromJson(args));
     });
 
-    _removeTodo = _replicache.register('removeTodo', (tx, args) async {
+    _deleteTodo = _replicache.register('deleteTodo', (tx, args) async {
       int id = args['id'];
       await _del(tx, id);
     });
@@ -237,7 +237,7 @@ class _MyHomePageState extends State<MyHomePage> {
   Future<void> _handleDone(int id, bool complete) =>
       _updateTodo({'id': id, 'complete': complete});
 
-  Future<void> _handleRemove(int id) => _removeTodo({'id': id});
+  Future<void> _handleRemove(int id) => _deleteTodo({'id': id});
 
   Future<void> _handleReorder(int oldIndex, int newIndex) async {
     if (oldIndex == newIndex) {
