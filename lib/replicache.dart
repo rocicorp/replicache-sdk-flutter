@@ -148,7 +148,9 @@ class Replicache implements ReadTransaction {
     _opened = _staticInvoke(_name, 'open');
     _root = _getRoot();
     await _root;
-    _scheduleSync();
+    if (_syncInterval != null) {
+      await sync();
+    }
   }
 
   String get name => _name;
