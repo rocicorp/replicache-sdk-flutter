@@ -15,7 +15,7 @@
     "dbName": "sync",
     "method": "beginSync",
     "data": "{\"batchPushURL\":\"https://replicache-sample-todo.now.sh/serve/replicache-batch\",\"diffServerURL\":\"http://localhost:7001/pull\",\"dataLayerAuth\":\"1\"}",
-    "responseBody": "{\"syncHead\":\"qq0ogn7i7q5calvg386d7t3itpdgeca5\",\"syncInfo\":{\"clientViewInfo\":{\"httpStatusCode\":200,\"errorMessage\":\"\"}}}"
+    "responseBody": "{\"syncHead\":\"qdm2lmmaqa8vfergtnj5na36c3akr3s8\",\"syncInfo\":{\"clientViewInfo\":{\"httpStatusCode\":200,\"errorMessage\":\"\"}}}"
   },
   {
     "dbName": "sync",
@@ -33,7 +33,7 @@
     "dbName": "sync",
     "method": "commitTransaction",
     "data": "{\"transactionId\":1}",
-    "responseBody": "{\"ref\":\"vk7t494u5oij0ph6bi7uii7s5a6902os\"}"
+    "responseBody": "{\"ref\":\"gamdlav3h91qiv9iknlj2nekq1rh9gg0\"}"
   },
   {
     "dbName": "sync",
@@ -43,15 +43,15 @@
   },
   {
     "dbName": "sync",
-    "method": "closeTransaction",
-    "data": "{\"transactionId\":2}",
-    "responseBody": "{}"
-  },
-  {
-    "dbName": "sync",
     "method": "openTransaction",
     "data": "{}",
     "responseBody": "{\"transactionId\":3}"
+  },
+  {
+    "dbName": "sync",
+    "method": "closeTransaction",
+    "data": "{\"transactionId\":2}",
+    "responseBody": "{}"
   },
   {
     "dbName": "sync",
@@ -81,7 +81,7 @@
     "dbName": "sync",
     "method": "commitTransaction",
     "data": "{\"transactionId\":4}",
-    "responseBody": "{\"ref\":\"ubeok52eumbi3e96fnnj40q256uiukuv\"}"
+    "responseBody": "{\"ref\":\"ac1mt9v3l5edaai7vgqb4j6vu19b3od8\"}"
   },
   {
     "dbName": "sync",
@@ -115,27 +115,27 @@
   },
   {
     "dbName": "sync",
+    "method": "maybeEndSync",
+    "data": "{\"syncHead\":\"qdm2lmmaqa8vfergtnj5na36c3akr3s8\"}",
+    "responseBody": "{\"replayMutations\":[{\"id\":1,\"name\":\"createTodo\",\"args\":{\"complete\":false,\"id\":14323534,\"listId\":1,\"order\":10000,\"text\":\"Test\"},\"original\":\"gamdlav3h91qiv9iknlj2nekq1rh9gg0\"},{\"id\":2,\"name\":\"createTodo\",\"args\":{\"complete\":false,\"id\":22354345,\"listId\":1,\"order\":20000,\"text\":\"Test 2\"},\"original\":\"ac1mt9v3l5edaai7vgqb4j6vu19b3od8\"}]}"
+  },
+  {
+    "dbName": "sync",
     "method": "openTransaction",
     "data": "{\"args\":{\"id\":34645673,\"listId\":1,\"text\":\"Test 3\",\"complete\":false,\"order\":30000},\"name\":\"createTodo\"}",
     "responseBody": "{\"transactionId\":7}"
   },
   {
     "dbName": "sync",
-    "method": "maybeEndSync",
-    "data": "{\"syncHead\":\"qq0ogn7i7q5calvg386d7t3itpdgeca5\"}",
-    "responseBody": "{\"replayMutations\":[{\"id\":1,\"name\":\"createTodo\",\"args\":{\"complete\":false,\"id\":14323534,\"listId\":1,\"order\":10000,\"text\":\"Test\"},\"original\":\"vk7t494u5oij0ph6bi7uii7s5a6902os\"},{\"id\":2,\"name\":\"createTodo\",\"args\":{\"complete\":false,\"id\":22354345,\"listId\":1,\"order\":20000,\"text\":\"Test 2\"},\"original\":\"ubeok52eumbi3e96fnnj40q256uiukuv\"}]}"
+    "method": "openTransaction",
+    "data": "{\"args\":{\"complete\":false,\"id\":14323534,\"listId\":1,\"order\":10000,\"text\":\"Test\"},\"name\":\"createTodo\",\"rebaseOpts\":{\"basis\":\"qdm2lmmaqa8vfergtnj5na36c3akr3s8\",\"original\":\"gamdlav3h91qiv9iknlj2nekq1rh9gg0\"}}",
+    "responseBody": "{\"transactionId\":8}"
   },
   {
     "dbName": "sync",
     "method": "put",
     "data": "{\"transactionId\":7,\"key\":\"/todo/34645673\",\"value\":{\"id\":34645673,\"listId\":1,\"text\":\"Test 3\",\"complete\":false,\"order\":30000}}",
     "responseBody": "{}"
-  },
-  {
-    "dbName": "sync",
-    "method": "openTransaction",
-    "data": "{\"args\":{\"complete\":false,\"id\":14323534,\"listId\":1,\"order\":10000,\"text\":\"Test\"},\"name\":\"createTodo\",\"rebaseOpts\":{\"basis\":\"qq0ogn7i7q5calvg386d7t3itpdgeca5\",\"original\":\"vk7t494u5oij0ph6bi7uii7s5a6902os\"}}",
-    "responseBody": "{\"transactionId\":8}"
   },
   {
     "dbName": "sync",
@@ -146,31 +146,37 @@
   {
     "dbName": "sync",
     "method": "commitTransaction",
-    "data": "{\"transactionId\":7}",
-    "responseBody": "{\"ref\":\"78qpfqdn8s7s33hfp9204s644lb4gk5a\"}"
+    "data": "{\"transactionId\":8}",
+    "responseBody": "{\"ref\":\"9vqk7rpjnli9lic6ogsqq8tfcgplp6qq\"}"
   },
   {
     "dbName": "sync",
     "method": "commitTransaction",
-    "data": "{\"transactionId\":8}",
-    "responseBody": "{\"ref\":\"rsq5mmblsf8pkvqkrg3b76ffj5rl706g\"}"
+    "data": "{\"transactionId\":7}",
+    "responseBody": "{\"ref\":\"hnbkai7m8fgs6u7nd83efco7u7utar4g\"}"
   },
   {
     "dbName": "sync",
     "method": "openTransaction",
-    "data": "{}",
+    "data": "{\"args\":{\"complete\":false,\"id\":22354345,\"listId\":1,\"order\":20000,\"text\":\"Test 2\"},\"name\":\"createTodo\",\"rebaseOpts\":{\"basis\":\"9vqk7rpjnli9lic6ogsqq8tfcgplp6qq\",\"original\":\"ac1mt9v3l5edaai7vgqb4j6vu19b3od8\"}}",
     "responseBody": "{\"transactionId\":9}"
   },
   {
     "dbName": "sync",
     "method": "openTransaction",
-    "data": "{\"args\":{\"complete\":false,\"id\":22354345,\"listId\":1,\"order\":20000,\"text\":\"Test 2\"},\"name\":\"createTodo\",\"rebaseOpts\":{\"basis\":\"rsq5mmblsf8pkvqkrg3b76ffj5rl706g\",\"original\":\"ubeok52eumbi3e96fnnj40q256uiukuv\"}}",
+    "data": "{}",
     "responseBody": "{\"transactionId\":10}"
   },
   {
     "dbName": "sync",
+    "method": "put",
+    "data": "{\"transactionId\":9,\"key\":\"/todo/22354345\",\"value\":{\"complete\":false,\"id\":22354345,\"listId\":1,\"order\":20000,\"text\":\"Test 2\"}}",
+    "responseBody": "{}"
+  },
+  {
+    "dbName": "sync",
     "method": "closeTransaction",
-    "data": "{\"transactionId\":9}",
+    "data": "{\"transactionId\":10}",
     "responseBody": "{}"
   },
   {
@@ -181,9 +187,9 @@
   },
   {
     "dbName": "sync",
-    "method": "put",
-    "data": "{\"transactionId\":10,\"key\":\"/todo/22354345\",\"value\":{\"complete\":false,\"id\":22354345,\"listId\":1,\"order\":20000,\"text\":\"Test 2\"}}",
-    "responseBody": "{}"
+    "method": "commitTransaction",
+    "data": "{\"transactionId\":9}",
+    "responseBody": "{\"ref\":\"elfrboi5p9hga2b8kiqi90ot46pfimmd\"}"
   },
   {
     "dbName": "sync",
@@ -193,9 +199,9 @@
   },
   {
     "dbName": "sync",
-    "method": "commitTransaction",
-    "data": "{\"transactionId\":10}",
-    "responseBody": "{\"ref\":\"5fvm8ikclcfmr6mn2v7025esnonaoli0\"}"
+    "method": "maybeEndSync",
+    "data": "{\"syncHead\":\"elfrboi5p9hga2b8kiqi90ot46pfimmd\"}",
+    "responseBody": "{\"replayMutations\":[{\"id\":3,\"name\":\"createTodo\",\"args\":{\"complete\":false,\"id\":34645673,\"listId\":1,\"order\":30000,\"text\":\"Test 3\"},\"original\":\"hnbkai7m8fgs6u7nd83efco7u7utar4g\"}]}"
   },
   {
     "dbName": "sync",
@@ -205,14 +211,8 @@
   },
   {
     "dbName": "sync",
-    "method": "maybeEndSync",
-    "data": "{\"syncHead\":\"5fvm8ikclcfmr6mn2v7025esnonaoli0\"}",
-    "responseBody": "{\"replayMutations\":[{\"id\":3,\"name\":\"createTodo\",\"args\":{\"complete\":false,\"id\":34645673,\"listId\":1,\"order\":30000,\"text\":\"Test 3\"},\"original\":\"78qpfqdn8s7s33hfp9204s644lb4gk5a\"}]}"
-  },
-  {
-    "dbName": "sync",
     "method": "openTransaction",
-    "data": "{\"args\":{\"complete\":false,\"id\":34645673,\"listId\":1,\"order\":30000,\"text\":\"Test 3\"},\"name\":\"createTodo\",\"rebaseOpts\":{\"basis\":\"5fvm8ikclcfmr6mn2v7025esnonaoli0\",\"original\":\"78qpfqdn8s7s33hfp9204s644lb4gk5a\"}}",
+    "data": "{\"args\":{\"complete\":false,\"id\":34645673,\"listId\":1,\"order\":30000,\"text\":\"Test 3\"},\"name\":\"createTodo\",\"rebaseOpts\":{\"basis\":\"elfrboi5p9hga2b8kiqi90ot46pfimmd\",\"original\":\"hnbkai7m8fgs6u7nd83efco7u7utar4g\"}}",
     "responseBody": "{\"transactionId\":12}"
   },
   {
@@ -225,12 +225,12 @@
     "dbName": "sync",
     "method": "commitTransaction",
     "data": "{\"transactionId\":12}",
-    "responseBody": "{\"ref\":\"nq7m59om89ait8hn6c7chtt3u85plfdl\"}"
+    "responseBody": "{\"ref\":\"q2kdg2tqqnar8fkdrshj71bso551rfgq\"}"
   },
   {
     "dbName": "sync",
     "method": "maybeEndSync",
-    "data": "{\"syncHead\":\"nq7m59om89ait8hn6c7chtt3u85plfdl\"}",
+    "data": "{\"syncHead\":\"q2kdg2tqqnar8fkdrshj71bso551rfgq\"}",
     "responseBody": "{}"
   },
   {
@@ -249,12 +249,12 @@
     "dbName": "sync",
     "method": "beginSync",
     "data": "{\"batchPushURL\":\"https://replicache-sample-todo.now.sh/serve/replicache-batch\",\"diffServerURL\":\"http://localhost:7001/pull\",\"dataLayerAuth\":\"1\"}",
-    "responseBody": "{\"syncHead\":\"lppkihqmmn1mdm430n8nnbclnhj2lshh\",\"syncInfo\":{\"batchPushInfo\":{\"httpStatusCode\":200,\"errorMessage\":\"\",\"batchPushResponse\":{}},\"clientViewInfo\":{\"httpStatusCode\":200,\"errorMessage\":\"\"}}}"
+    "responseBody": "{\"syncHead\":\"sg2saqb94k1o3boihfor6stbetdfg41k\",\"syncInfo\":{\"batchPushInfo\":{\"httpStatusCode\":200,\"errorMessage\":\"\",\"batchPushResponse\":{}},\"clientViewInfo\":{\"httpStatusCode\":200,\"errorMessage\":\"\"}}}"
   },
   {
     "dbName": "sync",
     "method": "maybeEndSync",
-    "data": "{\"syncHead\":\"lppkihqmmn1mdm430n8nnbclnhj2lshh\"}",
+    "data": "{\"syncHead\":\"sg2saqb94k1o3boihfor6stbetdfg41k\"}",
     "responseBody": "{}"
   },
   {
@@ -273,12 +273,12 @@
     "dbName": "sync",
     "method": "beginSync",
     "data": "{\"batchPushURL\":\"https://replicache-sample-todo.now.sh/serve/replicache-batch\",\"diffServerURL\":\"http://localhost:7001/pull\",\"dataLayerAuth\":\"1\"}",
-    "responseBody": "{\"syncHead\":\"47t98ajdphfp0fk034b8bthcvcuio9rs\",\"syncInfo\":{\"clientViewInfo\":{\"httpStatusCode\":200,\"errorMessage\":\"\"}}}"
+    "responseBody": "{\"syncHead\":\"1uj0jjckgrr8etqjshigqfpdnbi1kal8\",\"syncInfo\":{\"clientViewInfo\":{\"httpStatusCode\":200,\"errorMessage\":\"\"}}}"
   },
   {
     "dbName": "sync",
     "method": "maybeEndSync",
-    "data": "{\"syncHead\":\"47t98ajdphfp0fk034b8bthcvcuio9rs\"}",
+    "data": "{\"syncHead\":\"1uj0jjckgrr8etqjshigqfpdnbi1kal8\"}",
     "responseBody": "{}"
   },
   {
@@ -289,15 +289,15 @@
   },
   {
     "dbName": "sync",
-    "method": "openTransaction",
-    "data": "{\"args\":{\"id\":14323534},\"name\":\"deleteTodo\"}",
-    "responseBody": "{\"transactionId\":16}"
-  },
-  {
-    "dbName": "sync",
     "method": "closeTransaction",
     "data": "{\"transactionId\":15}",
     "responseBody": "{}"
+  },
+  {
+    "dbName": "sync",
+    "method": "openTransaction",
+    "data": "{\"args\":{\"id\":14323534},\"name\":\"deleteTodo\"}",
+    "responseBody": "{\"transactionId\":16}"
   },
   {
     "dbName": "sync",
@@ -309,7 +309,7 @@
     "dbName": "sync",
     "method": "commitTransaction",
     "data": "{\"transactionId\":16}",
-    "responseBody": "{\"ref\":\"ddt5fca4fnj2s59dloim2l1vobsgn9kl\"}"
+    "responseBody": "{\"ref\":\"ncdds1o7njvrd6e9erj8kg6s8cdo3tsh\"}"
   },
   {
     "dbName": "sync",
@@ -339,7 +339,7 @@
     "dbName": "sync",
     "method": "commitTransaction",
     "data": "{\"transactionId\":18}",
-    "responseBody": "{\"ref\":\"3ic6mqkro9jm1bebcv88je5djli61htk\"}"
+    "responseBody": "{\"ref\":\"rnmu0apfh814a3tb4lcclkgt709n3dud\"}"
   },
   {
     "dbName": "sync",
@@ -369,7 +369,7 @@
     "dbName": "sync",
     "method": "commitTransaction",
     "data": "{\"transactionId\":20}",
-    "responseBody": "{\"ref\":\"b842ffiv3mp9mc52jj6l9j5lr69hcmu2\"}"
+    "responseBody": "{\"ref\":\"ncnkg12fr1cbp3nc2pqndp38apjh6nd2\"}"
   },
   {
     "dbName": "sync",
@@ -387,12 +387,12 @@
     "dbName": "sync",
     "method": "beginSync",
     "data": "{\"batchPushURL\":\"https://replicache-sample-todo.now.sh/serve/replicache-batch\",\"diffServerURL\":\"http://localhost:7001/pull\",\"dataLayerAuth\":\"1\"}",
-    "responseBody": "{\"syncHead\":\"utbqa61l8aambt25vbahtgv2bmuegdr3\",\"syncInfo\":{\"batchPushInfo\":{\"httpStatusCode\":200,\"errorMessage\":\"\",\"batchPushResponse\":{}},\"clientViewInfo\":{\"httpStatusCode\":200,\"errorMessage\":\"\"}}}"
+    "responseBody": "{\"syncHead\":\"u35dtt240q9t8lt7blvfle5k11ebi781\",\"syncInfo\":{\"batchPushInfo\":{\"httpStatusCode\":200,\"errorMessage\":\"\",\"batchPushResponse\":{}},\"clientViewInfo\":{\"httpStatusCode\":200,\"errorMessage\":\"\"}}}"
   },
   {
     "dbName": "sync",
     "method": "maybeEndSync",
-    "data": "{\"syncHead\":\"utbqa61l8aambt25vbahtgv2bmuegdr3\"}",
+    "data": "{\"syncHead\":\"u35dtt240q9t8lt7blvfle5k11ebi781\"}",
     "responseBody": "{}"
   },
   {
