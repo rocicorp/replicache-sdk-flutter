@@ -582,6 +582,9 @@ Future<void> main() async {
     await deleteTodo({'id': id2});
     await deleteTodo({'id': id3});
 
-    await (rep as dynamic).syncNow();
+    final f3 = rep.sync();
+    final f4 = rep.sync();
+    await f3;
+    await f4;
   });
 }

@@ -69,8 +69,10 @@ class Replicache implements ReadTransaction {
   Future<String> _root;
   Future<dynamic> _opened;
   Timer _timer;
+  Duration _syncInterval;
   bool _closed = false;
   Set<_Subscription> _subscriptions = Set();
+  Future<void> _syncFuture;
 
   /// Lists information about available local databases.
   static Future<List<DatabaseInfo>> list() async {
@@ -104,9 +106,9 @@ class Replicache implements ReadTransaction {
       name: name,
       dataLayerAuth: dataLayerAuth,
       batchUrl: batchUrl,
-      startSync: true,
+      syncInterval: Duration(seconds: 5),
     );
-    rep._open(true);
+    rep._open();
     return rep;
   }
 
@@ -115,14 +117,15 @@ class Replicache implements ReadTransaction {
     String name = '',
     String dataLayerAuth = '',
     String batchUrl = '',
-    bool startSync,
+    Duration syncInterval,
   })  : _dataLayerAuth = dataLayerAuth,
         _batchUrl = batchUrl,
-        _name = name.isEmpty ? _diffServerUrl : name {
+        _name = name.isEmpty ? _diffServerUrl : name,
+        _syncInterval = syncInterval {
     if (_diffServerUrl.isEmpty) {
       throw Exception("remote must be non-empty");
     }
-    _open(startSync);
+    _open();
   }
 
   static Future<Replicache> forTesting(
@@ -141,18 +144,29 @@ class Replicache implements ReadTransaction {
     return rep;
   }
 
-  Future<void> _open(bool startSync) async {
+  Future<void> _open() async {
     _opened = _invoke(_name, 'open');
     _root = _getRoot();
     await _root;
-    if (startSync) {
-      _scheduleSync(0);
-    }
+    _scheduleSync();
   }
 
   String get name => _name;
   String get remote => _diffServerUrl;
   String get dataLayerAuth => _dataLayerAuth;
+
+  Duration get syncInterval => _syncInterval;
+
+  /// The duration between each [sync]. Set this to [null] to prevent syncing in
+  /// the background.
+  set syncInterval(Duration duration) {
+    if (_timer != null) {
+      _timer.cancel();
+      _timer = null;
+    }
+    _syncInterval = duration;
+    _scheduleSync();
+  }
 
   bool get closed => _closed;
 
@@ -332,25 +346,31 @@ class Replicache implements ReadTransaction {
       return;
     }
 
-    if (_timer == null) {
-      // Another call stack is already inside sync();
+    if (_syncFuture != null) {
+      await _syncFuture;
       return;
     }
 
+    if (_timer != null) {
+      _timer.cancel();
+      _timer = null;
+    }
     _fireOnSync(true);
 
     try {
-      _timer.cancel();
-      _timer = null;
-      await _sync();
+      _syncFuture = _sync();
+      await _syncFuture;
     } finally {
+      _syncFuture = null;
       this._fireOnSync(false);
-      _scheduleSync(5);
+      _scheduleSync();
     }
   }
 
-  void _scheduleSync(seconds) {
-    _timer = new Timer(new Duration(seconds: seconds), sync);
+  void _scheduleSync() {
+    if (_syncInterval != null) {
+      _timer = Timer(_syncInterval, sync);
+    }
   }
 
   Future<void> close() async {
@@ -571,17 +591,17 @@ class _ReplicacheTest extends Replicache {
     String name = '',
     String dataLayerAuth = '',
     String batchUrl = '',
-  }) : super._new(remote,
-            name: name,
-            dataLayerAuth: dataLayerAuth,
-            batchUrl: batchUrl,
-            startSync: false);
+  }) : super._new(
+          remote,
+          name: name,
+          dataLayerAuth: dataLayerAuth,
+          batchUrl: batchUrl,
+          syncInterval: null,
+        );
 
   Future<String> beginSync() => super._beginSync();
 
   Future<void> maybeEndSync(String syncHead) => super._maybeEndSync(syncHead);
-
-  Future<void> syncNow() => super._sync();
 }
 
 class _Subscription<R> {
