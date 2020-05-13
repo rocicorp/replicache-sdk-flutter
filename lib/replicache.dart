@@ -375,6 +375,10 @@ class Replicache implements ReadTransaction {
 
   Future<void> close() async {
     _closed = true;
+    if (_timer != null) {
+      _timer.cancel();
+      _timer = null;
+    }
     for (final subscription in _subscriptions) {
       if (!subscription.streamController.isClosed) {
         subscription.streamController.close();
