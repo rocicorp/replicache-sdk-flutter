@@ -435,7 +435,6 @@ Future<void> main() async {
 
     final repSub = rep.subscribe((tx) async {
       final v = await tx.get('k');
-      print('v: $v');
       if (v != null) {
         throw v;
       }
@@ -573,14 +572,12 @@ Future<void> main() async {
     expect(count, 6);
 
     {
-      await Future.delayed(Duration(seconds: 1));
       final syncHead = await (rep as dynamic).beginSync();
       await (rep as dynamic).maybeEndSync(syncHead);
       expect(count, 6);
     }
 
     {
-      await Future.delayed(Duration(seconds: 1));
       final syncHead = await (rep as dynamic).beginSync();
       await (rep as dynamic).maybeEndSync(syncHead);
       expect(count, 6);
