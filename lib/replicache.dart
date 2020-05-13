@@ -70,7 +70,6 @@ class Replicache implements ReadTransaction {
   Future<dynamic> _opened;
   Timer _timer;
   bool _closed = false;
-  bool _reauthenticating = false;
   Set<_Subscription> _subscriptions = Set();
 
   /// Lists information about available local databases.
