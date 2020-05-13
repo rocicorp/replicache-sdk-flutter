@@ -51,7 +51,7 @@ class _MyHomePageState extends State<MyHomePage> {
     _init();
   }
 
-  Future<String> _getAuthToken() async {
+  Future<String> _getDataLayerAuth() async {
     await showDialog<void>(
       context: context,
       builder: (BuildContext context) {
@@ -117,7 +117,7 @@ class _MyHomePageState extends State<MyHomePage> {
       batchUrl: batchUrl,
     );
     _replicache.onSync = _handleSync;
-    _replicache.getDataLayerAuth = _getAuthToken;
+    _replicache.getDataLayerAuth = _getDataLayerAuth;
 
     _registerMutations();
 

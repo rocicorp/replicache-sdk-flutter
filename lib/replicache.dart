@@ -1,6 +1,7 @@
 import 'dart:core';
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
@@ -251,13 +252,17 @@ class Replicache implements ReadTransaction {
 
     final syncInfo = beginSyncResult['syncInfo'];
 
+    bool reauth = false;
+
     void checkStatus(Map<String, dynamic> data, String serverName) {
       final httpStatusCode = data['httpStatusCode'];
       if (data['errorMessage'] != '') {
         print(
             'Got error response from $serverName server: $httpStatusCode: ${data['errorMessage']}');
       }
-      // TODO: Reauth
+      if (httpStatusCode == HttpStatus.unauthorized) {
+        reauth = true;
+      }
     }
 
     final batchPushInfo = syncInfo['batchPushInfo'];
@@ -273,6 +278,10 @@ class Replicache implements ReadTransaction {
     }
 
     checkStatus(syncInfo['clientViewInfo'], 'client view');
+
+    if (reauth && getDataLayerAuth != null) {
+      _dataLayerAuth = await getDataLayerAuth();
+    }
 
     return beginSyncResult['syncHead'];
   }
