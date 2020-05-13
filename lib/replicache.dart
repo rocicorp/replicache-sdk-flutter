@@ -76,13 +76,13 @@ class Replicache implements ReadTransaction {
 
   /// Lists information about available local databases.
   static Future<List<DatabaseInfo>> list() async {
-    var res = await _invoke('', 'list');
+    var res = await _staticInvoke('', 'list');
     return List.from(res['databases'].map((d) => DatabaseInfo.fromJson(d)));
   }
 
   /// Completely delete a local database. Remote replicas in the group aren't affected.
   static Future<void> drop(String name) async {
-    await _invoke(name, 'drop');
+    await _staticInvoke(name, 'drop');
   }
 
   static Future<void> _methodChannelHandler(MethodCall call) {
@@ -145,7 +145,7 @@ class Replicache implements ReadTransaction {
   }
 
   Future<void> _open() async {
-    _opened = _invoke(_name, 'open');
+    _opened = _staticInvoke(_name, 'open');
     _root = _getRoot();
     await _root;
     _scheduleSync();
@@ -171,8 +171,7 @@ class Replicache implements ReadTransaction {
   bool get closed => _closed;
 
   Future<void> _put(int transactionId, String key, dynamic value) async {
-    await _opened;
-    await _invoke(_name, 'put', {
+    await _invoke('put', {
       'transactionId': transactionId,
       'key': key,
       'value': value,
@@ -180,8 +179,7 @@ class Replicache implements ReadTransaction {
   }
 
   Future<dynamic> _get(int transactionId, String key) async {
-    await _opened;
-    final result = await _invoke(_name, 'get', {
+    final result = await _invoke('get', {
       'transactionId': transactionId,
       'key': key,
     });
@@ -195,8 +193,7 @@ class Replicache implements ReadTransaction {
   Future<dynamic> get(String key) => query((tx) => tx.get(key));
 
   Future<bool> _has(int transactionId, String key) async {
-    await _opened;
-    final result = await _invoke(_name, 'has', {
+    final result = await _invoke('has', {
       'transactionId': transactionId,
       'key': key,
     });
@@ -207,8 +204,7 @@ class Replicache implements ReadTransaction {
   Future<bool> has(String key) => query((tx) => tx.has(key));
 
   Future<bool> _del(int transactionId, String key) async {
-    await _opened;
-    final result = await _invoke(_name, 'del', {
+    final result = await _invoke('del', {
       'transactionId': transactionId,
       'key': key,
     });
@@ -229,8 +225,7 @@ class Replicache implements ReadTransaction {
     if (start != null) {
       args['start'] = start;
     }
-    List<dynamic> r = await _invoke(_name, 'scan', args);
-    await _opened;
+    List<dynamic> r = await _invoke('scan', args);
     return r.map((e) => ScanItem.fromJson(e));
   }
 
@@ -243,17 +238,12 @@ class Replicache implements ReadTransaction {
       query((tx) => tx.scan(prefix: prefix, start: start, limit: limit));
 
   Future<void> _sync() async {
-    await _opened;
-    if (_closed) {
-      return;
-    }
     final syncHead = await _beginSync();
     await _maybeEndSync(syncHead);
   }
 
   Future<String> _beginSync() async {
-    await _opened;
-    final beginSyncResult = await _invoke(_name, 'beginSync', {
+    final beginSyncResult = await _invoke('beginSync', {
       'batchPushURL': _batchUrl,
       'diffServerURL': _diffServerUrl,
       'dataLayerAuth': _dataLayerAuth,
@@ -288,11 +278,10 @@ class Replicache implements ReadTransaction {
   }
 
   Future<void> _maybeEndSync(String syncHead) async {
-    await _opened;
     if (_closed) {
       return;
     }
-    final res = await _invoke(_name, 'maybeEndSync', {'syncHead': syncHead});
+    final res = await _invoke('maybeEndSync', {'syncHead': syncHead});
     final replayMutations = res['replayMutations'];
     if (replayMutations == null || replayMutations.isEmpty) {
       // All done.
@@ -341,7 +330,6 @@ class Replicache implements ReadTransaction {
   /// Replicache design document for more information on sync:
   /// https://github.com/rocicorp/replicache/blob/master/design.md
   Future<void> sync() async {
-    await _opened;
     if (_closed) {
       return;
     }
@@ -375,6 +363,8 @@ class Replicache implements ReadTransaction {
 
   Future<void> close() async {
     _closed = true;
+    final f = _invoke('close');
+
     if (_timer != null) {
       _timer.cancel();
       _timer = null;
@@ -385,16 +375,15 @@ class Replicache implements ReadTransaction {
       }
     }
     _subscriptions.clear();
-    await _opened;
-    await _invoke(_name, 'close');
+
+    await f;
   }
 
   Future<String> _getRoot() async {
-    await _opened;
     if (_closed) {
       return null;
     }
-    var res = await _invoke(_name, 'getRoot');
+    final res = await _invoke('getRoot');
     return res['root'];
   }
 
@@ -406,8 +395,14 @@ class Replicache implements ReadTransaction {
     }
   }
 
-  static Future<dynamic> _invoke(String dbName, String rpc,
-      [dynamic args = const {}]) async {
+  Future<dynamic> _invoke(String rpc,
+      [Map<String, dynamic> args = const {}]) async {
+    await _opened;
+    return await _staticInvoke(_name, rpc, args);
+  }
+
+  static Future<dynamic> _staticInvoke(String dbName, String rpc,
+      [Map<String, dynamic> args = const {}]) async {
     final enc = JsonUtf8Encoder();
     if (_platform == null) {
       _platform = MethodChannel(CHANNEL_NAME);
@@ -482,8 +477,7 @@ class Replicache implements ReadTransaction {
   /// to ensure you get a consistent view across multiple calls to [get], [has]
   /// and [scan].
   Future<R> query<R>(Future<R> callback(ReadTransaction tx)) async {
-    await _opened;
-    final res = await _invoke(_name, 'openTransaction');
+    final res = await _invoke('openTransaction');
     final txId = res['transactionId'];
     try {
       final tx = _ReadTransactionImpl(this, txId);
@@ -544,13 +538,12 @@ class Replicache implements ReadTransaction {
     Map<String, dynamic> invokeArgs,
     @required bool shouldCheckChange,
   }) async {
-    await _opened;
     final actualInvokeArgs = {'args': args, 'name': name};
     if (invokeArgs != null) {
       actualInvokeArgs.addAll(invokeArgs);
     }
 
-    final res = await _invoke(_name, 'openTransaction', actualInvokeArgs);
+    final res = await _invoke('openTransaction', actualInvokeArgs);
     final txId = res['transactionId'];
     R rv;
     try {
@@ -562,7 +555,7 @@ class Replicache implements ReadTransaction {
       rethrow;
     }
     final commitRes =
-        await _invoke(_name, 'commitTransaction', {'transactionId': txId});
+        await _invoke('commitTransaction', {'transactionId': txId});
     if (commitRes['retryCommit'] == true) {
       return await _mutate(
         name,
@@ -582,7 +575,7 @@ class Replicache implements ReadTransaction {
 
   Future<void> _closeTransaction(int txId) async {
     try {
-      await _invoke(_name, 'closeTransaction', {'transactionId': txId});
+      await _invoke('closeTransaction', {'transactionId': txId});
     } catch (ex) {
       print('Failed to close transaction: $ex');
     }
