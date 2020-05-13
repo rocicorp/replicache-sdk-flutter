@@ -81,8 +81,16 @@ Future<void> main() async {
   List replays = [];
   String recordPath;
 
-  Future<void> useReplay(String path) async {
-    final replaysString = await File(path).readAsString();
+  File fixtureFile(String name) {
+    var dir = Directory.current.path;
+    if (dir.endsWith('/test')) {
+      dir = dir.replaceAll('/test', '');
+    }
+    return File('$dir/test/$name');
+  }
+
+  Future<void> useReplay(String name) async {
+    final replaysString = await fixtureFile(name).readAsString();
     replays = json
         .decode(replaysString)
         .toList()
@@ -139,7 +147,7 @@ Future<void> main() async {
 
     if (recordPath != null) {
       JsonEncoder encoder = new JsonEncoder.withIndent('  ');
-      await File(recordPath).writeAsString(encoder.convert(replays));
+      await fixtureFile(recordPath).writeAsString(encoder.convert(replays));
     }
 
     recordPath = null;
