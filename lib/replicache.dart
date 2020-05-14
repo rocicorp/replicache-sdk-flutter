@@ -149,10 +149,14 @@ class Replicache implements ReadTransaction {
   /// Sets the level of verbosity Replicache should log at.
   static setLogLevel(LogLevel level) {
     globalLogLevel = level;
-    _staticInvoke('', 'setLogLevel',
-      {LogLevel.debug:'debug',
-      LogLevel.info:'info',
-      LogLevel.error:'error'}[level]);
+    _staticInvoke(
+        '',
+        'setLogLevel',
+        {
+          LogLevel.debug: 'debug',
+          LogLevel.info: 'info',
+          LogLevel.error: 'error',
+        }[level]);
   }
 
   Future<void> _open() async {
@@ -269,7 +273,8 @@ class Replicache implements ReadTransaction {
     void checkStatus(Map<String, dynamic> data, String serverName) {
       final httpStatusCode = data['httpStatusCode'];
       if (data['errorMessage'] != '') {
-        error('Got error response from $serverName server: $httpStatusCode: ${data['errorMessage']}');
+        error(
+            'Got error response from $serverName server: $httpStatusCode: ${data['errorMessage']}');
       }
       if (httpStatusCode == HttpStatus.unauthorized) {
         reauth = true;
@@ -282,7 +287,8 @@ class Replicache implements ReadTransaction {
       final mutationInfos = batchPushInfo['batchPushResponse']['mutationInfos'];
       if (mutationInfos != null) {
         for (final mutationInfo in mutationInfos) {
-          error('MutationInfo: ID: ${mutationInfo['id']}, Error: ${mutationInfo['error']}');
+          error(
+              'MutationInfo: ID: ${mutationInfo['id']}, Error: ${mutationInfo['error']}');
         }
       }
     }
@@ -291,6 +297,10 @@ class Replicache implements ReadTransaction {
 
     if (reauth && getDataLayerAuth != null) {
       _dataLayerAuth = await getDataLayerAuth();
+      if (_dataLayerAuth != null) {
+        // Try again now instead of waiting for another 5 seconds.
+        return await _beginSync();
+      }
     }
 
     return beginSyncResult['syncHead'];
@@ -414,8 +424,7 @@ class Replicache implements ReadTransaction {
     }
   }
 
-  Future<dynamic> _invoke(String rpc,
-      [dynamic args = null]) async {
+  Future<dynamic> _invoke(String rpc, [dynamic args]) async {
     await _opened;
     return await _staticInvoke(_name, rpc, args);
   }
