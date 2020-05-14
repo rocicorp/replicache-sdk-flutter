@@ -51,6 +51,7 @@
     <ol>
           <li class="section-title">Libraries</li>
           <li><a href="database_info/database_info-library.html">database_info</a></li>
+          <li><a href="log/log-library.html">log</a></li>
           <li><a href="replicache/replicache-library.html">replicache</a></li>
     </ol>
   </div>
@@ -94,12 +95,6 @@ connections to the same database. <a href="replicache/Replicache-class.html">[..
         <dd>
           
         </dd>
-        <dt id="SyncProgress">
-          <span class="name "><a href="replicache/SyncProgress-class.html">SyncProgress</a></span>         
-        </dt>
-        <dd>
-          
-        </dd>
         <dt id="WriteTransaction">
           <span class="name "><a href="replicache/WriteTransaction-class.html">WriteTransaction</a></span>         
         </dt>
@@ -131,6 +126,18 @@ write operations on the database.
 
 
 
+    <section class="summary offset-anchor" id="enums">
+      <h2>Enums</h2>
+
+      <dl>
+        <dt id="LogLevel">
+          <span class="name "><a href="log/LogLevel-class.html">LogLevel</a></span>         
+        </dt>
+        <dd>
+          Defines logging levels for Replicache.
+        </dd>
+      </dl>
+    </section>
 
     <section class="summary offset-anchor" id="typedefs">
       <h2>Typedefs</h2>
@@ -172,15 +179,6 @@ write operations on the database.
           
                   
 </dd>
-        <dt id="SyncProgressHandler" class="callable">
-          <span class="name"><a href="replicache/SyncProgressHandler.html">SyncProgressHandler</a></span><span class="signature">(<wbr><span class="parameter" id="SyncProgressHandler-param-progress"><span class="type-annotation"><a href="replicache/SyncProgress-class.html">SyncProgress</a></span> <span class="parameter-name">progress</span></span>)
-            <span class="returntype parameter">&#8594; void</span>
-          </span>
-                  </dt>
-        <dd>
-          
-                  
-</dd>
       </dl>
     </section>
 
@@ -196,7 +194,6 @@ write operations on the database.
       <li><a href="replicache/ScanBound-class.html">ScanBound</a></li>
       <li><a href="replicache/ScanId-class.html">ScanId</a></li>
       <li><a href="replicache/ScanItem-class.html">ScanItem</a></li>
-      <li><a href="replicache/SyncProgress-class.html">SyncProgress</a></li>
       <li><a href="replicache/WriteTransaction-class.html">WriteTransaction</a></li>
     
     
@@ -205,13 +202,14 @@ write operations on the database.
     
     
     
+      <li class="section-title"><a href="replicache/replicache-library.html#enums">Enums</a></li>
+      <li><a href="log/LogLevel-class.html">LogLevel</a></li>
     
       <li class="section-title"><a href="replicache/replicache-library.html#typedefs">Typedefs</a></li>
       <li><a href="replicache/AuthTokenGetter.html">AuthTokenGetter</a></li>
       <li><a href="replicache/Mutator.html">Mutator</a></li>
       <li><a href="replicache/MutatorImpl.html">MutatorImpl</a></li>
       <li><a href="replicache/SyncHandler.html">SyncHandler</a></li>
-      <li><a href="replicache/SyncProgressHandler.html">SyncProgressHandler</a></li>
     
     </ol>
   </div><!--/sidebar-offcanvas-right-->
