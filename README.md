@@ -65,15 +65,15 @@ class MyApp extends StatelessWidget {
 class MyHomePage extends StatelessWidget {
   final String title;
   // Android emulator cannot use localhost.
-  final db = 'http://${Platform.isAndroid ? '10.0.2.2' : 'localhost'}:7001';
+  final diffsURL = 'http://${Platform.isAndroid ? '10.0.2.2' : 'localhost'}:7001/pull';
   final _random = Random();
   Replicache _replicache;
   Mutator _createTodo;
 
   MyHomePage({Key key, this.title}) : super(key: key) {
-    _replicache = Replicache(db);
+    _replicache = Replicache(diffsURL);
     _createTodo = _replicache.register("createTodo", (tx, args) async {
-      tx.put(args["id"], args);
+      tx.put("/todo/${args["id"]}", args);
     });
   }
 
