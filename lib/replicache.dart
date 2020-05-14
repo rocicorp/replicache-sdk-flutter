@@ -6,6 +6,9 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
 import 'database_info.dart';
+import 'log.dart';
+
+export 'log.dart' show LogLevel;
 
 const CHANNEL_NAME = 'replicache.dev';
 
@@ -60,8 +63,6 @@ class Replicache implements ReadTransaction {
   SyncHandler onSync;
   AuthTokenGetter getDataLayerAuth;
 
-  static bool logVerbosely = true;
-
   final Map<String, MutatorImpl> _mutatorRegistry = {};
   final String _name;
   final String _diffServerUrl;
@@ -87,7 +88,7 @@ class Replicache implements ReadTransaction {
   }
 
   static Future<void> _methodChannelHandler(MethodCall call) {
-    if (call.method == "log" && logVerbosely) {
+    if (call.method == "log") {
       print("Replicache (native): ${call.arguments}");
       return Future.value();
     }
@@ -143,6 +144,15 @@ class Replicache implements ReadTransaction {
     );
     await rep._opened;
     return rep;
+  }
+
+  /// Sets the level of verbosity Replicache should log at.
+  static setLogLevel(LogLevel level) {
+    globalLogLevel = level;
+    _staticInvoke('', 'setLogLevel',
+      {LogLevel.debug:'debug',
+      LogLevel.info:'info',
+      LogLevel.error:'error'}[level]);
   }
 
   Future<void> _open() async {
@@ -259,8 +269,7 @@ class Replicache implements ReadTransaction {
     void checkStatus(Map<String, dynamic> data, String serverName) {
       final httpStatusCode = data['httpStatusCode'];
       if (data['errorMessage'] != '') {
-        print(
-            'Got error response from $serverName server: $httpStatusCode: ${data['errorMessage']}');
+        error('Got error response from $serverName server: $httpStatusCode: ${data['errorMessage']}');
       }
       if (httpStatusCode == HttpStatus.unauthorized) {
         reauth = true;
@@ -273,8 +282,7 @@ class Replicache implements ReadTransaction {
       final mutationInfos = batchPushInfo['batchPushResponse']['mutationInfos'];
       if (mutationInfos != null) {
         for (final mutationInfo in mutationInfos) {
-          print(
-              'MutationInfo: ID: ${mutationInfo['id']}, Error: ${mutationInfo['error']}');
+          error('MutationInfo: ID: ${mutationInfo['id']}, Error: ${mutationInfo['error']}');
         }
       }
     }
@@ -407,13 +415,13 @@ class Replicache implements ReadTransaction {
   }
 
   Future<dynamic> _invoke(String rpc,
-      [Map<String, dynamic> args = const {}]) async {
+      [dynamic args = null]) async {
     await _opened;
     return await _staticInvoke(_name, rpc, args);
   }
 
   static Future<dynamic> _staticInvoke(String dbName, String rpc,
-      [Map<String, dynamic> args = const {}]) async {
+      [dynamic args = null]) async {
     final enc = JsonUtf8Encoder();
     if (_platform == null) {
       _platform = MethodChannel(CHANNEL_NAME);
@@ -588,7 +596,7 @@ class Replicache implements ReadTransaction {
     try {
       await _invoke('closeTransaction', {'transactionId': txId});
     } catch (ex) {
-      print('Failed to close transaction: $ex');
+      error('Failed to close transaction: $ex');
     }
   }
 }
