@@ -57,7 +57,6 @@
       <li><a href="replicache/ScanBound-class.html">ScanBound</a></li>
       <li><a href="replicache/ScanId-class.html">ScanId</a></li>
       <li><a href="replicache/ScanItem-class.html">ScanItem</a></li>
-      <li><a href="replicache/SyncProgress-class.html">SyncProgress</a></li>
       <li><a href="replicache/WriteTransaction-class.html">WriteTransaction</a></li>
     
     
@@ -66,13 +65,14 @@
     
     
     
+      <li class="section-title"><a href="replicache/replicache-library.html#enums">Enums</a></li>
+      <li><a href="log/LogLevel-class.html">LogLevel</a></li>
     
       <li class="section-title"><a href="replicache/replicache-library.html#typedefs">Typedefs</a></li>
       <li><a href="replicache/AuthTokenGetter.html">AuthTokenGetter</a></li>
       <li><a href="replicache/Mutator.html">Mutator</a></li>
       <li><a href="replicache/MutatorImpl.html">MutatorImpl</a></li>
       <li><a href="replicache/SyncHandler.html">SyncHandler</a></li>
-      <li><a href="replicache/SyncProgressHandler.html">SyncProgressHandler</a></li>
     
     </ol>
   </div>
@@ -111,11 +111,12 @@ it attempts to go to the network).</p>
 
       <dl class="constructor-summary-list">
         <dt id="Replicache" class="callable">
-          <span class="name"><a href="replicache/Replicache/Replicache.html">Replicache</a></span><span class="signature">(<span class="parameter" id="-param-_remote"><span class="type-annotation">String</span> <span class="parameter-name">_remote</span>, {</span> <span class="parameter" id="-param-name"><span class="type-annotation">String</span> <span class="parameter-name">name</span>: <span class="default-value">""</span>, </span> <span class="parameter" id="-param-clientViewAuth"><span class="type-annotation">String</span> <span class="parameter-name">clientViewAuth</span>: <span class="default-value">""</span></span> })</span>
+          <span class="name"><a href="replicache/Replicache/Replicache.html">Replicache</a></span><span class="signature">(<span class="parameter" id="-param-diffServerUrl"><span class="type-annotation">String</span> <span class="parameter-name">diffServerUrl</span>, {</span> <span class="parameter" id="-param-name"><span class="type-annotation">String</span> <span class="parameter-name">name</span>: <span class="default-value">''</span>, </span> <span class="parameter" id="-param-dataLayerAuth"><span class="type-annotation">String</span> <span class="parameter-name">dataLayerAuth</span>: <span class="default-value">''</span>, </span> <span class="parameter" id="-param-batchUrl"><span class="type-annotation">String</span> <span class="parameter-name">batchUrl</span>: <span class="default-value">''</span></span> })</span>
         </dt>
         <dd>
           Create or open a local Replicache database with named <code>name</code> synchronizing with <code>remote</code>.
 If <code>name</code> is omitted, it defaults to <code>remote</code>.
+          <div class="constructor-modifier features">factory</div>
         </dd>
       </dl>
     </section>
@@ -124,16 +125,24 @@ If <code>name</code> is omitted, it defaults to <code>remote</code>.
       <h2>Properties</h2>
 
       <dl class="properties">
-        <dt id="clientViewAuth" class="property">
-          <span class="name"><a href="replicache/Replicache/clientViewAuth.html">clientViewAuth</a></span>
+        <dt id="closed" class="property">
+          <span class="name"><a href="replicache/Replicache/closed.html">closed</a></span>
+          <span class="signature">&#8594; bool</span>         
+        </dt>
+        <dd>
+          
+                  <div class="features">read-only</div>
+</dd>
+        <dt id="dataLayerAuth" class="property">
+          <span class="name"><a href="replicache/Replicache/dataLayerAuth.html">dataLayerAuth</a></span>
           <span class="signature">&#8594; String</span>         
         </dt>
         <dd>
           
                   <div class="features">read-only</div>
 </dd>
-        <dt id="getClientViewAuth" class="property">
-          <span class="name"><a href="replicache/Replicache/getClientViewAuth.html">getClientViewAuth</a></span>
+        <dt id="getDataLayerAuth" class="property">
+          <span class="name"><a href="replicache/Replicache/getDataLayerAuth.html">getDataLayerAuth</a></span>
           <span class="signature">&#8596; <a href="replicache/AuthTokenGetter.html">AuthTokenGetter</a></span>         
         </dt>
         <dd>
@@ -156,14 +165,6 @@ If <code>name</code> is omitted, it defaults to <code>remote</code>.
           
                   <div class="features">read / write</div>
 </dd>
-        <dt id="onSyncProgress" class="property">
-          <span class="name"><a href="replicache/Replicache/onSyncProgress.html">onSyncProgress</a></span>
-          <span class="signature">&#8596; <a href="replicache/SyncProgressHandler.html">SyncProgressHandler</a></span>         
-        </dt>
-        <dd>
-          
-                  <div class="features">read / write</div>
-</dd>
         <dt id="remote" class="property">
           <span class="name"><a href="replicache/Replicache/remote.html">remote</a></span>
           <span class="signature">&#8594; String</span>         
@@ -172,13 +173,14 @@ If <code>name</code> is omitted, it defaults to <code>remote</code>.
           
                   <div class="features">read-only</div>
 </dd>
-        <dt id="syncProgress" class="property">
-          <span class="name"><a href="replicache/Replicache/syncProgress.html">syncProgress</a></span>
-          <span class="signature">&#8594; <a href="replicache/SyncProgress-class.html">SyncProgress</a></span>         
+        <dt id="syncInterval" class="property">
+          <span class="name"><a href="replicache/Replicache/syncInterval.html">syncInterval</a></span>
+          <span class="signature">&#8596; Duration</span>         
         </dt>
         <dd>
-          Gets the last sync progress for this repo.
-                  <div class="features">read-only</div>
+          The duration between each <a href="replicache/Replicache/sync.html">sync</a>. Set this to <code>null</code> to prevent syncing in
+the background.
+                  <div class="features">read / write</div>
 </dd>
         <dt id="hashCode" class="property inherited">
           <span class="name"><a href="replicache/ReadTransaction/hashCode.html">hashCode</a></span>
@@ -241,7 +243,7 @@ and <a href="replicache/Replicache/scan.html">scan</a>.
                   
 </dd>
         <dt id="register" class="callable">
-          <span class="name"><a href="replicache/Replicache/register.html">register</a></span><span class="signature">&lt;<wbr><span class="type-parameter">Return</span>, <span class="type-parameter">Args</span>&gt;</span><span class="signature">(<wbr><span class="parameter" id="register-param-name"><span class="type-annotation">String</span> <span class="parameter-name">name</span>, </span> <span class="parameter" id="register-param-callback"><span class="type-annotation"><a href="replicache/MutatorImpl.html">MutatorImpl</a><span class="signature">&lt;<wbr><span class="type-parameter">Return</span>, <span class="type-parameter">Args</span>&gt;</span></span> <span class="parameter-name">callback</span></span>)
+          <span class="name"><a href="replicache/Replicache/register.html">register</a></span><span class="signature">&lt;<wbr><span class="type-parameter">Return</span>, <span class="type-parameter">Args</span>&gt;</span><span class="signature">(<wbr><span class="parameter" id="register-param-name"><span class="type-annotation">String</span> <span class="parameter-name">name</span>, </span> <span class="parameter" id="register-param-mutatorImpl"><span class="type-annotation"><a href="replicache/MutatorImpl.html">MutatorImpl</a><span class="signature">&lt;<wbr><span class="type-parameter">Return</span>, <span class="type-parameter">Args</span>&gt;</span></span> <span class="parameter-name">mutatorImpl</span></span>)
             <span class="returntype parameter">&#8594; <a href="replicache/Mutator.html">Mutator</a><span class="signature">&lt;<wbr><span class="type-parameter">Return</span>, <span class="type-parameter">Args</span>&gt;</span></span>
           </span>
                   </dt>
@@ -278,8 +280,11 @@ over.
           </span>
                   </dt>
         <dd>
-          Synchronizes the database with the server. New local transactions that have been executed since the last
-sync are sent to the server, and new remote transactions are received and replayed.
+          Synchronizes this cache with the server. New local mutations are sent to
+the server, and the latest server state is applied to the cache. Any local
+mutations not included in the new server state are replayed. See the
+Replicache design document for more information on sync:
+<a href="https://github.com/rocicorp/replicache/blob/master/design.md">https://github.com/rocicorp/replicache/blob/master/design.md</a>
                   
 </dd>
         <dt id="noSuchMethod" class="callable inherited">
@@ -318,20 +323,6 @@ sync are sent to the server, and new remote transactions are received and replay
       </dl>
     </section>
 
-    <section class="summary offset-anchor" id="static-properties">
-      <h2>Static Properties</h2>
-
-      <dl class="properties">
-        <dt id="logVerbosely" class="property">
-          <span class="name"><a href="replicache/Replicache/logVerbosely.html">logVerbosely</a></span>
-          <span class="signature">&#8596; bool</span>         
-        </dt>
-        <dd>
-          
-                  <div class="features">read / write</div>
-</dd>
-      </dl>
-    </section>
 
     <section class="summary offset-anchor" id="static-methods">
       <h2>Static Methods</h2>
@@ -345,6 +336,15 @@ sync are sent to the server, and new remote transactions are received and replay
           Completely delete a local database. Remote replicas in the group aren't affected.
                   
 </dd>
+        <dt id="forTesting" class="callable">
+          <span class="name"><a href="replicache/Replicache/forTesting.html">forTesting</a></span><span class="signature">(<wbr><span class="parameter" id="forTesting-param-remote"><span class="type-annotation">String</span> <span class="parameter-name">remote</span>, {</span> <span class="parameter" id="forTesting-param-name"><span class="type-annotation">String</span> <span class="parameter-name">name</span>: <span class="default-value">''</span>, </span> <span class="parameter" id="forTesting-param-dataLayerAuth"><span class="type-annotation">String</span> <span class="parameter-name">dataLayerAuth</span>: <span class="default-value">''</span>, </span> <span class="parameter" id="forTesting-param-batchUrl"><span class="type-annotation">String</span> <span class="parameter-name">batchUrl</span>: <span class="default-value">''</span></span> })
+            <span class="returntype parameter">&#8594; Future<span class="signature">&lt;<wbr><span class="type-parameter"><a href="replicache/Replicache-class.html">Replicache</a></span>&gt;</span></span>
+          </span>
+                  </dt>
+        <dd>
+          
+                  
+</dd>
         <dt id="list" class="callable">
           <span class="name"><a href="replicache/Replicache/list.html">list</a></span><span class="signature">(<wbr>)
             <span class="returntype parameter">&#8594; Future<span class="signature">&lt;<wbr><span class="type-parameter">List<span class="signature">&lt;<wbr><span class="type-parameter"><a href="database_info/DatabaseInfo-class.html">DatabaseInfo</a></span>&gt;</span></span>&gt;</span></span>
@@ -352,6 +352,15 @@ sync are sent to the server, and new remote transactions are received and replay
                   </dt>
         <dd>
           Lists information about available local databases.
+                  
+</dd>
+        <dt id="setLogLevel" class="callable">
+          <span class="name"><a href="replicache/Replicache/setLogLevel.html">setLogLevel</a></span><span class="signature">(<wbr><span class="parameter" id="setLogLevel-param-level"><span class="type-annotation"><a href="log/LogLevel-class.html">LogLevel</a></span> <span class="parameter-name">level</span></span>)
+            <span class="returntype parameter">&#8594; dynamic</span>
+          </span>
+                  </dt>
+        <dd>
+          Sets the level of verbosity Replicache should log at.
                   
 </dd>
       </dl>
@@ -368,13 +377,13 @@ sync are sent to the server, and new remote transactions are received and replay
       <li class="section-title">
         <a href="replicache/Replicache-class.html#instance-properties">Properties</a>
       </li>
-      <li><a href="replicache/Replicache/clientViewAuth.html">clientViewAuth</a></li>
-      <li><a href="replicache/Replicache/getClientViewAuth.html">getClientViewAuth</a></li>
+      <li><a href="replicache/Replicache/closed.html">closed</a></li>
+      <li><a href="replicache/Replicache/dataLayerAuth.html">dataLayerAuth</a></li>
+      <li><a href="replicache/Replicache/getDataLayerAuth.html">getDataLayerAuth</a></li>
       <li><a href="replicache/Replicache/name.html">name</a></li>
       <li><a href="replicache/Replicache/onSync.html">onSync</a></li>
-      <li><a href="replicache/Replicache/onSyncProgress.html">onSyncProgress</a></li>
       <li><a href="replicache/Replicache/remote.html">remote</a></li>
-      <li><a href="replicache/Replicache/syncProgress.html">syncProgress</a></li>
+      <li><a href="replicache/Replicache/syncInterval.html">syncInterval</a></li>
       <li class="inherited"><a href="replicache/ReadTransaction/hashCode.html">hashCode</a></li>
       <li class="inherited"><a href="replicache/ReadTransaction/runtimeType.html">runtimeType</a></li>
     
@@ -393,12 +402,12 @@ sync are sent to the server, and new remote transactions are received and replay
       <li class="section-title inherited"><a href="replicache/Replicache-class.html#operators">Operators</a></li>
       <li class="inherited"><a href="replicache/ReadTransaction/operator_equals.html">operator ==</a></li>
     
-      <li class="section-title"><a href="replicache/Replicache-class.html#static-properties">Static properties</a></li>
-      <li><a href="replicache/Replicache/logVerbosely.html">logVerbosely</a></li>
     
       <li class="section-title"><a href="replicache/Replicache-class.html#static-methods">Static methods</a></li>
       <li><a href="replicache/Replicache/drop.html">drop</a></li>
+      <li><a href="replicache/Replicache/forTesting.html">forTesting</a></li>
       <li><a href="replicache/Replicache/list.html">list</a></li>
+      <li><a href="replicache/Replicache/setLogLevel.html">setLogLevel</a></li>
     
     </ol>
   </div><!--/.sidebar-offcanvas-->

@@ -59,13 +59,13 @@
       <li class="section-title">
         <a href="replicache/Replicache-class.html#instance-properties">Properties</a>
       </li>
-      <li><a href="replicache/Replicache/clientViewAuth.html">clientViewAuth</a></li>
-      <li><a href="replicache/Replicache/getClientViewAuth.html">getClientViewAuth</a></li>
+      <li><a href="replicache/Replicache/closed.html">closed</a></li>
+      <li><a href="replicache/Replicache/dataLayerAuth.html">dataLayerAuth</a></li>
+      <li><a href="replicache/Replicache/getDataLayerAuth.html">getDataLayerAuth</a></li>
       <li><a href="replicache/Replicache/name.html">name</a></li>
       <li><a href="replicache/Replicache/onSync.html">onSync</a></li>
-      <li><a href="replicache/Replicache/onSyncProgress.html">onSyncProgress</a></li>
       <li><a href="replicache/Replicache/remote.html">remote</a></li>
-      <li><a href="replicache/Replicache/syncProgress.html">syncProgress</a></li>
+      <li><a href="replicache/Replicache/syncInterval.html">syncInterval</a></li>
       <li class="inherited"><a href="replicache/ReadTransaction/hashCode.html">hashCode</a></li>
       <li class="inherited"><a href="replicache/ReadTransaction/runtimeType.html">runtimeType</a></li>
     
@@ -84,12 +84,12 @@
       <li class="section-title inherited"><a href="replicache/Replicache-class.html#operators">Operators</a></li>
       <li class="inherited"><a href="replicache/ReadTransaction/operator_equals.html">operator ==</a></li>
     
-      <li class="section-title"><a href="replicache/Replicache-class.html#static-properties">Static properties</a></li>
-      <li><a href="replicache/Replicache/logVerbosely.html">logVerbosely</a></li>
     
       <li class="section-title"><a href="replicache/Replicache-class.html#static-methods">Static methods</a></li>
       <li><a href="replicache/Replicache/drop.html">drop</a></li>
+      <li><a href="replicache/Replicache/forTesting.html">forTesting</a></li>
       <li><a href="replicache/Replicache/list.html">list</a></li>
+      <li><a href="replicache/Replicache/setLogLevel.html">setLogLevel</a></li>
     
     </ol>
   </div><!--/.sidebar-offcanvas-->
@@ -104,8 +104,11 @@
       
     </section>
     <section class="desc markdown">
-      <p>Synchronizes the database with the server. New local transactions that have been executed since the last
-sync are sent to the server, and new remote transactions are received and replayed.</p>
+      <p>Synchronizes this cache with the server. New local mutations are sent to
+the server, and the latest server state is applied to the cache. Any local
+mutations not included in the new server state are replayed. See the
+Replicache design document for more information on sync:
+<a href="https://github.com/rocicorp/replicache/blob/master/design.md">https://github.com/rocicorp/replicache/blob/master/design.md</a></p>
     </section>
     
     

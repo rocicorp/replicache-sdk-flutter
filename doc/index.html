@@ -48,6 +48,7 @@
     <ol>
           <li class="section-title">Libraries</li>
           <li><a href="database_info/database_info-library.html">database_info</a></li>
+          <li><a href="log/log-library.html">log</a></li>
           <li><a href="replicache/replicache-library.html">replicache</a></li>
     </ol>
   </div>
@@ -77,10 +78,12 @@ tar xvzf replicache-sdk.tar.gz
 
 ...
 </code></pre>
-<h3 id="4-read-data">4. Read Data</h3>
+<h3 id="4-add-maindart">4. Add main.dart</h3>
 <p>Replace the contents of <code>main.dart</code> with the following:</p>
 <pre class="language-dart"><code class="language-dart">import 'package:flutter/material.dart';
 import 'package:replicache/replicache.dart';
+import 'dart:io';
+import 'dart:math';
 
 void main() =&gt; runApp(MyApp());
 
@@ -100,16 +103,39 @@ class MyApp extends StatelessWidget {
 }
 
 class MyHomePage extends StatelessWidget {
-  MyHomePage({Key key, this.title}) : super(key: key);
-
   final String title;
-  final Replicache _replicache = new Replicache('http://localhost:7001');
+  // Android emulator cannot use localhost.
+  final diffsURL = 'http://${Platform.isAndroid ? '10.0.2.2' : 'localhost'}:7001/pull';
+  final _random = Random();
+  Replicache _replicache;
+  Mutator _createTodo;
+
+  MyHomePage({Key key, this.title}) : super(key: key) {
+    _replicache = Replicache(diffsURL);
+    _createTodo = _replicache.register("createTodo", (tx, args) async {
+      tx.put("/todo/${args["id"]}", args);
+    });
+  }
+
+  void _handleAddTodo() {
+    var id = _random.nextInt(2^32-1);
+    _createTodo({"id": id, "text": "Todo $id", "order": 1.0, "complete": false});
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: Text(title),
+        actions: &lt;Widget&gt;[
+          IconButton(
+            icon: const Icon(Icons.add),
+            tooltip: 'Add Todo',
+            onPressed: () {
+              _handleAddTodo();
+            },
+          ),
+        ],
       ),
       body: Center(
         child: StreamBuilder(
@@ -134,6 +160,7 @@ class MyHomePage extends StatelessWidget {
 </code></pre>
 <p>Now launch the Flutter app:</p>
 <pre class="language-bash"><code class="language-bash">cd todo
+flutter pub get
 flutter emulators --launch apple_ios_simulator
 flutter run
 </code></pre>
@@ -206,8 +233,9 @@ EOF
 </code></pre>
 <p>You will see the Flutter app update and display a new TODO and check off the previous one. Nice!</p>
 <h3 id="7-write-data">7. Write Data</h3>
-<p>TODO (this isn't implemented in the SDK yet)</p>
-<p>Congratulations — you are done with the client setup 🎉. Time for a cup of coffee.</p>
+<p>Add a Todo by pressing the "+" button in the top-right corner of the app. Periodically the client will attempt to sync and push this change to the server.</p>
+<h3 id="8-">8. 🎉</h3>
+<p>Congratulations — you are done with the client setup! Time for a cup of coffee.</p>
 <p>In fact, while you're away, why not turn off the wifi and click around. Your app will respond instantly with cached data and queue up the changes to replay, once you setup the server-side integration.</p>
 <h2 id="next-steps">Next steps</h2><ul><li>Implement the <a href="https://github.com/rocicorp/replicache/">server-side of Replicache integration</a></li><li>See <a href="https://github.com/rocicorp/replicache-sdk-flutter/tree/master/sample/redo"><code>flutter/redo</code></a> a fully functioning TODO app built on Flutter and Replicache</li><li>Review the <a href="https://replicache-sdk-flutter.now.sh/">Replicache Dart Reference</a></li><li>Inspect your Replicache databases using <a href="https://github.com/rocicorp/replicache-server/blob/master/doc/cli.md">the <code>repl</code> tool</a></li></ul>
 <h2 id="more-questions">More questions?</h2><ul><li><a href="#TODO">Join us on Slack!</a></li><li>See the <a href="https://github.com/rocicorp/replicache/blob/master/design.md">design doc</a>.</li></ul>
@@ -218,6 +246,11 @@ EOF
           <dl>
             <dt id="database_info">
               <span class="name"><a href="database_info/database_info-library.html">database_info</a></span>             
+            </dt>
+            <dd>
+              
+            </dd>            <dt id="log">
+              <span class="name"><a href="log/log-library.html">log</a></span>             
             </dt>
             <dd>
               
