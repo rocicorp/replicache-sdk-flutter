@@ -123,6 +123,7 @@ Now launch the Flutter app:
 
 ```bash
 cd todo
+flutter pub get
 flutter emulators --launch apple_ios_simulator
 flutter run
 ```
