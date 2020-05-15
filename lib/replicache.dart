@@ -87,6 +87,25 @@ class Replicache implements ReadTransaction {
     await _staticInvoke(name, 'drop');
   }
 
+  /// Sets the verbosity level Replicache logs at. By default,
+  /// Replicache logs at [LogLevel.info].
+  static void set logLevel(LogLevel level) {
+    _staticInvoke(
+        '',
+        'setLogLevel',
+        {
+          LogLevel.debug: 'debug',
+          LogLevel.info: 'info',
+          LogLevel.error: 'error',
+        }[level]);
+    globalLogLevel = level;
+  }
+
+  /// Gets the current verbosity level Replicache logs at.
+  static LogLevel get logLevel {
+    return globalLogLevel;
+  }
+
   static Future<void> _methodChannelHandler(MethodCall call) {
     if (call.method == "log") {
       print("Replicache (native): ${call.arguments}");
@@ -144,19 +163,6 @@ class Replicache implements ReadTransaction {
     );
     await rep._opened;
     return rep;
-  }
-
-  /// Sets the level of verbosity Replicache should log at.
-  static setLogLevel(LogLevel level) {
-    globalLogLevel = level;
-    _staticInvoke(
-        '',
-        'setLogLevel',
-        {
-          LogLevel.debug: 'debug',
-          LogLevel.info: 'info',
-          LogLevel.error: 'error',
-        }[level]);
   }
 
   Future<void> _open() async {

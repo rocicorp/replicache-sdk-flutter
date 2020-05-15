@@ -17,7 +17,6 @@ String addPrefix(int id) => '$prefix$id';
 class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    Replicache.setLogLevel(LogLevel.debug);
     return MaterialApp(
       title: 'Todo',
       theme: ThemeData(
