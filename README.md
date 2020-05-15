@@ -2,7 +2,12 @@
 
 Hi! This tutorial will walk you through integrating Replicache into your Flutter mobile app.
 
-If you have any problems working through this, or just have questions, please [join us on Slack](https://join.slack.com/t/rocicorp/shared_invite/zt-dcez2xsi-nAhW1Lt~32Y3~~y54pMV0g). We'd be happy to help.
+If you have any problems working through this, or just have questions, please [join us on Slack](https://join.slack.com/t/rocicorp/shared_invite/zt-dcez2xsi-nAhW1Lt~32Y3~~y54pMV0g). We'd be happy to help. See also our [contributing guide](https://github.com/rocicorp/replicache/blob/master/contributing.md).
+
+# Contributing
+
+See the [contributing guide in the main Replicache repo]
+
 
 **Note:** This document assumes you already know what Replicache is, why you might need it, and broadly how it works. If that's not true, see the [Replicache homepage](https://replicache.dev) for an overview, or the [design document](https://github.com/rocicorp/replicache/blob/master/design.md) for a detailed deep-dive.
 
