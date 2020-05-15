@@ -5,6 +5,10 @@ enum LogLevel {
   error,
 }
 
+// WARNING: This default here is coupled to the default in replicache-client.
+// They need to be changed together because there's no static initialization in
+// Dart so there's no convenient place to set the initial replicache-client
+// loglevel early.
 LogLevel globalLogLevel = LogLevel.info;
 
 void _log(LogLevel level, String msg) {

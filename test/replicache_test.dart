@@ -499,8 +499,8 @@ Future<void> main() async {
   });
 
   test('sync', () async {
-    recordPath = './sync_replay.json';
-    // await useReplay('./sync_replay.json');
+    // recordPath = './sync_replay.json';
+    await useReplay('./sync_replay.json');
 
     rep = await Replicache.forTesting(
       'http://localhost:7001/pull',
