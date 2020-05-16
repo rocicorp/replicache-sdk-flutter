@@ -507,6 +507,7 @@ Future<void> main() async {
       name: 'sync',
       batchUrl: 'https://replicache-sample-todo.now.sh/serve/replicache-batch',
       dataLayerAuth: '1',
+      diffServerAuth: 'sandbox',
     );
 
     Completer c = Completer();
