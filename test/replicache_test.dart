@@ -106,7 +106,7 @@ Future<void> main() async {
 
     if (recordPath == null && replays.isNotEmpty) {
       final i = replays.indexWhere((r) => r.matches(dbName, method, data));
-      expect(i, isNot(-1));
+      expect(i, isNot(-1), reason: 'Cannot find recorded response for request - perhaps you need to update sync_replay.json');
       final replay = replays[i];
       replays.removeAt(i);
       return replay.responseBody;
@@ -571,12 +571,6 @@ Future<void> main() async {
 
     await f;
     expect(count, 6);
-
-    {
-      final syncHead = await (rep as dynamic).beginSync();
-      await (rep as dynamic).maybeEndSync(syncHead);
-      expect(count, 6);
-    }
 
     {
       final syncHead = await (rep as dynamic).beginSync();
