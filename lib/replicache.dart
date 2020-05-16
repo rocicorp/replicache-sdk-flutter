@@ -67,6 +67,7 @@ class Replicache implements ReadTransaction {
   final String _name;
   final String _diffServerUrl;
   String _dataLayerAuth;
+  String _diffServerAuth;
   final String _batchUrl;
   Future<String> _root;
   Future<dynamic> _opened;
@@ -117,15 +118,18 @@ class Replicache implements ReadTransaction {
   /// Create or open a local Replicache database with named `name` synchronizing with `remote`.
   /// If `name` is omitted, it defaults to `remote`.
   factory Replicache(
+    // TODO(arv): Make this a required named parameter.
     String diffServerUrl, {
     String name = '',
     String dataLayerAuth = '',
+    String diffServerAuth = '',
     String batchUrl = '',
   }) {
     final rep = Replicache._new(
       diffServerUrl,
       name: name,
       dataLayerAuth: dataLayerAuth,
+      diffServerAuth: diffServerAuth,
       batchUrl: batchUrl,
       syncInterval: Duration(seconds: 5),
     );
@@ -137,9 +141,11 @@ class Replicache implements ReadTransaction {
     this._diffServerUrl, {
     String name = '',
     String dataLayerAuth = '',
+    String diffServerAuth = '',
     String batchUrl = '',
     Duration syncInterval,
   })  : _dataLayerAuth = dataLayerAuth,
+        _diffServerAuth = diffServerAuth,
         _batchUrl = batchUrl,
         _name = name.isEmpty ? _diffServerUrl : name,
         _syncInterval = syncInterval {
@@ -153,12 +159,14 @@ class Replicache implements ReadTransaction {
     String remote, {
     String name = '',
     String dataLayerAuth = '',
+    String diffServerAuth = '',
     String batchUrl = '',
   }) async {
     final rep = _ReplicacheTest._new(
       remote,
       name: name,
       dataLayerAuth: dataLayerAuth,
+      diffServerAuth: diffServerAuth,
       batchUrl: batchUrl,
     );
     await rep._opened;
@@ -270,6 +278,7 @@ class Replicache implements ReadTransaction {
       'batchPushURL': _batchUrl,
       'diffServerURL': _diffServerUrl,
       'dataLayerAuth': _dataLayerAuth,
+      'diffServerAuth': _diffServerAuth,
     });
 
     final syncInfo = beginSyncResult['syncInfo'];
@@ -621,11 +630,13 @@ class _ReplicacheTest extends Replicache {
     String remote, {
     String name = '',
     String dataLayerAuth = '',
+    String diffServerAuth = '',
     String batchUrl = '',
   }) : super._new(
           remote,
           name: name,
           dataLayerAuth: dataLayerAuth,
+          diffServerAuth: diffServerAuth,
           batchUrl: batchUrl,
           syncInterval: null,
         );

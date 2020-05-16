@@ -114,6 +114,7 @@ class _MyHomePageState extends State<MyHomePage> {
       diffServerUrl,
       name: loginResult.userId,
       dataLayerAuth: loginResult.userId,
+      diffServerAuth: 'sandbox',
       batchUrl: batchUrl,
     );
     _replicache.onSync = _handleSync;
