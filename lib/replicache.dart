@@ -262,7 +262,9 @@ class Replicache implements ReadTransaction {
 
   Future<void> _sync() async {
     final syncHead = await _beginSync();
-    await _maybeEndSync(syncHead);
+    if (syncHead != '00000000000000000000000000000000') {
+      await _maybeEndSync(syncHead);
+    }
   }
 
   Future<String> _beginSync() async {
