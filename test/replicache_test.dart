@@ -580,7 +580,7 @@ Future<void> main() async {
 
     {
       final syncHead = await (rep as dynamic).beginSync();
-      await (rep as dynamic).maybeEndSync(syncHead);
+      expect(syncHead, '00000000000000000000000000000000');
       expect(count, 6);
     }
 
