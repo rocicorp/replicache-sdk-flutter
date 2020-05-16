@@ -106,7 +106,7 @@ Future<void> main() async {
 
     if (recordPath == null && replays.isNotEmpty) {
       final i = replays.indexWhere((r) => r.matches(dbName, method, data));
-      expect(i, isNot(-1), reason: 'Cannot find recorded response for request - perhaps you need to update sync_replay.json');
+      expect(i, isNot(-1), reason: 'Cannot find recorded response for request: ($dbName, $method, ${utf8.decode(data)}) - perhaps you need to update sync_replay.json');
       final replay = replays[i];
       replays.removeAt(i);
       return replay.responseBody;
@@ -503,11 +503,11 @@ Future<void> main() async {
     await useReplay('./sync_replay.json');
 
     rep = await Replicache.forTesting(
-      'http://localhost:7001/pull',
+      'https://serve.replicache.dev/pull',
       name: 'sync',
       batchUrl: 'https://replicache-sample-todo.now.sh/serve/replicache-batch',
       dataLayerAuth: '1',
-      diffServerAuth: 'sandbox',
+      diffServerAuth: '1',
     );
 
     Completer c = Completer();
