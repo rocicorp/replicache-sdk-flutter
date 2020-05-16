@@ -2,7 +2,7 @@ ORIG=`pwd`
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 ROOT=$DIR/../
 PACKAGE_VERSION=`git describe --tags`
-REPM_VERSION='3459bfd48b85baf7df7d7332e64ae5c3ac2e3320'
+REPM_VERSION='c27ae0da73045a7149c29ddfffc5c875b1b5db4f'
 
 echo "Building Flutter SDK..."
 
@@ -23,6 +23,9 @@ cd replicache-client
 git reset --hard $REPM_VERSION
 ./build.sh
 cd ..
+# There might be symlinks already there
+rm replicache-flutter-sdk/ios/Repm.framework
+rm replicache-flutter-sdk/android/repm.aar
 cp -R replicache-client/build/Repm.framework replicache-flutter-sdk/ios/
 cp replicache-client/build/repm.aar replicache-flutter-sdk/android/
 
