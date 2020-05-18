@@ -73,6 +73,7 @@ class Replicache implements ReadTransaction {
   Set<_Subscription> _subscriptions = Set();
   Future<void> _syncFuture;
   RepmInvoke _repmInvoke;
+  bool _online = true;
 
   /// Lists information about available local databases.
   static Future<List<DatabaseInfo>> list({RepmInvoke repmInvoke}) async {
@@ -104,6 +105,10 @@ class Replicache implements ReadTransaction {
   /// Gets the current verbosity level Replicache logs at.
   static LogLevel get logLevel {
     return globalLogLevel;
+  }
+
+  bool get online {
+    return _online;
   }
 
   /// Create or open a local Replicache database with named `name` synchronizing
@@ -282,9 +287,15 @@ class Replicache implements ReadTransaction {
       query((tx) => tx.scan(prefix: prefix, start: start, limit: limit));
 
   Future<void> _sync() async {
-    final syncHead = await _beginSync();
-    if (syncHead != '00000000000000000000000000000000') {
-      await _maybeEndSync(syncHead);
+    try {
+      final syncHead = await _beginSync();
+      if (syncHead != '00000000000000000000000000000000') {
+        await _maybeEndSync(syncHead);
+      }
+      _online = true;
+    } catch (e) {
+      print('Error: ' + e.toString());
+      _online = false;
     }
   }
 
