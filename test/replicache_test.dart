@@ -1,53 +1,46 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
-import 'dart:typed_data';
 
-import 'package:flutter/foundation.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:replicache/database_info.dart';
 import 'package:replicache/replicache.dart';
+import 'package:replicache/repm_invoker.dart';
 import 'package:http/http.dart';
+
+enum TestMode { Replay, Record, Live }
 
 class Replay {
   final String dbName;
   final String method;
-  final Uint8List data;
-  final String responseBody;
+  final dynamic args;
+  final dynamic result;
+  String jsonArgs;
 
-  Replay(this.dbName, this.method, this.data, this.responseBody);
-
-  @override
-  operator ==(dynamic other) =>
-      other is Replay &&
-      other.dbName == dbName &&
-      other.method == method &&
-      listEquals(other.data, data) &&
-      other.responseBody == responseBody;
-
-  @override
-  int get hashCode =>
-      dbName.hashCode ^ method.hashCode ^ data.hashCode ^ responseBody.hashCode;
+  Replay(this.dbName, this.method, this.args, this.result) {
+    jsonArgs = json.encode(this.args);
+  }
 
   Map<String, dynamic> toJson() => {
         'dbName': dbName,
         'method': method,
-        'data': utf8.decode(data),
-        'responseBody': responseBody,
+        'args': args,
+        'result': result,
       };
 
-  Replay.fromJson(Map<String, dynamic> data)
-      : dbName = data['dbName'],
-        method = data['method'],
-        data = utf8.encode(data['data']),
-        responseBody = data['responseBody'];
+  factory Replay.fromJson(Map<String, dynamic> data) =>
+      Replay(data['dbName'], data['method'], data['args'], data['result']);
 
-  bool matches(dbName, method, data) =>
-      dbName == this.dbName &&
+  bool matches(String dbName, String method, dynamic args) =>
       method == this.method &&
-      listEquals(data, this.data);
+      json.encode(args) == jsonArgs &&
+      dbName == this.dbName;
 }
+
+// A ref looks like this: e99uif9c7bpavajrt666es1ki52dv239
+RegExp refRegExp = new RegExp(r'^[0-9a-v]{32}$');
+
+Map<String, String> refsMap;
 
 Future<void> main() async {
   const testServerUrl = 'http://localhost:7002';
@@ -72,70 +65,133 @@ Future<void> main() async {
   Matcher equalsJson(dynamic v) =>
       predicate((o) => o == v || json.encode(o) == json.encode(v));
 
+  const String emptyHash = "00000000000000000000000000000000";
+
   Future<void> nextMicrotask() => Future.delayed(Duration());
 
   TestWidgetsFlutterBinding.ensureInitialized();
 
   // TODO(arv): Start the test server from here!
 
-  List replays = [];
-  String recordPath;
+  List replays;
+  File fixtureFile;
 
-  File fixtureFile(String name) {
-    var dir = Directory.current.path;
-    if (dir.endsWith('/test')) {
-      dir = dir.replaceAll('/test', '');
-    }
-    return File('$dir/test/$name');
+  Future<dynamic> Function(String dbName, String rpc, [dynamic args]) invoke;
+
+  RepmHttpInvoker httpInvoker = RepmHttpInvoker('http://localhost:7002');
+  final httpInvoke = httpInvoker.invoke;
+
+  Future<dynamic> recordInvoke(String dbName, String rpc,
+      [dynamic args]) async {
+    expect(fixtureFile, isNotNull);
+    final result = await httpInvoke(dbName, rpc, args);
+    replays.add(Replay(dbName, rpc, args, result));
+    return result;
+  }
+
+  Future<dynamic> replayInvoke(String dbName, String rpc,
+      [dynamic args]) async {
+    expect(fixtureFile, isNotNull);
+    assert(replays != null, 'No replays found');
+
+    final i = replays.indexWhere((r) => r.matches(dbName, rpc, args));
+    expect(i, isNot(-1),
+        reason:
+            'Cannot find recorded response for request: ($dbName, $rpc, ${json.encode(args)}) - perhaps you need to update the test fixture file');
+
+    final replay = replays[i];
+    replays.removeAt(i);
+    // A microtask is not sufficient to emulate the RPC. We need to go to the
+    // event loop.
+    await Future.delayed(Duration.zero);
+    return replay.result;
+  }
+
+  TestMode testMode;
+
+  switch (Platform.environment['TEST_MODE'] ?? 'live') {
+    case 'replay':
+      testMode = TestMode.Replay;
+      invoke = replayInvoke;
+      break;
+    case 'live':
+      testMode = TestMode.Live;
+      invoke = httpInvoke;
+      break;
+    case 'record':
+      testMode = TestMode.Record;
+      invoke = recordInvoke;
+      break;
+    default:
+      fail('Unexpected TEST_MODE');
   }
 
   Future<void> useReplay(String name) async {
-    final replaysString = await fixtureFile(name).readAsString();
-    replays = json
-        .decode(replaysString)
-        .toList()
-        .map((data) => Replay.fromJson(data))
-        .toList();
+    Future<File> ff() {
+      var dir = Directory.current.path;
+      if (dir.endsWith('/test')) {
+        dir = dir.replaceAll('/test', '');
+      }
+      return File('$dir/test/fixtures/$name.json').create(recursive: true);
+    }
+
+    switch (testMode) {
+      case TestMode.Replay:
+        fixtureFile = await ff();
+        final replaysString = await (fixtureFile).readAsString();
+        if (replaysString.isEmpty) {
+          replays = null;
+        } else {
+          replays = json
+              .decode(replaysString)
+              .toList()
+              .map((data) => Replay.fromJson(data))
+              .toList();
+        }
+        break;
+      case TestMode.Record:
+        fixtureFile = await ff();
+        replays = [];
+        break;
+      case TestMode.Live:
+        break;
+    }
   }
 
-  const MethodChannel(CHANNEL_NAME)
-      .setMockMethodCallHandler((methodCall) async {
-    final method = methodCall.method;
-    final String dbName = methodCall.arguments[0];
-    final Uint8List data = methodCall.arguments[1];
-
-    if (recordPath == null && replays.isNotEmpty) {
-      final i = replays.indexWhere((r) => r.matches(dbName, method, data));
-      expect(i, isNot(-1), reason: 'Cannot find recorded response for request: ($dbName, $method, ${utf8.decode(data)}) - perhaps you need to update sync_replay.json');
-      final replay = replays[i];
-      replays.removeAt(i);
-      return replay.responseBody;
-    }
-
-    final resp =
-        await post('$testServerUrl/?dbname=$dbName&rpc=$method', body: data);
-    if (resp.statusCode == 200) {
-      if (recordPath != null) {
-        replays.add(Replay(dbName, method, data, resp.body));
-      }
-      return resp.body;
-    }
-    throw Exception(
-        'Test server failed: ${resp.statusCode} ${resp.reasonPhrase}: ${resp.body}');
-  });
+  Future<Replicache> replicacheForTesting(
+    String remote, {
+    String name = '',
+    String dataLayerAuth = '',
+    String diffServerAuth = '',
+    String batchUrl = '',
+  }) =>
+      Replicache.forTesting(
+        remote,
+        name: name,
+        dataLayerAuth: dataLayerAuth,
+        diffServerAuth: diffServerAuth,
+        batchUrl: batchUrl,
+        repmInvoke: invoke,
+      );
 
   setUp(() async {
     HttpOverrides.global = null;
-    recordPath = null;
-    replays = [];
-    final dbs = await Replicache.list();
-    for (final DatabaseInfo info in dbs) {
-      await Replicache.drop(info.name);
+    refsMap = Map();
+    if (testMode != TestMode.Replay) {
+      final dbs = await Replicache.list(repmInvoke: httpInvoke);
+      for (final DatabaseInfo info in dbs) {
+        await Replicache.drop(info.name, repmInvoke: httpInvoke);
+      }
     }
   });
 
   Replicache rep, rep2;
   tearDown(() async {
+    // _closeTransaction is async but we do not wait for it which can lead to
+    // us closing the db before the tx is done. For the tests we do not want
+    // these errors.
+    await Future.delayed(Duration(milliseconds: 300));
+
     if (rep != null && !rep.closed) {
       await rep.close();
       rep = null;
@@ -145,20 +201,22 @@ Future<void> main() async {
       rep2 = null;
     }
 
-    if (recordPath != null) {
+    if (testMode == TestMode.Record) {
       JsonEncoder encoder = new JsonEncoder.withIndent('  ');
-      await fixtureFile(recordPath).writeAsString(encoder.convert(replays));
+      await fixtureFile.writeAsString(encoder.convert(replays));
     }
 
-    recordPath = null;
-    replays = [];
+    replays = null;
+    fixtureFile = null;
   });
 
   test('list and drop', () async {
-    rep = await Replicache.forTesting('def');
-    rep2 = await Replicache.forTesting('abc');
+    await useReplay('list and drop');
 
-    final List<DatabaseInfo> dbs = await Replicache.list();
+    rep = await replicacheForTesting('def');
+    rep2 = await replicacheForTesting('abc');
+
+    final List<DatabaseInfo> dbs = await Replicache.list(repmInvoke: invoke);
     expect(
         dbs,
         orderedEquals([
@@ -167,8 +225,8 @@ Future<void> main() async {
         ]));
 
     {
-      await Replicache.drop('abc');
-      final List<DatabaseInfo> dbs = await Replicache.list();
+      await Replicache.drop('abc', repmInvoke: invoke);
+      final List<DatabaseInfo> dbs = await Replicache.list(repmInvoke: invoke);
       expect(
           dbs,
           orderedEquals([
@@ -178,7 +236,9 @@ Future<void> main() async {
   });
 
   test('get, has, scan on empty db', () async {
-    rep = await Replicache.forTesting('def');
+    await useReplay('get, has, scan on empty db');
+
+    rep = await replicacheForTesting('test2');
 
     t(ReadTransaction tx) async {
       expect(await tx.get('key'), isNull);
@@ -193,7 +253,9 @@ Future<void> main() async {
   });
 
   test('put, get, has, del inside tx', () async {
-    rep = await Replicache.forTesting('def');
+    await useReplay('put, get, has, del inside tx');
+
+    rep = await replicacheForTesting('test3');
     final mut = rep.register('mut', (tx, args) async {
       final key = args['key'];
       final value = args['value'];
@@ -222,7 +284,9 @@ Future<void> main() async {
   });
 
   test('scan', () async {
-    rep = await Replicache.forTesting('def');
+    await useReplay('scan');
+
+    rep = await replicacheForTesting('test4');
     final add = rep.register('add-data', addData);
     await add({
       'a/0': 0,
@@ -305,7 +369,9 @@ Future<void> main() async {
   });
 
   test('subscribe', () async {
-    rep = await Replicache.forTesting('subscribe');
+    await useReplay('subscribe');
+
+    rep = await replicacheForTesting('subscribe');
     final repSub = rep.subscribe((tx) async => (await tx.scan(prefix: 'a/')));
 
     final log = [];
@@ -371,7 +437,9 @@ Future<void> main() async {
   });
 
   test('subscribe close', () async {
-    rep = await Replicache.forTesting('subscribe2');
+    await useReplay('subscribe close');
+
+    rep = await replicacheForTesting('subscribe-close');
     final repSub = rep.subscribe((tx) async => (await tx.get('k')));
 
     final log = [];
@@ -397,8 +465,10 @@ Future<void> main() async {
   });
 
   test('name', () async {
-    final repA = await Replicache.forTesting('name', name: 'a');
-    final repB = await Replicache.forTesting('name', name: 'b');
+    await useReplay('name');
+
+    final repA = await replicacheForTesting('name', name: 'a');
+    final repB = await replicacheForTesting('name', name: 'b');
 
     final addA = repA.register('add-data', addData);
     final addB = repB.register('add-data', addData);
@@ -414,7 +484,9 @@ Future<void> main() async {
   });
 
   test('register with error', () async {
-    rep = await Replicache.forTesting('regerr');
+    await useReplay('register with error');
+
+    rep = await replicacheForTesting('regerr');
 
     final doErr = rep.register('err', (tx, args) async {
       throw args;
@@ -429,7 +501,9 @@ Future<void> main() async {
   });
 
   test('subscribe with error', () async {
-    rep = await Replicache.forTesting('suberr');
+    await useReplay('subscribe with error');
+
+    rep = await replicacheForTesting('suberr');
 
     final add = rep.register('add-data', addData);
 
@@ -468,12 +542,14 @@ Future<void> main() async {
   });
 
   test('conflicting commits', () async {
+    await useReplay('conflicting commits');
+
     // This test does not use pure functions in the mutations. This is of course
     // not a good practice but it makes testing easier.
     final ac = Completer();
     final bc = Completer();
 
-    rep = await Replicache.forTesting('conflict');
+    rep = await replicacheForTesting('conflict');
     final mutA = rep.register('mutA', (tx, v) async {
       await tx.put('k', v);
       await ac.future;
@@ -499,10 +575,9 @@ Future<void> main() async {
   });
 
   test('sync', () async {
-    // recordPath = './sync_replay.json';
-    await useReplay('./sync_replay.json');
+    await useReplay('sync');
 
-    rep = await Replicache.forTesting(
+    rep = await replicacheForTesting(
       'https://serve.replicache.dev/pull',
       name: 'sync',
       batchUrl: 'https://replicache-sample-todo.now.sh/serve/replicache-batch',
@@ -513,24 +588,34 @@ Future<void> main() async {
     Completer c = Completer();
     c.complete();
 
-    int count = 0;
+    int createCount = 0;
+    int deleteCount = 0;
+    String syncHead;
 
     final createTodo = rep.register('createTodo', (tx, args) async {
-      count++;
+      createCount++;
       await tx.put('/todo/${args['id']}', args);
-      await c.future;
     });
 
     final deleteTodo = rep.register('deleteTodo', (tx, args) async {
-      count++;
+      deleteCount++;
       await tx.del('/todo/${args['id']}');
     });
 
-    final syncHead = await (rep as dynamic).beginSync();
-
     final id1 = 14323534;
     final id2 = 22354345;
-    final id3 = 34645673;
+
+    await deleteTodo({'id': id1});
+    await deleteTodo({'id': id2});
+
+    expect(deleteCount, 2);
+
+    await rep.sync();
+    expect(deleteCount, 2);
+
+    syncHead = await (rep as dynamic).beginSync();
+    expect(syncHead, emptyHash);
+    expect(deleteCount, 2);
 
     await createTodo({
       'id': id1,
@@ -539,8 +624,11 @@ Future<void> main() async {
       'complete': false,
       'order': 10000,
     });
-    expect(count, 1);
+    expect(createCount, 1);
     expect((await rep.get('/todo/$id1'))['text'], 'Test');
+
+    syncHead = await (rep as dynamic).beginSync();
+    expect(syncHead, isNot(emptyHash));
 
     await createTodo({
       'id': id2,
@@ -549,42 +637,23 @@ Future<void> main() async {
       'complete': false,
       'order': 20000,
     });
-    expect(count, 2);
+    expect(createCount, 2);
     expect((await rep.get('/todo/$id2'))['text'], 'Test 2');
 
-    c = Completer();
+    await (rep as dynamic).maybeEndSync(syncHead);
 
-    final f = (rep as dynamic).maybeEndSync(syncHead);
+    expect(createCount, 3);
 
-    final f2 = createTodo({
-      'id': id3,
-      'listId': 1,
-      'text': 'Test 3',
-      'complete': false,
-      'order': 30000,
-    });
-
-    c.complete();
-
-    await f2;
-    expect((await rep.get('/todo/$id3'))['text'], 'Test 3');
-
-    await f;
-    expect(count, 6);
-
-    {
-      final syncHead = await (rep as dynamic).beginSync();
-      expect(syncHead, '00000000000000000000000000000000');
-      expect(count, 6);
-    }
-
+    // Clean up
     await deleteTodo({'id': id1});
     await deleteTodo({'id': id2});
-    await deleteTodo({'id': id3});
 
-    final f3 = rep.sync();
-    final f4 = rep.sync();
-    await f3;
-    await f4;
+    expect(deleteCount, 4);
+    expect(createCount, 3);
+
+    await rep.sync();
+
+    expect(deleteCount, 4);
+    expect(createCount, 3);
   });
 }
