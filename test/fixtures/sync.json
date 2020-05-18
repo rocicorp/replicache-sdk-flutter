@@ -1,0 +1,600 @@
+[
+  {
+    "dbName": "sync",
+    "method": "open",
+    "args": {},
+    "result": ""
+  },
+  {
+    "dbName": "sync",
+    "method": "getRoot",
+    "args": {},
+    "result": {
+      "root": "e99uif9c7bpavajrt666es1ki52dv239"
+    }
+  },
+  {
+    "dbName": "sync",
+    "method": "openTransaction",
+    "args": {
+      "args": {
+        "id": 14323534
+      },
+      "name": "deleteTodo"
+    },
+    "result": {
+      "transactionId": 1
+    }
+  },
+  {
+    "dbName": "sync",
+    "method": "del",
+    "args": {
+      "transactionId": 1,
+      "key": "/todo/14323534"
+    },
+    "result": {
+      "ok": false
+    }
+  },
+  {
+    "dbName": "sync",
+    "method": "commitTransaction",
+    "args": {
+      "transactionId": 1
+    },
+    "result": {}
+  },
+  {
+    "dbName": "sync",
+    "method": "openTransaction",
+    "args": {
+      "args": {
+        "id": 22354345
+      },
+      "name": "deleteTodo"
+    },
+    "result": {
+      "transactionId": 2
+    }
+  },
+  {
+    "dbName": "sync",
+    "method": "del",
+    "args": {
+      "transactionId": 2,
+      "key": "/todo/22354345"
+    },
+    "result": {
+      "ok": false
+    }
+  },
+  {
+    "dbName": "sync",
+    "method": "commitTransaction",
+    "args": {
+      "transactionId": 2
+    },
+    "result": {}
+  },
+  {
+    "dbName": "sync",
+    "method": "beginSync",
+    "args": {
+      "batchPushURL": "https://replicache-sample-todo.now.sh/serve/replicache-batch",
+      "diffServerURL": "https://serve.replicache.dev/pull",
+      "dataLayerAuth": "1",
+      "diffServerAuth": "1"
+    },
+    "result": {
+      "syncHead": "mci5gi0ebfpssbe03u88o5q0f47cl2fg",
+      "syncInfo": {
+        "clientViewInfo": {
+          "httpStatusCode": 200,
+          "errorMessage": ""
+        }
+      }
+    }
+  },
+  {
+    "dbName": "sync",
+    "method": "maybeEndSync",
+    "args": {
+      "syncHead": "mci5gi0ebfpssbe03u88o5q0f47cl2fg"
+    },
+    "result": {}
+  },
+  {
+    "dbName": "sync",
+    "method": "openTransaction",
+    "args": {},
+    "result": {
+      "transactionId": 3
+    }
+  },
+  {
+    "dbName": "sync",
+    "method": "closeTransaction",
+    "args": {
+      "transactionId": 3
+    },
+    "result": {}
+  },
+  {
+    "dbName": "sync",
+    "method": "beginSync",
+    "args": {
+      "batchPushURL": "https://replicache-sample-todo.now.sh/serve/replicache-batch",
+      "diffServerURL": "https://serve.replicache.dev/pull",
+      "dataLayerAuth": "1",
+      "diffServerAuth": "1"
+    },
+    "result": {
+      "syncHead": "00000000000000000000000000000000",
+      "syncInfo": {
+        "clientViewInfo": {
+          "httpStatusCode": 200,
+          "errorMessage": ""
+        }
+      }
+    }
+  },
+  {
+    "dbName": "sync",
+    "method": "openTransaction",
+    "args": {
+      "args": {
+        "id": 14323534,
+        "listId": 1,
+        "text": "Test",
+        "complete": false,
+        "order": 10000
+      },
+      "name": "createTodo"
+    },
+    "result": {
+      "transactionId": 4
+    }
+  },
+  {
+    "dbName": "sync",
+    "method": "put",
+    "args": {
+      "transactionId": 4,
+      "key": "/todo/14323534",
+      "value": {
+        "id": 14323534,
+        "listId": 1,
+        "text": "Test",
+        "complete": false,
+        "order": 10000
+      }
+    },
+    "result": {}
+  },
+  {
+    "dbName": "sync",
+    "method": "commitTransaction",
+    "args": {
+      "transactionId": 4
+    },
+    "result": {
+      "ref": "mh7784022pn4g3mo73rkj2dfc2ov7k78"
+    }
+  },
+  {
+    "dbName": "sync",
+    "method": "openTransaction",
+    "args": {},
+    "result": {
+      "transactionId": 5
+    }
+  },
+  {
+    "dbName": "sync",
+    "method": "closeTransaction",
+    "args": {
+      "transactionId": 5
+    },
+    "result": {}
+  },
+  {
+    "dbName": "sync",
+    "method": "openTransaction",
+    "args": {},
+    "result": {
+      "transactionId": 6
+    }
+  },
+  {
+    "dbName": "sync",
+    "method": "get",
+    "args": {
+      "transactionId": 6,
+      "key": "/todo/14323534"
+    },
+    "result": {
+      "has": true,
+      "value": {
+        "complete": false,
+        "id": 14323534,
+        "listId": 1,
+        "order": 10000,
+        "text": "Test"
+      }
+    }
+  },
+  {
+    "dbName": "sync",
+    "method": "closeTransaction",
+    "args": {
+      "transactionId": 6
+    },
+    "result": {}
+  },
+  {
+    "dbName": "sync",
+    "method": "beginSync",
+    "args": {
+      "batchPushURL": "https://replicache-sample-todo.now.sh/serve/replicache-batch",
+      "diffServerURL": "https://serve.replicache.dev/pull",
+      "dataLayerAuth": "1",
+      "diffServerAuth": "1"
+    },
+    "result": {
+      "syncHead": "o4lt715s46v19jssd955cqdec56fp5go",
+      "syncInfo": {
+        "batchPushInfo": {
+          "httpStatusCode": 200,
+          "errorMessage": "",
+          "batchPushResponse": {}
+        },
+        "clientViewInfo": {
+          "httpStatusCode": 200,
+          "errorMessage": ""
+        }
+      }
+    }
+  },
+  {
+    "dbName": "sync",
+    "method": "openTransaction",
+    "args": {
+      "args": {
+        "id": 22354345,
+        "listId": 1,
+        "text": "Test 2",
+        "complete": false,
+        "order": 20000
+      },
+      "name": "createTodo"
+    },
+    "result": {
+      "transactionId": 7
+    }
+  },
+  {
+    "dbName": "sync",
+    "method": "put",
+    "args": {
+      "transactionId": 7,
+      "key": "/todo/22354345",
+      "value": {
+        "id": 22354345,
+        "listId": 1,
+        "text": "Test 2",
+        "complete": false,
+        "order": 20000
+      }
+    },
+    "result": {}
+  },
+  {
+    "dbName": "sync",
+    "method": "commitTransaction",
+    "args": {
+      "transactionId": 7
+    },
+    "result": {
+      "ref": "f7p88e7pf0r7vnpec6uv8atgeobt9mkd"
+    }
+  },
+  {
+    "dbName": "sync",
+    "method": "openTransaction",
+    "args": {},
+    "result": {
+      "transactionId": 8
+    }
+  },
+  {
+    "dbName": "sync",
+    "method": "openTransaction",
+    "args": {},
+    "result": {
+      "transactionId": 9
+    }
+  },
+  {
+    "dbName": "sync",
+    "method": "closeTransaction",
+    "args": {
+      "transactionId": 8
+    },
+    "result": {}
+  },
+  {
+    "dbName": "sync",
+    "method": "get",
+    "args": {
+      "transactionId": 9,
+      "key": "/todo/22354345"
+    },
+    "result": {
+      "has": true,
+      "value": {
+        "complete": false,
+        "id": 22354345,
+        "listId": 1,
+        "order": 20000,
+        "text": "Test 2"
+      }
+    }
+  },
+  {
+    "dbName": "sync",
+    "method": "maybeEndSync",
+    "args": {
+      "syncHead": "o4lt715s46v19jssd955cqdec56fp5go"
+    },
+    "result": {
+      "replayMutations": [
+        {
+          "id": 2,
+          "name": "createTodo",
+          "args": {
+            "complete": false,
+            "id": 22354345,
+            "listId": 1,
+            "order": 20000,
+            "text": "Test 2"
+          },
+          "original": "f7p88e7pf0r7vnpec6uv8atgeobt9mkd"
+        }
+      ]
+    }
+  },
+  {
+    "dbName": "sync",
+    "method": "closeTransaction",
+    "args": {
+      "transactionId": 9
+    },
+    "result": {}
+  },
+  {
+    "dbName": "sync",
+    "method": "openTransaction",
+    "args": {
+      "args": {
+        "complete": false,
+        "id": 22354345,
+        "listId": 1,
+        "order": 20000,
+        "text": "Test 2"
+      },
+      "name": "createTodo",
+      "rebaseOpts": {
+        "basis": "o4lt715s46v19jssd955cqdec56fp5go",
+        "original": "f7p88e7pf0r7vnpec6uv8atgeobt9mkd"
+      }
+    },
+    "result": {
+      "transactionId": 10
+    }
+  },
+  {
+    "dbName": "sync",
+    "method": "put",
+    "args": {
+      "transactionId": 10,
+      "key": "/todo/22354345",
+      "value": {
+        "complete": false,
+        "id": 22354345,
+        "listId": 1,
+        "order": 20000,
+        "text": "Test 2"
+      }
+    },
+    "result": {}
+  },
+  {
+    "dbName": "sync",
+    "method": "commitTransaction",
+    "args": {
+      "transactionId": 10
+    },
+    "result": {
+      "ref": "u1k3uiol73dhdc35emnngfkalv239js7"
+    }
+  },
+  {
+    "dbName": "sync",
+    "method": "maybeEndSync",
+    "args": {
+      "syncHead": "u1k3uiol73dhdc35emnngfkalv239js7"
+    },
+    "result": {}
+  },
+  {
+    "dbName": "sync",
+    "method": "openTransaction",
+    "args": {},
+    "result": {
+      "transactionId": 11
+    }
+  },
+  {
+    "dbName": "sync",
+    "method": "closeTransaction",
+    "args": {
+      "transactionId": 11
+    },
+    "result": {}
+  },
+  {
+    "dbName": "sync",
+    "method": "openTransaction",
+    "args": {
+      "args": {
+        "id": 14323534
+      },
+      "name": "deleteTodo"
+    },
+    "result": {
+      "transactionId": 12
+    }
+  },
+  {
+    "dbName": "sync",
+    "method": "del",
+    "args": {
+      "transactionId": 12,
+      "key": "/todo/14323534"
+    },
+    "result": {
+      "ok": true
+    }
+  },
+  {
+    "dbName": "sync",
+    "method": "commitTransaction",
+    "args": {
+      "transactionId": 12
+    },
+    "result": {
+      "ref": "gp60hj1fpnqdrhmb5db97kt9mhihud7f"
+    }
+  },
+  {
+    "dbName": "sync",
+    "method": "openTransaction",
+    "args": {},
+    "result": {
+      "transactionId": 13
+    }
+  },
+  {
+    "dbName": "sync",
+    "method": "openTransaction",
+    "args": {
+      "args": {
+        "id": 22354345
+      },
+      "name": "deleteTodo"
+    },
+    "result": {
+      "transactionId": 14
+    }
+  },
+  {
+    "dbName": "sync",
+    "method": "closeTransaction",
+    "args": {
+      "transactionId": 13
+    },
+    "result": {}
+  },
+  {
+    "dbName": "sync",
+    "method": "del",
+    "args": {
+      "transactionId": 14,
+      "key": "/todo/22354345"
+    },
+    "result": {
+      "ok": true
+    }
+  },
+  {
+    "dbName": "sync",
+    "method": "commitTransaction",
+    "args": {
+      "transactionId": 14
+    },
+    "result": {
+      "ref": "vihtpsa1qnqgs5pbv8qg0ktoul63otn1"
+    }
+  },
+  {
+    "dbName": "sync",
+    "method": "openTransaction",
+    "args": {},
+    "result": {
+      "transactionId": 15
+    }
+  },
+  {
+    "dbName": "sync",
+    "method": "closeTransaction",
+    "args": {
+      "transactionId": 15
+    },
+    "result": {}
+  },
+  {
+    "dbName": "sync",
+    "method": "beginSync",
+    "args": {
+      "batchPushURL": "https://replicache-sample-todo.now.sh/serve/replicache-batch",
+      "diffServerURL": "https://serve.replicache.dev/pull",
+      "dataLayerAuth": "1",
+      "diffServerAuth": "1"
+    },
+    "result": {
+      "syncHead": "j6l7lsotuqs7vu48cq2ndfo8sors7k4q",
+      "syncInfo": {
+        "batchPushInfo": {
+          "httpStatusCode": 200,
+          "errorMessage": "",
+          "batchPushResponse": {}
+        },
+        "clientViewInfo": {
+          "httpStatusCode": 200,
+          "errorMessage": ""
+        }
+      }
+    }
+  },
+  {
+    "dbName": "sync",
+    "method": "maybeEndSync",
+    "args": {
+      "syncHead": "j6l7lsotuqs7vu48cq2ndfo8sors7k4q"
+    },
+    "result": {}
+  },
+  {
+    "dbName": "sync",
+    "method": "openTransaction",
+    "args": {},
+    "result": {
+      "transactionId": 16
+    }
+  },
+  {
+    "dbName": "sync",
+    "method": "closeTransaction",
+    "args": {
+      "transactionId": 16
+    },
+    "result": {}
+  },
+  {
+    "dbName": "sync",
+    "method": "close",
+    "args": {},
+    "result": ""
+  }
+]

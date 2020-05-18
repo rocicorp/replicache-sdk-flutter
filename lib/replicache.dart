@@ -3,14 +3,12 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/services.dart';
 
+import 'repm_invoker.dart';
 import 'database_info.dart';
 import 'log.dart';
 
 export 'log.dart' show LogLevel;
-
-const CHANNEL_NAME = 'replicache.dev';
 
 typedef void SyncHandler(bool syncing);
 typedef Future<String> AuthTokenGetter();
@@ -58,8 +56,6 @@ class ScanId {
 /// sync(), which runs concurrently with other operations (and might take awhile, since
 /// it attempts to go to the network).
 class Replicache implements ReadTransaction {
-  static MethodChannel _platform;
-
   SyncHandler onSync;
   AuthTokenGetter getDataLayerAuth;
 
@@ -76,25 +72,25 @@ class Replicache implements ReadTransaction {
   bool _closed = false;
   Set<_Subscription> _subscriptions = Set();
   Future<void> _syncFuture;
+  RepmInvoke _repmInvoke;
 
   /// Lists information about available local databases.
-  static Future<List<DatabaseInfo>> list() async {
-    var res = await _staticInvoke('', 'list');
+  static Future<List<DatabaseInfo>> list({RepmInvoke repmInvoke}) async {
+    var res = await _staticInvoke('', 'list', repmInvoke: repmInvoke);
     return List.from(res['databases'].map((d) => DatabaseInfo.fromJson(d)));
   }
 
   /// Completely delete a local database. Remote replicas in the group aren't affected.
-  static Future<void> drop(String name) async {
-    await _staticInvoke(name, 'drop');
+
+  static Future<void> drop(String name, {RepmInvoke repmInvoke}) async {
+    await _staticInvoke(name, 'drop', repmInvoke: repmInvoke);
   }
 
   /// Sets the verbosity level Replicache logs at. By default,
   /// Replicache logs at [LogLevel.info].
-  static void set logLevel(LogLevel level) {
-    _staticInvoke(
-        '',
-        'setLogLevel',
-        {
+  static set logLevel(LogLevel level) {
+    _staticInvoke('', 'setLogLevel',
+        args: {
           LogLevel.debug: 'debug',
           LogLevel.info: 'info',
           LogLevel.error: 'error',
@@ -107,16 +103,10 @@ class Replicache implements ReadTransaction {
     return globalLogLevel;
   }
 
-  static Future<void> _methodChannelHandler(MethodCall call) {
-    if (call.method == "log") {
-      print("Replicache (native): ${call.arguments}");
-      return Future.value();
-    }
-    throw Exception("Unknown method: ${call.method}");
-  }
-
-  /// Create or open a local Replicache database with named `name` synchronizing with `remote`.
-  /// If `name` is omitted, it defaults to `remote`.
+  /// Create or open a local Replicache database with named `name` synchronizing
+  /// with `remote`. If `name` is omitted, it defaults to `remote`. `repmInvoke`
+  /// is used to talk to the native Replicache module. It can be provided to
+  /// allow mocking out the underlying implementation.
   factory Replicache(
     // TODO(arv): Make this a required named parameter.
     String diffServerUrl, {
@@ -124,6 +114,7 @@ class Replicache implements ReadTransaction {
     String dataLayerAuth = '',
     String diffServerAuth = '',
     String batchUrl = '',
+    RepmInvoke repmInvoke,
   }) {
     final rep = Replicache._new(
       diffServerUrl,
@@ -132,6 +123,7 @@ class Replicache implements ReadTransaction {
       diffServerAuth: diffServerAuth,
       batchUrl: batchUrl,
       syncInterval: Duration(seconds: 5),
+      repmInvoke: repmInvoke,
     );
     rep._open();
     return rep;
@@ -144,13 +136,15 @@ class Replicache implements ReadTransaction {
     String diffServerAuth = '',
     String batchUrl = '',
     Duration syncInterval,
+    RepmInvoke repmInvoke,
   })  : _dataLayerAuth = dataLayerAuth,
         _diffServerAuth = diffServerAuth,
         _batchUrl = batchUrl,
         _name = name.isEmpty ? _diffServerUrl : name,
-        _syncInterval = syncInterval {
+        _syncInterval = syncInterval,
+        _repmInvoke = repmInvoke {
     if (_diffServerUrl.isEmpty) {
-      throw Exception("remote must be non-empty");
+      throw Exception('remote must be non-empty');
     }
     _open();
   }
@@ -161,6 +155,7 @@ class Replicache implements ReadTransaction {
     String dataLayerAuth = '',
     String diffServerAuth = '',
     String batchUrl = '',
+    @required RepmInvoke repmInvoke,
   }) async {
     final rep = _ReplicacheTest._new(
       remote,
@@ -168,13 +163,26 @@ class Replicache implements ReadTransaction {
       dataLayerAuth: dataLayerAuth,
       diffServerAuth: diffServerAuth,
       batchUrl: batchUrl,
+      repmInvoke: repmInvoke,
     );
     await rep._opened;
+    await rep._root;
     return rep;
   }
 
+  /// Sets the level of verbosity Replicache should log at.
+  static setLogLevel(LogLevel level) {
+    globalLogLevel = level;
+    _staticInvoke('', 'setLogLevel',
+        args: {
+          LogLevel.debug: 'debug',
+          LogLevel.info: 'info',
+          LogLevel.error: 'error',
+        }[level]);
+  }
+
   Future<void> _open() async {
-    _opened = _staticInvoke(_name, 'open');
+    _opened = _staticInvoke(_name, 'open', repmInvoke: _repmInvoke);
     _root = _getRoot();
     await _root;
     if (_syncInterval != null) {
@@ -441,24 +449,19 @@ class Replicache implements ReadTransaction {
     }
   }
 
-  Future<dynamic> _invoke(String rpc, [dynamic args]) async {
+  Future<dynamic> _invoke(String rpc, [dynamic args = const {}]) async {
     await _opened;
-    return await _staticInvoke(_name, rpc, args);
+    return await _staticInvoke(_name, rpc, args: args, repmInvoke: _repmInvoke);
   }
 
   static Future<dynamic> _staticInvoke(String dbName, String rpc,
-      [dynamic args = null]) async {
-    final enc = JsonUtf8Encoder();
-    if (_platform == null) {
-      _platform = MethodChannel(CHANNEL_NAME);
-      _platform.setMethodCallHandler(_methodChannelHandler);
+      {dynamic args = const {}, RepmInvoke repmInvoke}) {
+    if (repmInvoke == null) {
+      final invoker = RepmMethodChannelInvoker();
+      repmInvoke = invoker.invoke;
     }
-    try {
-      final r = await _platform.invokeMethod(rpc, [dbName, enc.convert(args)]);
-      return r == '' ? null : jsonDecode(r);
-    } catch (e) {
-      throw Exception('Error invoking "$rpc": ${e.toString()}');
-    }
+
+    return repmInvoke(dbName, rpc, args);
   }
 
   void _fireOnSync(bool syncing) {
@@ -634,6 +637,7 @@ class _ReplicacheTest extends Replicache {
     String dataLayerAuth = '',
     String diffServerAuth = '',
     String batchUrl = '',
+    RepmInvoke repmInvoke,
   }) : super._new(
           remote,
           name: name,
@@ -641,6 +645,7 @@ class _ReplicacheTest extends Replicache {
           diffServerAuth: diffServerAuth,
           batchUrl: batchUrl,
           syncInterval: null,
+          repmInvoke: repmInvoke,
         );
 
   Future<String> beginSync() => super._beginSync();
