@@ -1,6 +1,5 @@
 import 'dart:core';
 import 'dart:async';
-import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 
@@ -9,6 +8,7 @@ import 'src/database_info.dart';
 import 'src/log.dart';
 import 'src/scan_item.dart';
 import 'src/scan_bound.dart';
+import 'src/transactions.dart';
 
 export 'src/log.dart' show LogLevel;
 export 'src/scan_item.dart';
@@ -471,7 +471,7 @@ class Replicache implements ReadTransaction {
     final res = await _invoke('openTransaction');
     final txId = res['transactionId'];
     try {
-      final tx = _ReadTransactionImpl(this._invoke, txId);
+      final tx = ReadTransactionImpl(this._invoke, txId);
       return await callback(tx);
     } finally {
       // No need to await the response.
@@ -538,7 +538,7 @@ class Replicache implements ReadTransaction {
     final txId = res['transactionId'];
     R rv;
     try {
-      final tx = WriteTransaction._new(this._invoke, txId);
+      final tx = newWriteTransaction(this._invoke, txId);
       rv = await Function.apply(mutatorImpl, [tx, args]);
     } catch (ex) {
       // No need to await the response.
@@ -602,63 +602,6 @@ class _Subscription<R> {
   _Subscription(this.callback, this.streamController);
 }
 
-/// ReadTransactions are used with [Replicache.query] and allows read operations on the database.
-abstract class ReadTransaction {
-  /// Get a single value from the database.
-  Future<dynamic> get(String key);
-
-  /// Determines if a single key is present in the database.
-  Future<bool> has(String key);
-
-  /// Gets many values from the database.
-  Future<Iterable<ScanItem>> scan({String prefix, ScanBound start, int limit});
-}
-
-typedef Future<dynamic> _Invoke(String rpc, [dynamic args]);
-
-class _ReadTransactionImpl implements ReadTransaction {
-  final int _transactionId;
-  final _Invoke _invoke;
-
-  _ReadTransactionImpl(this._invoke, this._transactionId);
-
-  Future<dynamic> get(String key) async {
-    final result = await _invoke('get', {
-      'transactionId': _transactionId,
-      'key': key,
-    });
-    if (!result['has']) {
-      return null;
-    }
-    return result['value'];
-  }
-
-  Future<bool> has(String key) async {
-    final result = await _invoke('has', {
-      'transactionId': _transactionId,
-      'key': key,
-    });
-    return result['has'];
-  }
-
-  Future<Iterable<ScanItem>> scan({
-    String prefix = '',
-    ScanBound start,
-    int limit = 50,
-  }) async {
-    final args = {
-      'transactionId': _transactionId,
-      'prefix': prefix,
-      'limit': limit,
-    };
-    if (start != null) {
-      args['start'] = start;
-    }
-    List<dynamic> r = await _invoke('scan', args);
-    return r.map((e) => ScanItem.fromJson(e));
-  }
-}
-
 class _SubscriptionSuccess<V> {
   final V value;
   _SubscriptionSuccess(this.value);
@@ -667,33 +610,6 @@ class _SubscriptionSuccess<V> {
 class _SubscriptionError<E> {
   final E error;
   _SubscriptionError(this.error);
-}
-
-/// WriteTransactions are used with [Replicache.register] and allows read and
-/// write operations on the database.
-class WriteTransaction extends _ReadTransactionImpl {
-  WriteTransaction._new(_Invoke invoke, int transactionId)
-      : super(invoke, transactionId);
-
-  /// Sets a single value in the database. The [value] will be encoded using
-  /// [json.encode].
-  Future<void> put(String key, dynamic value) async {
-    await _invoke('put', {
-      'transactionId': _transactionId,
-      'key': key,
-      'value': value,
-    });
-  }
-
-  /// Removes a key and its value from the database. Returns true if there was a
-  /// key to remove.
-  Future<bool> del(String key) async {
-    final result = await _invoke('del', {
-      'transactionId': _transactionId,
-      'key': key,
-    });
-    return result['ok'];
-  }
 }
 
 class _MutateResult<R> {
