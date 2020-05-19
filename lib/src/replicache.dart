@@ -131,27 +131,6 @@ class Replicache implements ReadTransaction {
     _open();
   }
 
-  static Future<Replicache> forTesting({
-    @required String diffServerUrl,
-    String name = '',
-    String dataLayerAuth = '',
-    String diffServerAuth = '',
-    String batchUrl = '',
-    @required RepmInvoke repmInvoke,
-  }) async {
-    final rep = _ReplicacheTest._new(
-      diffServerUrl: diffServerUrl,
-      name: name,
-      dataLayerAuth: dataLayerAuth,
-      diffServerAuth: diffServerAuth,
-      batchUrl: batchUrl,
-      repmInvoke: repmInvoke,
-    );
-    await rep._opened;
-    await rep._root;
-    return rep;
-  }
-
   /// Sets the level of verbosity Replicache should log at.
   static setLogLevel(LogLevel level) {
     globalLogLevel = level;
@@ -566,8 +545,8 @@ class Replicache implements ReadTransaction {
   }
 }
 
-class _ReplicacheTest extends Replicache {
-  _ReplicacheTest._new({
+class ReplicacheTest extends Replicache {
+  ReplicacheTest._new({
     @required String diffServerUrl,
     String name = '',
     String dataLayerAuth = '',
@@ -583,6 +562,27 @@ class _ReplicacheTest extends Replicache {
           syncInterval: null,
           repmInvoke: repmInvoke,
         );
+
+  static Future<ReplicacheTest> make({
+    @required String diffServerUrl,
+    String name = '',
+    String dataLayerAuth = '',
+    String diffServerAuth = '',
+    String batchUrl = '',
+    RepmInvoke repmInvoke,
+  }) async {
+    final rep = ReplicacheTest._new(
+      diffServerUrl: diffServerUrl,
+      name: name,
+      dataLayerAuth: dataLayerAuth,
+      diffServerAuth: diffServerAuth,
+      batchUrl: batchUrl,
+      repmInvoke: repmInvoke,
+    );
+    await rep._opened;
+    await rep._root;
+    return rep;
+  }
 
   Future<String> beginSync() => super._beginSync();
 

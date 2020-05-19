@@ -160,14 +160,14 @@ Future<void> main() async {
     }
   }
 
-  Future<Replicache> replicacheForTesting(
+  Future<ReplicacheTest> replicacheForTesting(
     String name, {
     String diffServerUrl = 'https://serve.replicache.dev/pull',
     String dataLayerAuth = '',
     String diffServerAuth = '',
     String batchUrl = '',
   }) =>
-      Replicache.forTesting(
+      ReplicacheTest.make(
         diffServerUrl: diffServerUrl,
         name: name,
         dataLayerAuth: dataLayerAuth,
@@ -187,7 +187,7 @@ Future<void> main() async {
     }
   });
 
-  Replicache rep, rep2;
+  ReplicacheTest rep, rep2;
   tearDown(() async {
     // _closeTransaction is async but we do not wait for it which can lead to
     // us closing the db before the tx is done. For the tests we do not want
@@ -614,7 +614,7 @@ Future<void> main() async {
     await rep.sync();
     expect(deleteCount, 2);
 
-    syncHead = await (rep as dynamic).beginSync();
+    syncHead = await rep.beginSync();
     expect(syncHead, emptyHash);
     expect(deleteCount, 2);
 
@@ -628,7 +628,7 @@ Future<void> main() async {
     expect(createCount, 1);
     expect((await rep.get('/todo/$id1'))['text'], 'Test');
 
-    syncHead = await (rep as dynamic).beginSync();
+    syncHead = await rep.beginSync();
     expect(syncHead, isNot(emptyHash));
 
     await createTodo({
@@ -641,7 +641,7 @@ Future<void> main() async {
     expect(createCount, 2);
     expect((await rep.get('/todo/$id2'))['text'], 'Test 2');
 
-    await (rep as dynamic).maybeEndSync(syncHead);
+    await rep.maybeEndSync(syncHead);
 
     expect(createCount, 3);
 
