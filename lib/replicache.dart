@@ -89,12 +89,15 @@ class Replicache implements ReadTransaction {
   /// Sets the verbosity level Replicache logs at. By default,
   /// Replicache logs at [LogLevel.info].
   static set logLevel(LogLevel level) {
-    _staticInvoke('', 'setLogLevel',
-        args: {
-          LogLevel.debug: 'debug',
-          LogLevel.info: 'info',
-          LogLevel.error: 'error',
-        }[level]);
+    _staticInvoke(
+      '',
+      'setLogLevel',
+      args: {
+        LogLevel.debug: 'debug',
+        LogLevel.info: 'info',
+        LogLevel.error: 'error',
+      }[level],
+    );
     globalLogLevel = level;
   }
 
@@ -107,9 +110,8 @@ class Replicache implements ReadTransaction {
   /// with `remote`. If `name` is omitted, it defaults to `remote`. `repmInvoke`
   /// is used to talk to the native Replicache module. It can be provided to
   /// allow mocking out the underlying implementation.
-  factory Replicache(
-    // TODO(arv): Make this a required named parameter.
-    String diffServerUrl, {
+  factory Replicache({
+    @required String diffServerUrl,
     String name = '',
     String dataLayerAuth = '',
     String diffServerAuth = '',
@@ -117,7 +119,7 @@ class Replicache implements ReadTransaction {
     RepmInvoke repmInvoke,
   }) {
     final rep = Replicache._new(
-      diffServerUrl,
+      diffServerUrl: diffServerUrl,
       name: name,
       dataLayerAuth: dataLayerAuth,
       diffServerAuth: diffServerAuth,
@@ -129,18 +131,21 @@ class Replicache implements ReadTransaction {
     return rep;
   }
 
-  Replicache._new(
-    this._diffServerUrl, {
+  Replicache._new({
+    @required String diffServerUrl,
     String name = '',
     String dataLayerAuth = '',
     String diffServerAuth = '',
     String batchUrl = '',
     Duration syncInterval,
     RepmInvoke repmInvoke,
-  })  : _dataLayerAuth = dataLayerAuth,
+  })  : _diffServerUrl = diffServerUrl,
+        _dataLayerAuth = dataLayerAuth,
         _diffServerAuth = diffServerAuth,
         _batchUrl = batchUrl,
-        _name = name.isEmpty ? _diffServerUrl : name,
+        // TODO(arv): Probably does not make much sense to have name default to
+        // the diffServerUrl. Make it a required param?
+        _name = name.isEmpty ? diffServerUrl : name,
         _syncInterval = syncInterval,
         _repmInvoke = repmInvoke {
     if (_diffServerUrl.isEmpty) {
@@ -149,8 +154,8 @@ class Replicache implements ReadTransaction {
     _open();
   }
 
-  static Future<Replicache> forTesting(
-    String remote, {
+  static Future<Replicache> forTesting({
+    @required String diffServerUrl,
     String name = '',
     String dataLayerAuth = '',
     String diffServerAuth = '',
@@ -158,7 +163,7 @@ class Replicache implements ReadTransaction {
     @required RepmInvoke repmInvoke,
   }) async {
     final rep = _ReplicacheTest._new(
-      remote,
+      diffServerUrl: diffServerUrl,
       name: name,
       dataLayerAuth: dataLayerAuth,
       diffServerAuth: diffServerAuth,
@@ -631,15 +636,15 @@ class Replicache implements ReadTransaction {
 }
 
 class _ReplicacheTest extends Replicache {
-  _ReplicacheTest._new(
-    String remote, {
+  _ReplicacheTest._new({
+    @required String diffServerUrl,
     String name = '',
     String dataLayerAuth = '',
     String diffServerAuth = '',
     String batchUrl = '',
     RepmInvoke repmInvoke,
   }) : super._new(
-          remote,
+          diffServerUrl: diffServerUrl,
           name: name,
           dataLayerAuth: dataLayerAuth,
           diffServerAuth: diffServerAuth,

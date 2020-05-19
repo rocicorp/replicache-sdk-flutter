@@ -25,7 +25,7 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   Iterable<Map<String, dynamic>> _events = [];
-  Replicache _replicache = new Replicache('http://localhost:7001');
+  Replicache _replicache = Replicache(diffServerUrl: 'http://localhost:7001');
 
   _MyHomePageState() {
     _replicache
