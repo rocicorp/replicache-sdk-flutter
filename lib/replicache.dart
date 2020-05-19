@@ -4,11 +4,19 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 
-import 'repm_invoker.dart';
-import 'database_info.dart';
-import 'log.dart';
+import 'src/repm_invoker.dart';
+import 'src/database_info.dart';
+import 'src/log.dart';
+import 'src/scan_item.dart';
+import 'src/scan_bound.dart';
 
-export 'log.dart' show LogLevel;
+export 'src/log.dart' show LogLevel;
+export 'src/scan_item.dart';
+export 'src/scan_id.dart';
+export 'src/scan_bound.dart';
+export 'src/database_info.dart';
+export 'src/repm_invoker.dart' show RepmInvoke;
+export 'src/transactions.dart' show ReadTransaction, WriteTransaction;
 
 typedef void SyncHandler(bool syncing);
 typedef Future<String> AuthTokenGetter();
@@ -16,34 +24,6 @@ typedef Future<String> AuthTokenGetter();
 typedef Future<Return> Mutator<Return, Args>(Args args);
 typedef Future<Return> MutatorImpl<Return, Args>(
     WriteTransaction tx, Args args);
-
-class ScanBound {
-  ScanBound(this.id, this.index);
-  final ScanId id;
-  final int index;
-  Map<String, dynamic> toJson() {
-    final Map<String, dynamic> r = {};
-    if (this.id != null) {
-      r['id'] = this.id;
-    }
-    if (this.index != null) {
-      r['index'] = this.index;
-    }
-    return r;
-  }
-}
-
-class ScanId {
-  ScanId(this.value, this.exclusive);
-  final String value;
-  final bool exclusive;
-  Map<String, dynamic> toJson() {
-    return {
-      'value': value ?? '',
-      'exclusive': exclusive ?? false,
-    };
-  }
-}
 
 /// Replicache is a connection to a local Replicache database. There can be multiple
 /// connections to the same database.
@@ -673,18 +653,6 @@ class _Subscription<R> {
   final Future<R> Function(ReadTransaction tx) callback;
   final StreamController<R> streamController;
   _Subscription(this.callback, this.streamController);
-}
-
-class ScanItem {
-  ScanItem.fromJson(Map<String, dynamic> data)
-      : key = data['key'],
-        value = data['value'];
-  final String key;
-
-  final dynamic value;
-
-  @Deprecated('Use key instead')
-  get id => key;
 }
 
 /// ReadTransactions are used with [Replicache.query] and allows read operations on the database.
