@@ -3,9 +3,8 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:replicache/database_info.dart';
 import 'package:replicache/replicache.dart';
-import 'package:replicache/repm_invoker.dart';
+import 'package:replicache/src/repm_invoker.dart';
 import 'package:http/http.dart';
 
 enum TestMode { Replay, Record, Live }
