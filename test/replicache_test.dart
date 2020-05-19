@@ -4,6 +4,7 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:replicache/replicache.dart';
+import 'package:replicache/src/replicache.dart';
 import 'package:replicache/src/repm_invoker.dart';
 import 'package:http/http.dart';
 
