@@ -199,64 +199,11 @@ class Replicache implements ReadTransaction {
 
   bool get closed => _closed;
 
-  Future<void> _put(int transactionId, String key, dynamic value) async {
-    await _invoke('put', {
-      'transactionId': transactionId,
-      'key': key,
-      'value': value,
-    });
-  }
-
-  Future<dynamic> _get(int transactionId, String key) async {
-    final result = await _invoke('get', {
-      'transactionId': transactionId,
-      'key': key,
-    });
-    if (!result['has']) {
-      return null;
-    }
-    return result['value'];
-  }
-
   /// Get a single value from the database.
   Future<dynamic> get(String key) => query((tx) => tx.get(key));
 
-  Future<bool> _has(int transactionId, String key) async {
-    final result = await _invoke('has', {
-      'transactionId': transactionId,
-      'key': key,
-    });
-    return result['has'];
-  }
-
   /// Determines if a single key is present in the database.
   Future<bool> has(String key) => query((tx) => tx.has(key));
-
-  Future<bool> _del(int transactionId, String key) async {
-    final result = await _invoke('del', {
-      'transactionId': transactionId,
-      'key': key,
-    });
-    return result['ok'];
-  }
-
-  Future<Iterable<ScanItem>> _scan(
-    int transactionId, {
-    @required String prefix,
-    @required ScanBound start,
-    @required int limit,
-  }) async {
-    var args = {
-      'transactionId': transactionId,
-      'prefix': prefix,
-      'limit': limit,
-    };
-    if (start != null) {
-      args['start'] = start;
-    }
-    List<dynamic> r = await _invoke('scan', args);
-    return r.map((e) => ScanItem.fromJson(e));
-  }
 
   /// Gets many values from the database.
   Future<Iterable<ScanItem>> scan({
@@ -524,7 +471,7 @@ class Replicache implements ReadTransaction {
     final res = await _invoke('openTransaction');
     final txId = res['transactionId'];
     try {
-      final tx = _ReadTransactionImpl(this, txId);
+      final tx = _ReadTransactionImpl(this._invoke, txId);
       return await callback(tx);
     } finally {
       // No need to await the response.
@@ -591,7 +538,7 @@ class Replicache implements ReadTransaction {
     final txId = res['transactionId'];
     R rv;
     try {
-      final tx = WriteTransaction._new(this, txId);
+      final tx = WriteTransaction._new(this._invoke, txId);
       rv = await Function.apply(mutatorImpl, [tx, args]);
     } catch (ex) {
       // No need to await the response.
@@ -667,25 +614,48 @@ abstract class ReadTransaction {
   Future<Iterable<ScanItem>> scan({String prefix, ScanBound start, int limit});
 }
 
+typedef Future<dynamic> _Invoke(String rpc, [dynamic args]);
+
 class _ReadTransactionImpl implements ReadTransaction {
-  final Replicache _rep;
   final int _transactionId;
+  final _Invoke _invoke;
 
-  _ReadTransactionImpl(this._rep, this._transactionId);
+  _ReadTransactionImpl(this._invoke, this._transactionId);
 
-  Future<dynamic> get(String key) {
-    // TODO(arv): Move implementations to the TX.
-    return _rep._get(_transactionId, key);
+  Future<dynamic> get(String key) async {
+    final result = await _invoke('get', {
+      'transactionId': _transactionId,
+      'key': key,
+    });
+    if (!result['has']) {
+      return null;
+    }
+    return result['value'];
   }
 
-  Future<bool> has(String key) {
-    return _rep._has(_transactionId, key);
+  Future<bool> has(String key) async {
+    final result = await _invoke('has', {
+      'transactionId': _transactionId,
+      'key': key,
+    });
+    return result['has'];
   }
 
-  Future<Iterable<ScanItem>> scan(
-      {String prefix = '', ScanBound start, int limit = 50}) {
-    return _rep._scan(_transactionId,
-        prefix: prefix, start: start, limit: limit);
+  Future<Iterable<ScanItem>> scan({
+    String prefix = '',
+    ScanBound start,
+    int limit = 50,
+  }) async {
+    final args = {
+      'transactionId': _transactionId,
+      'prefix': prefix,
+      'limit': limit,
+    };
+    if (start != null) {
+      args['start'] = start;
+    }
+    List<dynamic> r = await _invoke('scan', args);
+    return r.map((e) => ScanItem.fromJson(e));
   }
 }
 
@@ -702,19 +672,27 @@ class _SubscriptionError<E> {
 /// WriteTransactions are used with [Replicache.register] and allows read and
 /// write operations on the database.
 class WriteTransaction extends _ReadTransactionImpl {
-  WriteTransaction._new(Replicache rep, int transactionId)
-      : super(rep, transactionId);
+  WriteTransaction._new(_Invoke invoke, int transactionId)
+      : super(invoke, transactionId);
 
   /// Sets a single value in the database. The [value] will be encoded using
   /// [json.encode].
-  Future<void> put(String key, dynamic value) {
-    return _rep._put(_transactionId, key, value);
+  Future<void> put(String key, dynamic value) async {
+    await _invoke('put', {
+      'transactionId': _transactionId,
+      'key': key,
+      'value': value,
+    });
   }
 
   /// Removes a key and its value from the database. Returns true if there was a
   /// key to remove.
-  Future<bool> del(String key) {
-    return _rep._del(_transactionId, key);
+  Future<bool> del(String key) async {
+    final result = await _invoke('del', {
+      'transactionId': _transactionId,
+      'key': key,
+    });
+    return result['ok'];
   }
 }
 
