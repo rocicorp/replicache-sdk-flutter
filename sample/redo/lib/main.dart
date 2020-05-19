@@ -36,7 +36,6 @@ class _MyHomePageState extends State<MyHomePage> {
   final GlobalKey<ScaffoldState> _scaffoldKey = new GlobalKey<ScaffoldState>();
 
   Replicache _replicache;
-  Iterable<int> _listIds = [];
   Iterable<Todo> _allTodos = [];
   bool _syncing = false;
   int _selectedListId;
@@ -111,7 +110,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
   Future<void> _initWithLoginResult(LoginResult loginResult) async {
     _replicache = Replicache(
-      diffServerUrl,
+      diffServerUrl: diffServerUrl,
       name: loginResult.userId,
       dataLayerAuth: loginResult.userId,
       diffServerAuth: diffServerAuth,
@@ -132,7 +131,6 @@ class _MyHomePageState extends State<MyHomePage> {
             listIds.isNotEmpty) {
           _selectedListId = listIds.first;
         }
-        _listIds = listIds;
       });
     });
 
@@ -302,7 +300,6 @@ class _MyHomePageState extends State<MyHomePage> {
       _selectedListId = null;
       _loginResult = null;
       _allTodos = [];
-      _listIds = [];
     });
   }
 

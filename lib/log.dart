@@ -13,7 +13,7 @@ LogLevel globalLogLevel = LogLevel.info;
 
 void _log(LogLevel level, String msg) {
   if (level.index >= globalLogLevel.index) {
-    print('Replicache: ${level}: ${msg}');
+    print('Replicache: $level: $msg');
   }
 }
 

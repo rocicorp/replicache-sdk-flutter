@@ -159,14 +159,14 @@ Future<void> main() async {
   }
 
   Future<Replicache> replicacheForTesting(
-    String remote, {
-    String name = '',
+    String name, {
+    String diffServerUrl = 'https://serve.replicache.dev/pull',
     String dataLayerAuth = '',
     String diffServerAuth = '',
     String batchUrl = '',
   }) =>
       Replicache.forTesting(
-        remote,
+        diffServerUrl: diffServerUrl,
         name: name,
         dataLayerAuth: dataLayerAuth,
         diffServerAuth: diffServerAuth,
@@ -467,8 +467,8 @@ Future<void> main() async {
   test('name', () async {
     await useReplay('name');
 
-    final repA = await replicacheForTesting('name', name: 'a');
-    final repB = await replicacheForTesting('name', name: 'b');
+    final repA = await replicacheForTesting('a');
+    final repB = await replicacheForTesting('b');
 
     final addA = repA.register('add-data', addData);
     final addB = repB.register('add-data', addData);
@@ -578,8 +578,7 @@ Future<void> main() async {
     await useReplay('sync');
 
     rep = await replicacheForTesting(
-      'https://serve.replicache.dev/pull',
-      name: 'sync',
+      'sync',
       batchUrl: 'https://replicache-sample-todo.now.sh/serve/replicache-batch',
       dataLayerAuth: '1',
       diffServerAuth: '1',

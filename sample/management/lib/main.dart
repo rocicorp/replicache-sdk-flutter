@@ -72,8 +72,10 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   Replicache _fromName(String name) {
-    return new Replicache('http://localhost:7001/sandbox/' + name,
-        name: name, dataLayerAuth: "");
+    return Replicache(
+        diffServerUrl: 'http://localhost:7001/sandbox/$name',
+        name: name,
+        dataLayerAuth: "");
   }
 
   @override
