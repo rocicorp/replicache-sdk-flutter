@@ -18,11 +18,11 @@ jobs:
         uses: actions/cache@v1
         with:
           path: /opt/hostedtoolcache/flutter
-          key: ${{ runner.OS }}-flutter-install-cache-$FLUTTER_VERSION
+          key: ${{ runner.OS }}-flutter-install-cache-${{env.FLUTTER_VERSION}}
 
       - uses: subosito/flutter-action@v1
         with:
-          flutter-version: $FLUTTER_VERSION
+          flutter-version: ${{env.FLUTTER_VERSION}
 
       - run: flutter pub get
 
