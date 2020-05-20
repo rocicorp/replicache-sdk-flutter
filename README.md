@@ -1,4 +1,8 @@
-# Replicache Flutter SDK - Quickstart
+# Replicache Flutter SDK
+
+![Flutter Test](https://github.com/rocicorp/replicache-sdk-flutter/workflows/Flutter%20Test/badge.svg)
+
+# Quickstart
 
 Hi! This tutorial will walk you through integrating Replicache into your Flutter mobile app.
 
