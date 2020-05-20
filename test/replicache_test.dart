@@ -43,13 +43,6 @@ RegExp refRegExp = new RegExp(r'^[0-9a-v]{32}$');
 Map<String, String> refsMap;
 
 Future<void> main() async {
-  const testServerUrl = 'http://localhost:7002';
-
-  final resp = await get('$testServerUrl/statusz');
-  if (resp.statusCode != 200) {
-    throw Exception('Test server not running');
-  }
-
   Future<void> addData(WriteTransaction tx, dynamic data) async {
     for (final entry in data.entries) {
       await tx.put(entry.key, entry.value);
@@ -68,8 +61,6 @@ Future<void> main() async {
   const String emptyHash = "00000000000000000000000000000000";
 
   Future<void> nextMicrotask() => Future.delayed(Duration());
-
-  TestWidgetsFlutterBinding.ensureInitialized();
 
   // TODO(arv): Start the test server from here!
 
@@ -109,7 +100,7 @@ Future<void> main() async {
 
   TestMode testMode;
 
-  switch (Platform.environment['TEST_MODE'] ?? 'live') {
+  switch (Platform.environment['TEST_MODE'] ?? 'replay') {
     case 'replay':
       testMode = TestMode.Replay;
       invoke = replayInvoke;
@@ -125,6 +116,17 @@ Future<void> main() async {
     default:
       fail('Unexpected TEST_MODE');
   }
+
+  if (testMode != TestMode.Replay) {
+    const testServerUrl = 'http://localhost:7002';
+
+    final resp = await get('$testServerUrl/statusz');
+    if (resp.statusCode != 200) {
+      throw Exception('Test server not running');
+    }
+  }
+
+  TestWidgetsFlutterBinding.ensureInitialized();
 
   Future<void> useReplay(String name) async {
     Future<File> ff() {
