@@ -9,19 +9,21 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v2
+    env:
+        FLUTTER_VERSION: '1.17.x'
+    steps:   
+      - uses: actions/checkout@v2
     
-    - name: Cache Flutter dependencies
-      uses: actions/cache@v1
-      with:
-        path: /opt/hostedtoolcache/flutter
-        key: ${{ runner.OS }}-flutter-install-cache-${{ env.flutter_version }}
-          
-    - uses: subosito/flutter-action@v1
-      with:
-        flutter-version: '1.17.x'
-    
-    - run: flutter pub get
-    
-    - run: flutter test
+      - name: Cache Flutter dependencies
+        uses: actions/cache@v1
+        with:
+          path: /opt/hostedtoolcache/flutter
+          key: ${{ runner.OS }}-flutter-install-cache-$FLUTTER_VERSION
+
+      - uses: subosito/flutter-action@v1
+        with:
+          flutter-version: $FLUTTER_VERSION
+
+      - run: flutter pub get
+
+      - run: flutter test
