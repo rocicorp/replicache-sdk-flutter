@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "1088179932262",
+    "firebase_url": "https://replicache-sample-todo-push.firebaseio.com",
+    "project_id": "replicache-sample-todo-push",
+    "storage_bucket": "replicache-sample-todo-push.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1088179932262:android:5ed6f674096be3547f31a7",
+        "android_client_info": {
+          "package_name": "dev.roci.redo"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1088179932262-0n2r1vcs2i2hc9c9bouka8817390lbh2.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDEwB6NYbONc-tYC-oOrrSFLopE-CxSwn0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1088179932262-0n2r1vcs2i2hc9c9bouka8817390lbh2.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "1088179932262-ivhb948p743f0ioo5eubr0ilb333bobg.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "dev.roci.redo"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
