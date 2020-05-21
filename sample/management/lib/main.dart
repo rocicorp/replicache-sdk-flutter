@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:replicache/database_info.dart';
 import 'package:uuid/uuid.dart';
 
 import 'package:replicache/replicache.dart';
