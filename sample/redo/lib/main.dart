@@ -40,7 +40,6 @@ class _MyHomePageState extends State<MyHomePage> {
   bool _dirty = false;
   bool _online = true;
   int _selectedListId;
-  bool _deleteMode = false;
 
   LoginResult _loginResult;
   LoginPrefs _loginPrefs;
@@ -83,19 +82,11 @@ class _MyHomePageState extends State<MyHomePage> {
     } else if (_dirty) {
       icons = [Icon(Icons.sync)];
     }
-    icons.add(IconButton(
-      icon: Icon(Icons.delete),
-      onPressed: () {
-        setState(() {
-          _deleteMode = !_deleteMode;
-        });
-      }));
     return Scaffold(
       key: _scaffoldKey,
       appBar: AppBar(
         title: Text('Todo List'),
         actions: icons,
-        centerTitle: false,
       ),
       drawer: TodoDrawer(
         selectedListId: _selectedListId,
@@ -108,7 +99,6 @@ class _MyHomePageState extends State<MyHomePage> {
       ),
       body: TodoList(
         todosInList(_allTodos, _selectedListId),
-        _deleteMode,
         _handleDone,
         _handleRemove,
         _handleReorder,
@@ -269,12 +259,9 @@ class _MyHomePageState extends State<MyHomePage> {
   void _handleRemove(int id) {
     _setDirty();
     _deleteTodo({'id': id});
-    setState(() {
-      _deleteMode = false;
-    });
   }
 
-  Future<void> _handleReorder(int oldIndex, int newIndex) async {
+  void _handleReorder(int oldIndex, int newIndex) {
     if (oldIndex == newIndex) {
       return;
     }
@@ -298,7 +285,7 @@ class _MyHomePageState extends State<MyHomePage> {
     _setDirty();
 
     double order = newOrderBetween(left, right);
-    await _updateTodo({'id': id, 'order': order});
+    _updateTodo({'id': id, 'order': order});
   }
 
   void _pushAddTodoScreen() {
@@ -349,14 +336,13 @@ class _MyHomePageState extends State<MyHomePage> {
 }
 
 class TodoList extends StatelessWidget {
-  bool _deleteMode;
   final List<Todo> _todos;
-  final Future<void> Function(int, bool) _handleDone;
-  final Future<void> Function(int) _handleRemove;
-  final Future<void> Function(int, int) _handleReorder;
+  final void Function(int, bool) _handleDone;
+  final void Function(int) _handleRemove;
+  final void Function(int, int) _handleReorder;
 
   TodoList(
-      this._todos, this._deleteMode, this._handleDone, this._handleRemove, this._handleReorder);
+      this._todos, this._handleDone, this._handleRemove, this._handleReorder);
 
   // Build the whole list of todo items
   @override
@@ -369,28 +355,24 @@ class TodoList extends StatelessWidget {
 
   // builds a reorderable list, reorder functionality is achieved by dragging and dropping list items.
   Widget _buildReorderableListView(BuildContext context) {
-
     return ReorderableListView(
       children: List.generate(_todos.length, (index) {
         var todo = _todos[index];
         var id = todo.id;
-        if (_deleteMode) {
-          return ListTile(
-            key: Key('$id'),
-            title: Text(todo.text),
-            trailing: IconButton(
-              icon: Icon(Icons.delete),
-              onPressed: () {
-                _handleRemove(id);
-              }));
-        }
-        return CheckboxListTile(
+        return Dismissible(
           key: Key('$id'),
-          title: Text(todo.text),
-          value: todo.complete,
-          onChanged: (bool newValue) {
-            _handleDone(id, newValue);
-          });
+          onDismissed: (direction) {
+            _handleRemove(id);
+          },
+          // Show a red background as the item is swiped away.
+          background: Container(color: Colors.red),
+          child: new CheckboxListTile(
+              title: new Text(todo.text),
+              value: todo.complete,
+              onChanged: (bool newValue) {
+                _handleDone(id, newValue);
+              }),
+        );
       }),
       onReorder: (int oldIndex, int newIndex) {
         _handleReorder(oldIndex, newIndex);
