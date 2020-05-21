@@ -274,7 +274,7 @@ class _MyHomePageState extends State<MyHomePage> {
     });
   }
 
-  Future<void> _handleReorder(int oldIndex, int newIndex) async {
+  void _handleReorder(int oldIndex, int newIndex) async {
     if (oldIndex == newIndex) {
       return;
     }
@@ -298,7 +298,7 @@ class _MyHomePageState extends State<MyHomePage> {
     _setDirty();
 
     double order = newOrderBetween(left, right);
-    await _updateTodo({'id': id, 'order': order});
+    _updateTodo({'id': id, 'order': order});
   }
 
   void _pushAddTodoScreen() {
@@ -351,9 +351,9 @@ class _MyHomePageState extends State<MyHomePage> {
 class TodoList extends StatelessWidget {
   bool _deleteMode;
   final List<Todo> _todos;
-  final Future<void> Function(int, bool) _handleDone;
-  final Future<void> Function(int) _handleRemove;
-  final Future<void> Function(int, int) _handleReorder;
+  final void Function(int, bool) _handleDone;
+  final void Function(int) _handleRemove;
+  final void Function(int, int) _handleReorder;
 
   TodoList(
       this._todos, this._deleteMode, this._handleDone, this._handleRemove, this._handleReorder);
