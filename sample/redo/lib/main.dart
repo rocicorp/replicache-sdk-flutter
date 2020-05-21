@@ -4,6 +4,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:redo/login.dart';
 import 'package:replicache/replicache.dart';
+import 'package:replicache/log.dart';
 
 import 'model.dart';
 import 'settings.dart';
@@ -153,13 +154,14 @@ class _MyHomePageState extends State<MyHomePage> {
 
     _todoStream().listen((allTodos) {
       setState(() {
+        debug("num todos at setState: " + allTodos.length.toString());
         _allTodos = allTodos;
       });
     });
   }
 
   Stream<Iterable<int>> _listIdStream() => _replicache.subscribe(
-        (tx) async => (await tx.scan(prefix: '/list/')).map(
+        (tx) async => (await tx.scan(prefix: '/list/', limit: 500)).map(
           (item) => item.value['id'],
         ),
       );
@@ -222,7 +224,7 @@ class _MyHomePageState extends State<MyHomePage> {
       int id = args['id'];
       final todo = await _read(tx, id);
       if (todo == null) {
-        print('Warning: Possible conflict - Specified Todo $id is not present.'
+        info('Warning: Possible conflict - Specified Todo $id is not present.'
             ' Skipping reorder.');
         return;
       }
@@ -369,7 +371,7 @@ class TodoList extends StatelessWidget {
 
   // builds a reorderable list, reorder functionality is achieved by dragging and dropping list items.
   Widget _buildReorderableListView(BuildContext context) {
-
+    debug("num todos: " + this._todos.length.toString());
     return ReorderableListView(
       children: List.generate(_todos.length, (index) {
         var todo = _todos[index];
@@ -470,7 +472,7 @@ class TodoDrawer extends StatelessWidget {
 }
 
 Future<Iterable<Todo>> allTodosInTx(ReadTransaction tx) async =>
-    (await tx.scan(prefix: prefix))
+    (await tx.scan(prefix: prefix, limit: 500))
         .map((scanItem) => Todo.fromJson(scanItem.value));
 
 List<Todo> todosInList(Iterable<Todo> allTodos, int listId) {
