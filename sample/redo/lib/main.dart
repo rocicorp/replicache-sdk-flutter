@@ -37,7 +37,8 @@ class _MyHomePageState extends State<MyHomePage> {
 
   Replicache _replicache;
   Iterable<Todo> _allTodos = [];
-  bool _syncing = false;
+  bool _dirty = false;
+  bool _online = true;
   int _selectedListId;
 
   LoginResult _loginResult;
@@ -75,11 +76,17 @@ class _MyHomePageState extends State<MyHomePage> {
 
   @override
   Widget build(BuildContext context) {
+    var icons = List<Widget>();
+    if (!_online) {
+      icons = [Icon(Icons.sync_disabled)];
+    } else if (_dirty) {
+      icons = [Icon(Icons.sync)];
+    }
     return Scaffold(
       key: _scaffoldKey,
       appBar: AppBar(
         title: Text('Todo List'),
-        actions: _syncing ? [Icon(Icons.sync)] : [],
+        actions: icons,
       ),
       drawer: TodoDrawer(
         selectedListId: _selectedListId,
@@ -151,7 +158,10 @@ class _MyHomePageState extends State<MyHomePage> {
 
   void _handleSync(bool syncing) {
     setState(() {
-      _syncing = syncing;
+      _online = _replicache.online;
+      if (_online) {
+        _dirty = false;
+      }
     });
   }
 
@@ -224,6 +234,8 @@ class _MyHomePageState extends State<MyHomePage> {
     Iterable<Todo> todos = todosInList(_allTodos, _selectedListId);
     final order = newOrderBetween(todos.isEmpty ? null : todos.last, null);
 
+    _setDirty();
+
     await _createTodo({
       'id': id,
       'listId': _selectedListId,
@@ -233,10 +245,21 @@ class _MyHomePageState extends State<MyHomePage> {
     });
   }
 
-  Future<void> _handleDone(int id, bool complete) =>
-      _updateTodo({'id': id, 'complete': complete});
+  void _setDirty() {
+    setState(() {
+      _dirty = true;
+    });
+  }
 
-  Future<void> _handleRemove(int id) => _deleteTodo({'id': id});
+  Future<void> _handleDone(int id, bool complete) {
+    _setDirty();
+    _updateTodo({'id': id, 'complete': complete});
+  }
+
+  Future<void> _handleRemove(int id) {
+    _setDirty();
+    _deleteTodo({'id': id});
+  }
 
   Future<void> _handleReorder(int oldIndex, int newIndex) async {
     if (oldIndex == newIndex) {
@@ -259,6 +282,7 @@ class _MyHomePageState extends State<MyHomePage> {
       left = newIndex > 0 ? todos[newIndex - 1] : null;
       right = newIndex < todos.length ? todos[newIndex] : null;
     }
+    _setDirty();
 
     double order = newOrderBetween(left, right);
     await _updateTodo({'id': id, 'order': order});
