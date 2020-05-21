@@ -4,7 +4,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:redo/login.dart';
 import 'package:replicache/replicache.dart';
-import 'package:replicache/log.dart';
+import 'package:replicache/src/log.dart';
 
 import 'model.dart';
 import 'settings.dart';
@@ -85,12 +85,12 @@ class _MyHomePageState extends State<MyHomePage> {
       icons = [Icon(Icons.sync)];
     }
     icons.add(IconButton(
-      icon: Icon(Icons.delete),
-      onPressed: () {
-        setState(() {
-          _deleteMode = !_deleteMode;
-        });
-      }));
+        icon: Icon(Icons.delete),
+        onPressed: () {
+          setState(() {
+            _deleteMode = !_deleteMode;
+          });
+        }));
     return Scaffold(
       key: _scaffoldKey,
       appBar: AppBar(
@@ -351,14 +351,14 @@ class _MyHomePageState extends State<MyHomePage> {
 }
 
 class TodoList extends StatelessWidget {
-  bool _deleteMode;
+  final bool _deleteMode;
   final List<Todo> _todos;
   final void Function(int, bool) _handleDone;
   final void Function(int) _handleRemove;
   final void Function(int, int) _handleReorder;
 
-  TodoList(
-      this._todos, this._deleteMode, this._handleDone, this._handleRemove, this._handleReorder);
+  TodoList(this._todos, this._deleteMode, this._handleDone, this._handleRemove,
+      this._handleReorder);
 
   // Build the whole list of todo items
   @override
@@ -378,21 +378,21 @@ class TodoList extends StatelessWidget {
         var id = todo.id;
         if (_deleteMode) {
           return ListTile(
-            key: Key('$id'),
-            title: Text(todo.text),
-            trailing: IconButton(
-              icon: Icon(Icons.delete),
-              onPressed: () {
-                _handleRemove(id);
-              }));
+              key: Key('$id'),
+              title: Text(todo.text),
+              trailing: IconButton(
+                  icon: Icon(Icons.delete),
+                  onPressed: () {
+                    _handleRemove(id);
+                  }));
         }
         return CheckboxListTile(
-          key: Key('$id'),
-          title: Text(todo.text),
-          value: todo.complete,
-          onChanged: (bool newValue) {
-            _handleDone(id, newValue);
-          });
+            key: Key('$id'),
+            title: Text(todo.text),
+            value: todo.complete,
+            onChanged: (bool newValue) {
+              _handleDone(id, newValue);
+            });
       }),
       onReorder: (int oldIndex, int newIndex) {
         _handleReorder(oldIndex, newIndex);
