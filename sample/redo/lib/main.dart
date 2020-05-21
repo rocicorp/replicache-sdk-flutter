@@ -159,7 +159,7 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   Stream<Iterable<int>> _listIdStream() => _replicache.subscribe(
-        (tx) async => (await tx.scan(prefix: '/list/')).map(
+        (tx) async => (await tx.scan(prefix: '/list/', limit: 500)).map(
           (item) => item.value['id'],
         ),
       );
@@ -470,7 +470,7 @@ class TodoDrawer extends StatelessWidget {
 }
 
 Future<Iterable<Todo>> allTodosInTx(ReadTransaction tx) async =>
-    (await tx.scan(prefix: prefix))
+    (await tx.scan(prefix: prefix, limit: 500))
         .map((scanItem) => Todo.fromJson(scanItem.value));
 
 List<Todo> todosInList(Iterable<Todo> allTodos, int listId) {
