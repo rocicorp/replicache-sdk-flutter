@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:math';
 
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:redo/login.dart';
 import 'package:replicache/replicache.dart';
@@ -12,6 +13,7 @@ import 'settings.dart';
 void main() => runApp(MyApp());
 
 const prefix = '/todo/';
+final _firebaseMessaging = FirebaseMessaging();
 
 String addPrefix(int id) => '$prefix$id';
 
@@ -49,6 +51,16 @@ class _MyHomePageState extends State<MyHomePage> {
   final Random _random = Random.secure();
 
   _MyHomePageState() {
+    // Note: this is a no-op on Android.
+    _firebaseMessaging.requestNotificationPermissions(
+      const IosNotificationSettings(sound: true, badge: true, alert: true, provisional: false),
+    );
+    _firebaseMessaging.configure(
+      onMessage: (Map<String, dynamic> message) async {
+        _replicache.sync();
+      },
+    );
+
     _loginPrefs = LoginPrefs(() => context);
     _init();
   }
@@ -124,6 +136,7 @@ class _MyHomePageState extends State<MyHomePage> {
   Future<void> _init() async {
     var loginResult = await _loginPrefs.login();
     await _initWithLoginResult(loginResult);
+    debug("FCM token: " + await _firebaseMessaging.getToken());
   }
 
   Future<void> _initWithLoginResult(LoginResult loginResult) async {
@@ -136,6 +149,12 @@ class _MyHomePageState extends State<MyHomePage> {
     );
     _replicache.onSync = _handleSync;
     _replicache.getDataLayerAuth = _getDataLayerAuth;
+
+    if (_loginResult != null) {
+      _firebaseMessaging.unsubscribeFromTopic("u-" + _loginResult.userId);
+    }
+    _firebaseMessaging.subscribeToTopic("u-" + loginResult.userId);
+    debug("Subscribed to topic: u-" + loginResult.userId);
 
     _registerMutations();
 
@@ -255,6 +274,7 @@ class _MyHomePageState extends State<MyHomePage> {
       'complete': false,
       'order': order,
     });
+    _replicache.sync();
   }
 
   void _setDirty() {
@@ -266,14 +286,16 @@ class _MyHomePageState extends State<MyHomePage> {
   void _handleDone(int id, bool complete) {
     _setDirty();
     _updateTodo({'id': id, 'complete': complete});
+    _replicache.sync();
   }
 
   void _handleRemove(int id) {
     _setDirty();
-    _deleteTodo({'id': id});
     setState(() {
       _deleteMode = false;
     });
+    _deleteTodo({'id': id});
+    _replicache.sync();
   }
 
   void _handleReorder(int oldIndex, int newIndex) async {
@@ -301,6 +323,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
     double order = newOrderBetween(left, right);
     _updateTodo({'id': id, 'order': order});
+    _replicache.sync();
   }
 
   void _pushAddTodoScreen() {
