@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CLIENT_ID</key>
+	<string>1088179932262-ivhb948p743f0ioo5eubr0ilb333bobg.apps.googleusercontent.com</string>
+	<key>REVERSED_CLIENT_ID</key>
+	<string>com.googleusercontent.apps.1088179932262-ivhb948p743f0ioo5eubr0ilb333bobg</string>
+	<key>API_KEY</key>
+	<string>AIzaSyBT4DpA9F1yzVdZJSOVyYreVvC6_L9Jhoo</string>
+	<key>GCM_SENDER_ID</key>
+	<string>1088179932262</string>
+	<key>PLIST_VERSION</key>
+	<string>1</string>
+	<key>BUNDLE_ID</key>
+	<string>dev.roci.redo</string>
+	<key>PROJECT_ID</key>
+	<string>replicache-sample-todo-push</string>
+	<key>STORAGE_BUCKET</key>
+	<string>replicache-sample-todo-push.appspot.com</string>
+	<key>IS_ADS_ENABLED</key>
+	<false></false>
+	<key>IS_ANALYTICS_ENABLED</key>
+	<false></false>
+	<key>IS_APPINVITE_ENABLED</key>
+	<true></true>
+	<key>IS_GCM_ENABLED</key>
+	<true></true>
+	<key>IS_SIGNIN_ENABLED</key>
+	<true></true>
+	<key>GOOGLE_APP_ID</key>
+	<string>1:1088179932262:ios:d85547d8faaa59387f31a7</string>
+	<key>DATABASE_URL</key>
+	<string>https://replicache-sample-todo-push.firebaseio.com</string>
+</dict>
+</plist>
