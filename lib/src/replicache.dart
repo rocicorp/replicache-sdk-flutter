@@ -192,7 +192,8 @@ class Replicache implements ReadTransaction {
       }
       _online = true;
     } catch (e) {
-      print('Error: $e');
+      // TODO: Would be better to re-throw if this came from mutator.
+      info('Error: $e');
       _online = false;
       rethrow;
     }
