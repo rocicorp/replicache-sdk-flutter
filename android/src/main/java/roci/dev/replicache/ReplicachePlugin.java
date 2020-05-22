@@ -1,7 +1,6 @@
 package roci.dev.replicache;
 
 import android.content.Context;
-import android.os.HandlerThread;
 import android.os.Handler;
 import android.os.Looper;
 
@@ -13,6 +12,8 @@ import io.flutter.plugin.common.PluginRegistry.Registrar;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ExecutorService;
 
 import android.util.Log;
 
@@ -22,8 +23,7 @@ public class ReplicachePlugin implements MethodCallHandler {
   private static Context appContext;
 
   private Handler uiThreadHandler;
-  private Handler generalHandler;
-  private Handler pullHandler;
+  private ExecutorService pool;
 
   /** Plugin registration. */
   public static void registerWith(Registrar registrar) {
@@ -35,17 +35,11 @@ public class ReplicachePlugin implements MethodCallHandler {
   public ReplicachePlugin() {
     uiThreadHandler = new Handler(Looper.getMainLooper());
 
-    // Most Replicache operations happen serially, but not blocking UI thread.
-    HandlerThread generalThread = new HandlerThread("replicache.dev/general");
-    generalThread.start();
-    generalHandler = new Handler(generalThread.getLooper());
+    // The replicache-client API is threadafe and handles locking internally,
+    // so we can dispatch commands on multiple threads.
+    pool = Executors.newWorkStealingPool();
 
-    // Pull shouldn't block the UI or other Replicache operations.
-    HandlerThread pullThread = new HandlerThread("replicache.dev/pull");
-    pullThread.start();
-    pullHandler = new Handler(pullThread.getLooper());
-
-    generalHandler.post(new Runnable() {
+    pool.execute(new Runnable() {
       public void run() {
         initReplicache();
       }
@@ -54,14 +48,7 @@ public class ReplicachePlugin implements MethodCallHandler {
 
   @Override
   public void onMethodCall(final MethodCall call, final Result result) {
-    Handler handler;
-    if (call.method.equals("pull")) {
-      handler = pullHandler;
-    } else {
-      handler = generalHandler;
-    }
-
-    handler.post(new Runnable() {
+    pool.execute(new Runnable() {
       public void run() {
         // The arguments passed from Flutter is a two-element array:
         // 0th element is the name of the database to call on
