@@ -101,7 +101,7 @@ class Replicache implements ReadTransaction {
       dataLayerAuth: dataLayerAuth,
       diffServerAuth: diffServerAuth,
       batchUrl: batchUrl,
-      syncInterval: Duration(seconds: 5),
+      syncInterval: Duration(minutes: 1),
       repmInvoke: repmInvoke,
     );
     rep._open();
