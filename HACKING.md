@@ -18,7 +18,7 @@ returns a pre-recorded set of responses. See [test/fixtures/](test/fixtures/).
 To update the recorded fixtures you need to run the replicache-client test server:
 
 ```
-go run ./build/replicache-client/cmd/test_server/main.go &
+(cd build/replicache-client && go run ./cmd/test_server) &
 ```
 
 Then run the tests with `TEST_MODE` set to `record` like this:
