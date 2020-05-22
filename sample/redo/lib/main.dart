@@ -40,8 +40,8 @@ class _MyHomePageState extends State<MyHomePage> {
 
   Replicache _replicache;
   Iterable<Todo> _allTodos = [];
-  bool _dirty = false;
   bool _online = true;
+  bool _syncing = false;
   int _selectedListId;
   bool _deleteMode = false;
 
@@ -91,10 +91,10 @@ class _MyHomePageState extends State<MyHomePage> {
   @override
   Widget build(BuildContext context) {
     var icons = List<Widget>();
-    if (!_online) {
-      icons = [Icon(Icons.sync_disabled)];
-    } else if (_dirty) {
+    if (_syncing) {
       icons = [Icon(Icons.sync)];
+    } else if (!_online) {
+      icons = [Icon(Icons.sync_disabled)];
     }
     icons.add(IconButton(
         icon: Icon(Icons.delete),
@@ -190,9 +190,7 @@ class _MyHomePageState extends State<MyHomePage> {
   void _handleSync(bool syncing) {
     setState(() {
       _online = _replicache.online;
-      if (_online) {
-        _dirty = false;
-      }
+      _syncing = syncing;
     });
   }
 
@@ -265,8 +263,6 @@ class _MyHomePageState extends State<MyHomePage> {
     Iterable<Todo> todos = todosInList(_allTodos, _selectedListId);
     final order = newOrderBetween(todos.isEmpty ? null : todos.last, null);
 
-    _setDirty();
-
     await _createTodo({
       'id': id,
       'listId': _selectedListId,
@@ -277,20 +273,12 @@ class _MyHomePageState extends State<MyHomePage> {
     _replicache.sync();
   }
 
-  void _setDirty() {
-    setState(() {
-      _dirty = true;
-    });
-  }
-
   void _handleDone(int id, bool complete) {
-    _setDirty();
     _updateTodo({'id': id, 'complete': complete});
     _replicache.sync();
   }
 
   void _handleRemove(int id) {
-    _setDirty();
     setState(() {
       _deleteMode = false;
     });
@@ -319,7 +307,6 @@ class _MyHomePageState extends State<MyHomePage> {
       left = newIndex > 0 ? todos[newIndex - 1] : null;
       right = newIndex < todos.length ? todos[newIndex] : null;
     }
-    _setDirty();
 
     double order = newOrderBetween(left, right);
     _updateTodo({'id': id, 'order': order});
