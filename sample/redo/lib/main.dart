@@ -273,20 +273,20 @@ class _MyHomePageState extends State<MyHomePage> {
     _replicache.sync();
   }
 
-  void _handleDone(int id, bool complete) {
-    _updateTodo({'id': id, 'complete': complete});
+  Future<void> _handleDone(int id, bool complete) async {
+    await _updateTodo({'id': id, 'complete': complete});
     _replicache.sync();
   }
 
-  void _handleRemove(int id) {
+  Future<void> _handleRemove(int id) async {
     setState(() {
       _deleteMode = false;
     });
-    _deleteTodo({'id': id});
+    await _deleteTodo({'id': id});
     _replicache.sync();
   }
 
-  void _handleReorder(int oldIndex, int newIndex) async {
+  Future<void> _handleReorder(int oldIndex, int newIndex) async {
     if (oldIndex == newIndex) {
       return;
     }
@@ -309,7 +309,7 @@ class _MyHomePageState extends State<MyHomePage> {
     }
 
     double order = newOrderBetween(left, right);
-    _updateTodo({'id': id, 'order': order});
+    await _updateTodo({'id': id, 'order': order});
     _replicache.sync();
   }
 
