@@ -10,6 +10,8 @@ import 'package:http/http.dart';
 
 enum TestMode { Replay, Record, Live }
 
+const testModeDefault = 'replay';
+
 class Replay {
   final String dbName;
   final String method;
@@ -58,6 +60,8 @@ Future<void> main() async {
   Matcher equalsJson(dynamic v) =>
       predicate((o) => o == v || json.encode(o) == json.encode(v));
 
+  Matcher throwsNestedTransactionError = throwsA(isA<NestedTransactionError>());
+
   const String emptyHash = "00000000000000000000000000000000";
 
   Future<void> nextMicrotask() => Future.delayed(Duration());
@@ -100,7 +104,7 @@ Future<void> main() async {
 
   TestMode testMode;
 
-  switch (Platform.environment['TEST_MODE'] ?? 'replay') {
+  switch (Platform.environment['TEST_MODE'] ?? testModeDefault) {
     case 'replay':
       testMode = TestMode.Replay;
       invoke = replayInvoke;
@@ -656,5 +660,70 @@ Future<void> main() async {
 
     expect(deleteCount, 4);
     expect(createCount, 3);
+  });
+
+  test('nested tx', () async {
+    await useReplay('nested tx');
+
+    rep = await replicacheForTesting('nested-tx');
+
+    expect(await rep.query((tx) async => 'abc'), 'abc');
+
+    expect(
+      rep.query((tx) async {
+        await rep.query((tx) => null);
+      }),
+      throwsNestedTransactionError,
+    );
+
+    final c = Completer();
+    var err;
+
+    Future<void> tricky() async {
+      try {
+        await rep.query((tx) => null);
+      } catch (e) {
+        err = e;
+        c.complete();
+      }
+    }
+
+    await rep.query((tx) async {
+      Timer(Duration(milliseconds: 10), tricky);
+    });
+
+    await c.future;
+    expect(err, isA<NestedTransactionError>());
+  });
+
+  test('nested tx mutate', () async {
+    await useReplay('nested tx mutate');
+
+    rep = await replicacheForTesting('nested-tx-mutate');
+
+    final mut = rep.register('mut', (tx, args) async {
+      return args;
+    });
+    expect(await mut(42), 42);
+
+    final mut2 = rep.register('mut2', (tx, args) async {
+      if (args == 0) {
+        return 0;
+      }
+      return (await mut(args - 1)) + 1;
+    });
+    expect(mut2(1), throwsNestedTransactionError);
+
+    final mut3 = rep.register('mut3', (tx, args) => rep.get('abc'));
+    expect(mut3(null), throwsNestedTransactionError);
+  });
+
+  test('nested tx subscribe', () async {
+    await useReplay('nested tx subscribe');
+
+    rep = await replicacheForTesting('nested-tx-subscribe');
+
+    final s = rep.subscribe((tx) => rep.get('abc'));
+    expect(s.single, throwsNestedTransactionError);
   });
 }

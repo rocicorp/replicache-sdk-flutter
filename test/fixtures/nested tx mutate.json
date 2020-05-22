@@ -1,0 +1,81 @@
+[
+  {
+    "dbName": "nested-tx-mutate",
+    "method": "open",
+    "args": {},
+    "result": ""
+  },
+  {
+    "dbName": "nested-tx-mutate",
+    "method": "getRoot",
+    "args": {},
+    "result": {
+      "root": "e99uif9c7bpavajrt666es1ki52dv239"
+    }
+  },
+  {
+    "dbName": "nested-tx-mutate",
+    "method": "openTransaction",
+    "args": {
+      "args": 42,
+      "name": "mut"
+    },
+    "result": {
+      "transactionId": 1
+    }
+  },
+  {
+    "dbName": "nested-tx-mutate",
+    "method": "commitTransaction",
+    "args": {
+      "transactionId": 1
+    },
+    "result": {
+      "ref": "e99uif9c7bpavajrt666es1ki52dv239"
+    }
+  },
+  {
+    "dbName": "nested-tx-mutate",
+    "method": "openTransaction",
+    "args": {
+      "args": 1,
+      "name": "mut2"
+    },
+    "result": {
+      "transactionId": 2
+    }
+  },
+  {
+    "dbName": "nested-tx-mutate",
+    "method": "openTransaction",
+    "args": {
+      "args": null,
+      "name": "mut3"
+    },
+    "result": {
+      "transactionId": 3
+    }
+  },
+  {
+    "dbName": "nested-tx-mutate",
+    "method": "closeTransaction",
+    "args": {
+      "transactionId": 2
+    },
+    "result": {}
+  },
+  {
+    "dbName": "nested-tx-mutate",
+    "method": "closeTransaction",
+    "args": {
+      "transactionId": 3
+    },
+    "result": {}
+  },
+  {
+    "dbName": "nested-tx-mutate",
+    "method": "close",
+    "args": {},
+    "result": ""
+  }
+]

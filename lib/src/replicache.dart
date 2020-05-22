@@ -390,7 +390,7 @@ class Replicache implements ReadTransaction {
     final List<_Subscription> subscriptions = _subscriptions
         .where((s) => !s.streamController.isPaused)
         .toList(growable: false);
-    final results = await query((tx) async {
+    final results = await _queryNoGuard((tx) async {
       final futures = subscriptions.map((s) async {
         // Tag the result so we can deal with success vs error below.
         try {
@@ -440,7 +440,11 @@ class Replicache implements ReadTransaction {
   /// Query is used for read transactions. It is recommended to use transactions
   /// to ensure you get a consistent view across multiple calls to [get], [has]
   /// and [scan].
-  Future<R> query<R>(Future<R> callback(ReadTransaction tx)) async {
+  Future<R> query<R>(Future<R> callback(ReadTransaction tx)) {
+    return _guardTransaction(() => _queryNoGuard(callback));
+  }
+
+  Future<R> _queryNoGuard<R>(Future<R> callback(ReadTransaction tx)) async {
     final res = await _invoke('openTransaction');
     final txId = res['transactionId'];
     try {
@@ -501,6 +505,22 @@ class Replicache implements ReadTransaction {
     A args, {
     Map<String, dynamic> invokeArgs,
     @required bool shouldCheckChange,
+  }) {
+    return _guardTransaction(() => _mutateNoGuard(
+          name,
+          mutatorImpl,
+          args,
+          invokeArgs: invokeArgs,
+          shouldCheckChange: shouldCheckChange,
+        ));
+  }
+
+  Future<_MutateResult<R>> _mutateNoGuard<R, A>(
+    String name,
+    MutatorImpl<R, A> mutatorImpl,
+    A args, {
+    Map<String, dynamic> invokeArgs,
+    @required bool shouldCheckChange,
   }) async {
     final actualInvokeArgs = {'args': args, 'name': name};
     if (invokeArgs != null) {
@@ -521,7 +541,7 @@ class Replicache implements ReadTransaction {
     final commitRes =
         await _invoke('commitTransaction', {'transactionId': txId});
     if (commitRes['retryCommit'] == true) {
-      return await _mutate(
+      return await _mutateNoGuard(
         name,
         mutatorImpl,
         args,
@@ -610,4 +630,22 @@ class _MutateResult<R> {
   final R result;
   final String ref;
   _MutateResult(this.result, this.ref);
+}
+
+final _inTxKey = {};
+
+Future<R> _guardTransaction<R>(Future<R> Function() body) {
+  if (Zone.current[_inTxKey] != null) {
+    return Future.error(NestedTransactionError());
+  }
+  return runZoned(body, zoneValues: {_inTxKey: true});
+}
+
+/// This error is thrown if there are nested transactions. It is a programming
+/// error to create another transaction from a transaction function.
+class NestedTransactionError extends Error {
+  @override
+  String toString() {
+    return "Invalid nested transaction";
+  }
 }

@@ -1,0 +1,38 @@
+[
+  {
+    "dbName": "nested-tx-subscribe",
+    "method": "open",
+    "args": {},
+    "result": ""
+  },
+  {
+    "dbName": "nested-tx-subscribe",
+    "method": "getRoot",
+    "args": {},
+    "result": {
+      "root": "e99uif9c7bpavajrt666es1ki52dv239"
+    }
+  },
+  {
+    "dbName": "nested-tx-subscribe",
+    "method": "openTransaction",
+    "args": {},
+    "result": {
+      "transactionId": 1
+    }
+  },
+  {
+    "dbName": "nested-tx-subscribe",
+    "method": "closeTransaction",
+    "args": {
+      "transactionId": 1
+    },
+    "result": {}
+  },
+  {
+    "dbName": "nested-tx-subscribe",
+    "method": "close",
+    "args": {},
+    "result": ""
+  }
+]
