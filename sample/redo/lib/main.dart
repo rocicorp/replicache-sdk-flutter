@@ -94,7 +94,10 @@ class _MyHomePageState extends State<MyHomePage> {
     if (_syncing) {
       icons = [Icon(Icons.sync)];
     } else if (!_online) {
-      icons = [Icon(Icons.sync_disabled)];
+      icons = [IconButton(
+        icon: Icon(Icons.sync_disabled),
+        onPressed: () => this._replicache.sync(),
+        padding: EdgeInsets.all(0.0))];
     }
     icons.add(IconButton(
         icon: Icon(Icons.delete),
