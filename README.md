@@ -6,7 +6,7 @@
 
 Hi! This tutorial will walk you through integrating Replicache into your Flutter mobile app.
 
-If you have any problems working through this, or just have questions, please [join us on Slack](https://join.slack.com/t/rocicorp/shared_invite/zt-dcez2xsi-nAhW1Lt~32Y3~~y54pMV0g). We'd be happy to help. See also our [contributing guide](https://github.com/rocicorp/replicache/blob/master/contributing.md).
+If you have any problems working through this, or just have questions, please [join us on Slack](https://join.slack.com/t/rocicorp/shared_invite/zt-ekh3oxbq-FzzB7qP9lwqdTvBjxXU2oA). We'd be happy to help. See also our [contributing guide](https://github.com/rocicorp/replicache/blob/master/contributing.md).
 
 # Contributing
 
@@ -248,5 +248,5 @@ In fact, while you're away, why not turn off the wifi and click around. Your app
 
 ## More questions?
 
-* [Join us on Slack!](#TODO)
+* [Join us on Slack!](https://join.slack.com/t/rocicorp/shared_invite/zt-ekh3oxbq-FzzB7qP9lwqdTvBjxXU2oA)
 * See the [design doc](https://github.com/rocicorp/replicache/blob/master/design.md).
