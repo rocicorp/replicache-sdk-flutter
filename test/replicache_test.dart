@@ -596,6 +596,7 @@ Future<void> main() async {
     int createCount = 0;
     int deleteCount = 0;
     String syncHead;
+    BeginSyncResult beginSyncResult;
 
     final createTodo = rep.register('createTodo', (tx, args) async {
       createCount++;
@@ -618,7 +619,8 @@ Future<void> main() async {
     await rep.sync();
     expect(deleteCount, 2);
 
-    syncHead = await rep.beginSync();
+    beginSyncResult = await rep.beginSync();
+    syncHead = beginSyncResult.syncHead;
     expect(syncHead, emptyHash);
     expect(deleteCount, 2);
 
@@ -632,7 +634,8 @@ Future<void> main() async {
     expect(createCount, 1);
     expect((await rep.get('/todo/$id1'))['text'], 'Test');
 
-    syncHead = await rep.beginSync();
+    beginSyncResult = await rep.beginSync();
+    syncHead = beginSyncResult.syncHead;
     expect(syncHead, isNot(emptyHash));
 
     await createTodo({
@@ -645,7 +648,7 @@ Future<void> main() async {
     expect(createCount, 2);
     expect((await rep.get('/todo/$id2'))['text'], 'Test 2');
 
-    await rep.maybeEndSync(syncHead);
+    await rep.maybeEndSync(beginSyncResult);
 
     expect(createCount, 3);
 

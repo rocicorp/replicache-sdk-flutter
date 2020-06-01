@@ -54,7 +54,6 @@ class Replicache implements ReadTransaction {
   }
 
   /// Completely delete a local database. Remote replicas in the group aren't affected.
-
   static Future<void> drop(String name, {RepmInvoke repmInvoke}) async {
     await _staticInvoke(name, 'drop', repmInvoke: repmInvoke);
   }
@@ -186,9 +185,10 @@ class Replicache implements ReadTransaction {
 
   Future<void> _sync() async {
     try {
-      final syncHead = await _beginSync();
-      if (syncHead != '00000000000000000000000000000000') {
-        await _maybeEndSync(syncHead);
+      final beginSyncResult = await _beginSync();
+
+      if (beginSyncResult.syncHead != '00000000000000000000000000000000') {
+        await _maybeEndSync(beginSyncResult);
       }
       _online = true;
     } catch (e) {
@@ -199,7 +199,7 @@ class Replicache implements ReadTransaction {
     }
   }
 
-  Future<String> _beginSync() async {
+  Future<BeginSyncResult> _beginSync() async {
     final beginSyncResult = await _invoke('beginSync', {
       'batchPushURL': _batchUrl,
       'diffServerURL': _diffServerUrl,
@@ -244,18 +244,23 @@ class Replicache implements ReadTransaction {
       }
     }
 
-    return beginSyncResult['syncHead'];
+    final String syncHead = beginSyncResult['syncHead'];
+    final String syncId = syncInfo['syncID'];
+    return BeginSyncResult(syncId, syncHead);
   }
 
-  Future<void> _maybeEndSync(String syncHead) async {
+  Future<void> _maybeEndSync(BeginSyncResult beginSyncResult) async {
     if (_closed) {
       return;
     }
-    final res = await _invoke('maybeEndSync', {'syncHead': syncHead});
+
+    String syncHead = beginSyncResult.syncHead;
+
+    final res = await _invoke('maybeEndSync', beginSyncResult);
     final replayMutations = res['replayMutations'];
     if (replayMutations == null || replayMutations.isEmpty) {
       // All done.
-      await _checkChange(syncHead);
+      await _checkChange(beginSyncResult.syncHead);
       return;
     }
 
@@ -269,7 +274,7 @@ class Replicache implements ReadTransaction {
       );
     }
 
-    await _maybeEndSync(syncHead);
+    await _maybeEndSync(BeginSyncResult(beginSyncResult.syncId, syncHead));
   }
 
   Future<String> _replay<R, A>(
@@ -605,9 +610,10 @@ class ReplicacheTest extends Replicache {
     return rep;
   }
 
-  Future<String> beginSync() => super._beginSync();
+  Future<BeginSyncResult> beginSync() => super._beginSync();
 
-  Future<void> maybeEndSync(String syncHead) => super._maybeEndSync(syncHead);
+  Future<void> maybeEndSync(BeginSyncResult beginSyncResult) =>
+      super._maybeEndSync(beginSyncResult);
 }
 
 class _Subscription<R> {
@@ -648,4 +654,14 @@ class NestedTransactionError extends Error {
   String toString() {
     return "Invalid nested transaction";
   }
+}
+
+class BeginSyncResult {
+  final String syncId;
+  final String syncHead;
+  BeginSyncResult(this.syncId, this.syncHead);
+  Map<String, String> toJson() => {
+        'syncID': syncId,
+        'syncHead': syncHead,
+      };
 }
