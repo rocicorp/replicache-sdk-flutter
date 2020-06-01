@@ -2,7 +2,7 @@ ORIG=`pwd`
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 ROOT=$DIR/../
 PACKAGE_VERSION=`git describe --tags`
-REPM_VERSION='c27ae0da73045a7149c29ddfffc5c875b1b5db4f'
+REPM_VERSION='7dc06be02dc06caf8f91b26ad06c7f9f4d9bfb1b'
 
 echo "Building Flutter SDK..."
 

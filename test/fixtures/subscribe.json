@@ -16,12 +16,7 @@
   {
     "dbName": "subscribe",
     "method": "openTransaction",
-    "args": {
-      "args": {
-        "a/0": 0
-      },
-      "name": "add-data"
-    },
+    "args": {},
     "result": {
       "transactionId": 1
     }
@@ -29,26 +24,21 @@
   {
     "dbName": "subscribe",
     "method": "openTransaction",
-    "args": {},
+    "args": {
+      "args": {
+        "a/0": 0
+      },
+      "name": "add-data"
+    },
     "result": {
       "transactionId": 2
     }
   },
   {
     "dbName": "subscribe",
-    "method": "put",
-    "args": {
-      "transactionId": 1,
-      "key": "a/0",
-      "value": 0
-    },
-    "result": {}
-  },
-  {
-    "dbName": "subscribe",
     "method": "scan",
     "args": {
-      "transactionId": 2,
+      "transactionId": 1,
       "prefix": "a/",
       "limit": 50
     },
@@ -56,21 +46,31 @@
   },
   {
     "dbName": "subscribe",
-    "method": "commitTransaction",
+    "method": "put",
     "args": {
-      "transactionId": 1
+      "transactionId": 2,
+      "key": "a/0",
+      "value": 0
     },
-    "result": {
-      "ref": "1urd54h8eang8qlg04a2252jdensto5m"
-    }
+    "result": {}
   },
   {
     "dbName": "subscribe",
     "method": "closeTransaction",
     "args": {
-      "transactionId": 2
+      "transactionId": 1
     },
     "result": {}
+  },
+  {
+    "dbName": "subscribe",
+    "method": "commitTransaction",
+    "args": {
+      "transactionId": 2
+    },
+    "result": {
+      "ref": "1urd54h8eang8qlg04a2252jdensto5m"
+    }
   },
   {
     "dbName": "subscribe",
