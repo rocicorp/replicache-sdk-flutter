@@ -14,8 +14,8 @@ mkdir build
 cd build
 
 # Copy the local repo into the output dir
-mkdir replicache-flutter-sdk
-ls ../ | grep -v build | grep -v sample | grep -v tool | grep -v gh-dl-release | grep -v doc | xargs -I{} cp -R ../{} replicache-flutter-sdk/{}
+mkdir replicache-sdk-flutter
+ls ../ | grep -v build | grep -v sample | grep -v tool | grep -v gh-dl-release | grep -v doc | xargs -I{} cp -R ../{} replicache-sdk-flutter/{}
 
 # Build repm
 git clone https://github.com/rocicorp/replicache-client
@@ -24,14 +24,14 @@ git reset --hard $REPM_VERSION
 ./build.sh
 cd ..
 # There might be symlinks already there
-rm replicache-flutter-sdk/ios/Repm.framework
-rm replicache-flutter-sdk/android/repm.aar
-cp -R replicache-client/build/Repm.framework replicache-flutter-sdk/ios/
-cp replicache-client/build/repm.aar replicache-flutter-sdk/android/
+rm replicache-sdk-flutter/ios/Repm.framework
+rm replicache-sdk-flutter/android/repm.aar
+cp -R replicache-client/build/Repm.framework replicache-sdk-flutter/ios/
+cp replicache-client/build/repm.aar replicache-sdk-flutter/android/
 
 # Stamp the version number
-sed -i "" "s/version: 0.0.0+dev/version: $PACKAGE_VERSION/" replicache-flutter-sdk/pubspec.yaml
+sed -i "" "s/version: 0.0.0+dev/version: $PACKAGE_VERSION/" replicache-sdk-flutter/pubspec.yaml
 
-zip -r replicache-flutter-sdk.zip replicache-flutter-sdk
+zip -r replicache-sdk-flutter.zip replicache-sdk-flutter
 
 cd $ORIG
