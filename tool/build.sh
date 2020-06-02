@@ -32,4 +32,6 @@ cp replicache-client/build/repm.aar replicache-flutter-sdk/android/
 # Stamp the version number
 sed -i "" "s/version: 0.0.0+dev/version: $PACKAGE_VERSION/" replicache-flutter-sdk/pubspec.yaml
 
+zip -r replicache-flutter-sdk.zip replicache-flutter-sdk
+
 cd $ORIG
