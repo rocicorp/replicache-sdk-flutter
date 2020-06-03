@@ -146,20 +146,20 @@
     }
   },
   {
-    "dbName": "b",
-    "method": "openTransaction",
-    "args": {},
-    "result": {
-      "transactionId": 3
-    }
-  },
-  {
     "dbName": "a",
     "method": "closeTransaction",
     "args": {
       "transactionId": 3
     },
     "result": {}
+  },
+  {
+    "dbName": "b",
+    "method": "openTransaction",
+    "args": {},
+    "result": {
+      "transactionId": 3
+    }
   },
   {
     "dbName": "b",

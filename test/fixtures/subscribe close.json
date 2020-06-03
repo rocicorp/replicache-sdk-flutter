@@ -57,6 +57,14 @@
   },
   {
     "dbName": "subscribe-close",
+    "method": "closeTransaction",
+    "args": {
+      "transactionId": 2
+    },
+    "result": {}
+  },
+  {
+    "dbName": "subscribe-close",
     "method": "commitTransaction",
     "args": {
       "transactionId": 1
@@ -64,14 +72,6 @@
     "result": {
       "ref": "tqp56qjgdntdpktfht1vke2qhkahv5fl"
     }
-  },
-  {
-    "dbName": "subscribe-close",
-    "method": "closeTransaction",
-    "args": {
-      "transactionId": 2
-    },
-    "result": {}
   },
   {
     "dbName": "subscribe-close",

@@ -160,19 +160,19 @@
   },
   {
     "dbName": "conflict",
-    "method": "closeTransaction",
-    "args": {
-      "transactionId": 6
-    },
-    "result": {}
-  },
-  {
-    "dbName": "conflict",
     "method": "openTransaction",
     "args": {},
     "result": {
       "transactionId": 7
     }
+  },
+  {
+    "dbName": "conflict",
+    "method": "closeTransaction",
+    "args": {
+      "transactionId": 6
+    },
+    "result": {}
   },
   {
     "dbName": "conflict",

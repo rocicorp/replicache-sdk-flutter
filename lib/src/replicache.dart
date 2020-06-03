@@ -54,7 +54,6 @@ class Replicache implements ReadTransaction {
   }
 
   /// Completely delete a local database. Remote replicas in the group aren't affected.
-
   static Future<void> drop(String name, {RepmInvoke repmInvoke}) async {
     await _staticInvoke(name, 'drop', repmInvoke: repmInvoke);
   }
@@ -186,20 +185,25 @@ class Replicache implements ReadTransaction {
 
   Future<void> _sync() async {
     try {
-      final syncHead = await _beginSync();
-      if (syncHead != '00000000000000000000000000000000') {
-        await _maybeEndSync(syncHead);
+      final beginSyncResult = await _beginSync();
+
+      if (beginSyncResult.syncHead != '00000000000000000000000000000000') {
+        await _maybeEndSync(beginSyncResult);
       }
       _online = true;
     } catch (e) {
-      // TODO: Would be better to re-throw if this came from mutator.
-      info('Error: $e');
+      // We purposely don't rethrow here because a common case is that an exception is
+      // from beginSync() and we are offline. We don't want such cases to look so
+      // exceptional in the console output.
+      //
+      // TODO: we can rethrow here once replicache-internal is improved to not treat
+      // offlineness as an error.
+      info('Error: ${e}');
       _online = false;
-      rethrow;
     }
   }
 
-  Future<String> _beginSync() async {
+  Future<BeginSyncResult> _beginSync() async {
     final beginSyncResult = await _invoke('beginSync', {
       'batchPushURL': _batchUrl,
       'diffServerURL': _diffServerUrl,
@@ -244,18 +248,23 @@ class Replicache implements ReadTransaction {
       }
     }
 
-    return beginSyncResult['syncHead'];
+    final String syncHead = beginSyncResult['syncHead'];
+    final String syncId = syncInfo['syncID'];
+    return BeginSyncResult(syncId, syncHead);
   }
 
-  Future<void> _maybeEndSync(String syncHead) async {
+  Future<void> _maybeEndSync(BeginSyncResult beginSyncResult) async {
     if (_closed) {
       return;
     }
-    final res = await _invoke('maybeEndSync', {'syncHead': syncHead});
+
+    String syncHead = beginSyncResult.syncHead;
+
+    final res = await _invoke('maybeEndSync', beginSyncResult);
     final replayMutations = res['replayMutations'];
     if (replayMutations == null || replayMutations.isEmpty) {
       // All done.
-      await _checkChange(syncHead);
+      await _checkChange(beginSyncResult.syncHead);
       return;
     }
 
@@ -269,7 +278,7 @@ class Replicache implements ReadTransaction {
       );
     }
 
-    await _maybeEndSync(syncHead);
+    await _maybeEndSync(BeginSyncResult(beginSyncResult.syncId, syncHead));
   }
 
   Future<String> _replay<R, A>(
@@ -390,7 +399,7 @@ class Replicache implements ReadTransaction {
     final List<_Subscription> subscriptions = _subscriptions
         .where((s) => !s.streamController.isPaused)
         .toList(growable: false);
-    final results = await query((tx) async {
+    final results = await _queryNoGuard((tx) async {
       final futures = subscriptions.map((s) async {
         // Tag the result so we can deal with success vs error below.
         try {
@@ -440,7 +449,11 @@ class Replicache implements ReadTransaction {
   /// Query is used for read transactions. It is recommended to use transactions
   /// to ensure you get a consistent view across multiple calls to [get], [has]
   /// and [scan].
-  Future<R> query<R>(Future<R> callback(ReadTransaction tx)) async {
+  Future<R> query<R>(Future<R> callback(ReadTransaction tx)) {
+    return _guardTransaction(() => _queryNoGuard(callback));
+  }
+
+  Future<R> _queryNoGuard<R>(Future<R> callback(ReadTransaction tx)) async {
     final res = await _invoke('openTransaction');
     final txId = res['transactionId'];
     try {
@@ -501,6 +514,22 @@ class Replicache implements ReadTransaction {
     A args, {
     Map<String, dynamic> invokeArgs,
     @required bool shouldCheckChange,
+  }) {
+    return _guardTransaction(() => _mutateNoGuard(
+          name,
+          mutatorImpl,
+          args,
+          invokeArgs: invokeArgs,
+          shouldCheckChange: shouldCheckChange,
+        ));
+  }
+
+  Future<_MutateResult<R>> _mutateNoGuard<R, A>(
+    String name,
+    MutatorImpl<R, A> mutatorImpl,
+    A args, {
+    Map<String, dynamic> invokeArgs,
+    @required bool shouldCheckChange,
   }) async {
     final actualInvokeArgs = {'args': args, 'name': name};
     if (invokeArgs != null) {
@@ -521,7 +550,7 @@ class Replicache implements ReadTransaction {
     final commitRes =
         await _invoke('commitTransaction', {'transactionId': txId});
     if (commitRes['retryCommit'] == true) {
-      return await _mutate(
+      return await _mutateNoGuard(
         name,
         mutatorImpl,
         args,
@@ -585,9 +614,10 @@ class ReplicacheTest extends Replicache {
     return rep;
   }
 
-  Future<String> beginSync() => super._beginSync();
+  Future<BeginSyncResult> beginSync() => super._beginSync();
 
-  Future<void> maybeEndSync(String syncHead) => super._maybeEndSync(syncHead);
+  Future<void> maybeEndSync(BeginSyncResult beginSyncResult) =>
+      super._maybeEndSync(beginSyncResult);
 }
 
 class _Subscription<R> {
@@ -610,4 +640,32 @@ class _MutateResult<R> {
   final R result;
   final String ref;
   _MutateResult(this.result, this.ref);
+}
+
+final _inTxKey = {};
+
+Future<R> _guardTransaction<R>(Future<R> Function() body) {
+  if (Zone.current[_inTxKey] != null) {
+    return Future.error(NestedTransactionError());
+  }
+  return runZoned(body, zoneValues: {_inTxKey: true});
+}
+
+/// This error is thrown if there are nested transactions. It is a programming
+/// error to create another transaction from a transaction function.
+class NestedTransactionError extends Error {
+  @override
+  String toString() {
+    return "Invalid nested transaction";
+  }
+}
+
+class BeginSyncResult {
+  final String syncId;
+  final String syncHead;
+  BeginSyncResult(this.syncId, this.syncHead);
+  Map<String, String> toJson() => {
+        'syncID': syncId,
+        'syncHead': syncHead,
+      };
 }
