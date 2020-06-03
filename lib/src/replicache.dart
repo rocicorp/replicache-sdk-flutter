@@ -192,10 +192,14 @@ class Replicache implements ReadTransaction {
       }
       _online = true;
     } catch (e) {
-      // TODO: Would be better to re-throw if this came from mutator.
-      info('Error: $e');
+      // We purposely don't rethrow here because a common case is that an exception is
+      // from beginSync() and we are offline. We don't want such cases to look so
+      // exceptional in the console output.
+      //
+      // TODO: we can rethrow here once replicache-internal is improved to not treat
+      // offlineness as an error.
+      info('Error: ${e}');
       _online = false;
-      rethrow;
     }
   }
 
