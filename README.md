@@ -35,7 +35,7 @@ Add the following lines to the `dependencies` section of `pubspec.yaml`:
       /path/to/replicache-sdk-flutter/
 ```
 
-### 4. Add main.dart
+### 4. Instantiate Replicache
 
 Replace the contents of `main.dart` with the following:
 
@@ -64,10 +64,12 @@ class MyApp extends StatelessWidget {
 
 class MyHomePage extends StatelessWidget {
   // Android emulator cannot use localhost.
-  final diffsURL = 'http://${Platform.isAndroid ? '10.0.2.2' : 'localhost'}:7001/pull';
+  final diffsUrl = 'http://${Platform.isAndroid ? '10.0.2.2' : 'localhost'}:7001/pull';
 
   // You authenticate to the diff server with your account ID. To play around, use 'sandbox'.
   final diffsAuth = 'sandbox';
+  final batchUrl = '';
+  final dataLayerAuth = '';
 
   final String title;
   final _random = Random();
@@ -76,8 +78,10 @@ class MyHomePage extends StatelessWidget {
 
   MyHomePage({Key key, this.title}) : super(key: key) {
     _replicache = Replicache(
-      diffServerUrl: diffsURL,
+      diffServerUrl: diffsUrl,
       diffServerAuth: diffsAuth,
+      batchUrl: batchUrl,
+      dataLayerAuth: dataLayerAuth,
     );
 
     // Tell Replicache to pull from the diff server every 10s. In a real app you'll have this be
@@ -85,14 +89,23 @@ class MyHomePage extends StatelessWidget {
     // this is convenient for development.
     _replicache.syncInterval = Duration(seconds: 10);
 
-    _createTodo = _replicache.register("createTodo", (tx, args) async {
-      tx.put("/todo/${args["id"]}", args);
-    });
+    _replicache.onSync = (syncing) {
+      if (syncing) {
+        print('Syncing...');
+      } else {
+        print('Done.');
+      }
+    };
+
+    _registerMutations();
+  }
+
+  void _registerMutations() {
+      // TODO
   }
 
   void _handleAddTodo() {
-    var id = _random.nextInt(2^32-1);
-    _createTodo({"id": id, "text": "Todo $id", "order": 1.0, "complete": false});
+    // TODO
   }
 
   @override
@@ -110,24 +123,12 @@ class MyHomePage extends StatelessWidget {
           ),
         ],
       ),
-      body: Center(
-        child: StreamBuilder(
-          stream: _replicache.subscribe((ReadTransaction tx) async {
-            Iterable<ScanItem> res = await tx.scan(prefix: '/todo/');
-            return res.map((event) => event.value as Map<String, dynamic>);
-          }),
-          builder:  (BuildContext context, AsyncSnapshot<Iterable<Map<String, dynamic>>> snapshot) {
-            return Column(
-              mainAxisAlignment: MainAxisAlignment.start,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: List.from(
-                (snapshot.data ?? []).map(
-                  (Map m) => CheckboxListTile(value: m['complete'], title: Text(m['text'])))),
-            );
-          },
-        ),
-      ),
+      body: _getBody(context),
     );
+  }
+  
+  Widget _getBody(BuildContext context) {
+    return Text("hi!");
   }
 }
 ```
@@ -143,7 +144,7 @@ flutter run
 
 The app starts up, but there's no TODOs yet:
 
-[todo: image]()
+[todo: image](image1)
 
 In the console, you will see output like:
 
@@ -154,8 +155,7 @@ flutter: Replicache: LogLevel.info: Error: Exception: Error invoking "beginSync"
 
 Replicache starts up and tries to do an initial sync, but fails because no diff-server is running. That's OK! We'll fix that in the next step.
 
-For now, search for `ClientID` in the console output and copy it down. Every device syncing with Replicache has a unique `ClientID` generated at first run. We'll need that value next.
-
+For now, search for `ClientID` in the console output and copy it down. Every unique instance of Replicache on a device has a unique `ClientID` generated at first run. We'll need that value next.
 
 ### 5. Start a development diff-server and put some data in it:
 
@@ -179,7 +179,9 @@ Start `diffs` and leave it running:
 /path/to/diffs --db=/tmp/foo serve --enable-inject
 ```
 
-Then, in a third console, inject a snapshot into the diff server:
+Then, in a third console, inject a snapshot of your Client View into diff-server.
+
+The Client View must be key/value pairs, but the value part can be any valid JSON type. You decide the data you will need locally in your application.
 
 ```bash
 CLIENT_ID=<your-client-id-from-step-4>
@@ -207,7 +209,33 @@ curl -d @- http://localhost:7001/inject << EOF
 EOF
 ```
 
-The new todo shows up on next sync:
+### 6. Build your View
+
+Replace `_getBody` with the following:
+
+```
+  Widget _getBody(BuildContext context) {
+    return Center(
+      child: StreamBuilder(
+        stream: _replicache.subscribe((ReadTransaction tx) async {
+          Iterable<ScanItem> res = await tx.scan(prefix: '/todo/');
+          return res.map((event) => event.value as Map<String, dynamic>);
+        }),
+        builder:  (BuildContext context, AsyncSnapshot<Iterable<Map<String, dynamic>>> snapshot) {
+          return Column(
+            mainAxisAlignment: MainAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: List.from(
+              (snapshot.data ?? []).map(
+                (Map m) => CheckboxListTile(value: m['complete'], title: Text(m['text'])))),
+          );
+        },
+      )
+    );
+  }
+```
+
+Reload or re-run the app. The initial Client View data appears.
 
 [image](image2)
 
@@ -220,7 +248,7 @@ Sweet!
 * To get the `clientID` value search the log output of the Flutter app for `ClientID`. Replicache prints it out early in startup.
 * You'll setup `lastTransactionID` later in this tutorial. For now just return `0`.
 
-### 6. Update Data
+### 7. Update Data
 
 Now inject a new snapshot:
 
@@ -262,22 +290,46 @@ You'll see your Flutter app update dynamically:
 
 Huzzah!
 
-### 7. Write Data
+### 8. Mutations
 
-Add a Todo by pressing the "+" button in the top-right corner of the app. The change happens immediately and updates in the app:
+Replace `_registerMutations` and `_handleTodo` as follows:
+
+```
+  void _registerMutations() {
+    // Register a single mutator to create a new todo. A real todo app would have one of these for each
+    // mutation that the UI needs.
+    _createTodo = _replicache.register("createTodo", (tx, args) async {
+      tx.put("/todo/${args["id"]}", args);
+    });
+  }
+
+  void _handleAddTodo() async {
+    var id = _random.nextInt(2^32-1);
+    await _createTodo({"id": id, "listID": 1, "text": "Todo $id", "order": 1.0, "complete": false});
+    _replicache.sync();
+  }
+```
+
+Then, re-run the app. Add a Todo locally by pressing the "+" button in the top-right corner of the app. The change happens immediately and updates in the app:
 
 [image](4)
 
-...
-
-
-
-
-### 8. 🎉
+### 9. Server Integration
 
 Congratulations — you are done with the client setup! Time for a cup of coffee.
 
-In fact, while you're away, why not turn off the wifi and click around. Your app will respond instantly with cached data and queue up the changes to replay, once you setup the server-side integration.
+At this point, you are reading and writing locally, but you're not syncing with any server. To do that, you'll need to add your server implementation of the Replicache sync protocol. See [Replicache Server Quickstart](https://github.com/rocicorp/replicache#server-side) for instructions.
+
+In the meantime you can hook your client up to our sample todo server by changing the URLs like so:
+
+```
+  final diffsUrl = 'https://serve.replicache.dev/pull';
+  final diffsAuth = '1';
+  final batchUrl = 'https://replicache-sample-todo.now.sh/serve/replicache-batch';
+  final dataLayerAuth = '1';
+```
+
+Re-launch the app. The changes will be committed to the remote server.
 
 ## Next steps
 
