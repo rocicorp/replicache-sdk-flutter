@@ -319,7 +319,8 @@ You'll see your Flutter app update dynamically:
 Huzzah!
 
 ### 8. Mutations
-Then, re-run the app. Add a Todo locally by pressing the "+" button in the top-right corner of the app. The change happens immediately and updates in the app:
+
+Add a Todo locally by pressing the "+" button in the top-right corner of the app. The change happens immediately and updates in the app:
 
 <img src="img/quickstart-3.png" height="400">
 
