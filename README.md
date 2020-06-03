@@ -2,26 +2,25 @@
 
 ![Flutter Test](https://github.com/rocicorp/replicache-sdk-flutter/workflows/Flutter%20Test/badge.svg)
 
-# Quickstart
-
-Hi! This tutorial will walk you through integrating Replicache into your Flutter mobile app.
-
-If you have any problems working through this, or just have questions, please [join us on Slack](https://join.slack.com/t/rocicorp/shared_invite/zt-ekh3oxbq-FzzB7qP9lwqdTvBjxXU2oA). We'd be happy to help. See also our [contributing guide](https://github.com/rocicorp/replicache/blob/master/contributing.md).
-
 # Contributing
 
-See the [contributing guide in the main Replicache repo]
+See the [contributing guide in the main Replicache repo](https://github.com/rocicorp/replicache/blob/master/contributing.md).
 
+# Quickstart
+
+Hi! This tutorial walks through creating a basic offline-first todo app in Flutter with Replicache.
+
+If you have any problems working through this, or just have questions, please [join us on Slack](https://join.slack.com/t/rocicorp/shared_invite/zt-ekh3oxbq-FzzB7qP9lwqdTvBjxXU2oA). We'd be happy to help. See also our [contributing guide](https://github.com/rocicorp/replicache/blob/master/contributing.md).
 
 **Note:** This document assumes you already know what Replicache is, why you might need it, and broadly how it works. If that's not true, see the [Replicache homepage](https://replicache.dev) for an overview, or the [design document](https://github.com/rocicorp/replicache/blob/master/design.md) for a detailed deep-dive.
 
 ### 1. Get the SDK
 
-Download the [Replicache SDK](https://github.com/rocicorp/replicache/releases/latest/download/replicache-sdk.tar.gz), then unzip it:
+Download and unzip the latest SDK release:
 
 ```bash
-curl -o replicache-sdk.tar.gz -L https://github.com/rocicorp/replicache/releases/latest/download/replicache-sdk.tar.gz
-tar xvzf replicache-sdk.tar.gz
+curl -o replicache-sdk-flutter.zip -L https://github.com/rocicorp/replicache-sdk-flutter/releases/latest/download/replicache-sdk-flutter.zip
+unzip replicache-sdk-flutter.zip
 ```
 
 ### 2. Start a new, empty Flutter app
@@ -32,16 +31,12 @@ flutter create todo
 
 ### 3. Add the `replicache` dependency to your Flutter app's `pubspec.yaml`
 
+Add the following lines to the `dependencies` section of `pubspec.yaml`:
+
 ```yaml
-...
-
-  cupertino_icons: ^0.1.2
-
-+   replicache:
-+     path:
-+       /path/to/replicache-sdk/flutter/
-
-...
+  replicache:
+    path:
+      /path/to/replicache-sdk-flutter/
 ```
 
 ### 4. Add main.dart
@@ -72,15 +67,28 @@ class MyApp extends StatelessWidget {
 }
 
 class MyHomePage extends StatelessWidget {
-  final String title;
   // Android emulator cannot use localhost.
   final diffsURL = 'http://${Platform.isAndroid ? '10.0.2.2' : 'localhost'}:7001/pull';
+
+  // You authenticate to the diff server with your account ID. To play around, use 'sandbox'.
+  final diffsAuth = 'sandbox';
+
+  final String title;
   final _random = Random();
   Replicache _replicache;
   Mutator _createTodo;
 
   MyHomePage({Key key, this.title}) : super(key: key) {
-    _replicache = Replicache(diffsURL);
+    _replicache = Replicache(
+      diffServerUrl: diffsURL,
+      diffServerAuth: diffsAuth,
+    );
+
+    // Tell Replicache to pull from the diff server every 10s. In a real app you'll have this be
+    // far less frequent and typically pull only in response to a server push notification.  But
+    // this is convenient for development.
+    _replicache.syncInterval = Duration(seconds: 10);
+
     _createTodo = _replicache.register("createTodo", (tx, args) async {
       tx.put("/todo/${args["id"]}", args);
     });
@@ -137,26 +145,45 @@ flutter emulators --launch apple_ios_simulator
 flutter run
 ```
 
-You will see Replicache start up and start trying to sync, but fail because no diff-server is running. That's OK! We'll fix that in the next step.
+The app starts up, but there's no TODOs yet:
 
-For now, search for `ClientID` in the output and copy it down. Every device syncing with Replicache has a unique `ClientID` generated at first run. We'll need that value next.
+[todo: image]()
 
+In the console, you will see output like:
 
-### 5. Start a development diff-server and put some sample data in it:
-
-Under normal circumstances, Replicache periodically pulls a snapshot of user data that should be persistent on the client (the *Client View*) from your service. Replicache computes a diff for each client and sends only the changes as part of downstream sync.
-
-You will need set up integration with your service later (see [server-side integration](https://github.com/rocicorp/replicache/blob/master/README.md)).
-
-But while you're working on the client side, it's easiest to just inject snapshots directly from the command line.
-
-In a new tab, start a development `diffs` server and leave it running:
-
-```bash
-/path/to/replicache-sdk/<platform>/diffs --db=/tmp/foo serve --enable-inject
+```
+flutter: Replicache (native): 02 Jun 20 13:53:31.000 -1000 INF Opened Replicache instance at: /Users/aa/Library/Developer/CoreSimulator/Devices/66A73307-D0C6-4D9A-87A4-B2664A3F13CA/data/Containers/Data/Application/4FD702A2-84E8-4D47-82D6-F804702481F5/Library/Application Support/com.example.todo/replicache/aHR0cDovL2xvY2FsaG9zdDo3MDAxL3B1bGw with tempdir: /Users/aa/Library/Developer/CoreSimulator/Devices/66A73307-D0C6-4D9A-87A4-B2664A3F13CA/data/Containers/Data/Application/4FD702A2-84E8-4D47-82D6-F804702481F5/tmp and ClientID: o3mMfS36gUrMkw3jfoNWun db=http://localhost:7001/pull gr=17 req=open rid=1
+flutter: Replicache: LogLevel.info: Error: Exception: Error invoking "beginSync": PlatformException(UNAVAILABLE, sync o3mMfS36gUrMkw3jfoNWun-5ed6e67b-1 failed: pull from http://localhost:7001/pull failed: Post "http://localhost:7001/pull": dial tcp [::1]:7001: connect: connection refused, null)
 ```
 
-Then, in a third tab, inject a snapshot into the diff server:
+Replicache starts up and tries to do an initial sync, but fails because no diff-server is running. That's OK! We'll fix that in the next step.
+
+For now, search for `ClientID` in the console output and copy it down. Every device syncing with Replicache has a unique `ClientID` generated at first run. We'll need that value next.
+
+
+### 5. Start a development diff-server and put some data in it:
+
+In a new console, download a copy of the development diff-server:
+
+```bash
+# For OSX
+curl -o diffs -L https://github.com/rocicorp/diff-server/releases/latest/download/diffs-osx
+chmod u+x diffs
+
+# For Linux
+curl -o diffs -L https://github.com/rocicorp/diff-server/releases/latest/download/diffs-linux
+chmod u+x diffs
+```
+
+*(Note: You'll probably want to put `diffs` in your path somewhere as you'll be using it frequently.)*
+
+Start `diffs` and leave it running:
+
+```bash
+/path/to/diffs --db=/tmp/foo serve --enable-inject
+```
+
+Then, in a third console, inject a snapshot into the diff server:
 
 ```bash
 CLIENT_ID=<your-client-id-from-step-4>
@@ -184,15 +211,22 @@ curl -d @- http://localhost:7001/inject << EOF
 EOF
 ```
 
-Notes:
+The new todo shows up on next sync:
 
+[image](image2)
+
+Sweet!
+
+#### Notes:
+
+* We set a relatively frequent sync interval during development. For production applications, we recommend leaving this the default (1 minute) and syncing primarily in response to a server push. Most applications have to send such pushes anyway, e.g., to display notifications to the user.
+* The `accountID` is your unique account ID on diff-server. During our early alpha testing, use `"sandbox"`.
 * To get the `clientID` value search the log output of the Flutter app for `ClientID`. Replicache prints it out early in startup.
-* The `accountID` is your unique account ID on diff-server. During our early alpha testing, use "sandbox".
 * You'll setup `lastTransactionID` later in this tutorial. For now just return `0`.
 
 ### 6. Update Data
 
-Now inject a new snapshot, you'll see your view dynamically update:
+Now inject a new snapshot:
 
 ```bash
 curl -d @- http://localhost:7001/inject << EOF
@@ -226,11 +260,21 @@ curl -d @- http://localhost:7001/inject << EOF
 EOF
 ```
 
-You will see the Flutter app update and display a new TODO and check off the previous one. Nice!
+You'll see your Flutter app update dynamically:
+
+[image](image3)
+
+Huzzah!
 
 ### 7. Write Data
 
-Add a Todo by pressing the "+" button in the top-right corner of the app. Periodically the client will attempt to sync and push this change to the server.
+Add a Todo by pressing the "+" button in the top-right corner of the app. The change happens immediately and updates in the app:
+
+[image](4)
+
+...
+
+
 
 
 ### 8. 🎉
