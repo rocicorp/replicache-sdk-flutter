@@ -142,9 +142,9 @@ flutter emulators --launch apple_ios_simulator
 flutter run
 ```
 
-The app starts up, but there's no TODOs yet:
+The app starts up, but there's no TODOs yet 😢:
 
-[todo: image](image1)
+<img src="./img/quickstart-0.png" height="400">
 
 In the console, you will see output like:
 
@@ -235,9 +235,9 @@ Replace `_getBody` with the following:
   }
 ```
 
-Reload or re-run the app. The initial Client View data appears.
+Reload or re-run the app. The initial Client View data appears:
 
-[image](image2)
+<img src="img/quickstart-1.png" height="400">
 
 Sweet!
 
@@ -286,7 +286,7 @@ EOF
 
 You'll see your Flutter app update dynamically:
 
-[image](image3)
+<img src="img/quickstart-2.png" height="400">
 
 Huzzah!
 
@@ -312,7 +312,7 @@ Replace `_registerMutations` and `_handleTodo` as follows:
 
 Then, re-run the app. Add a Todo locally by pressing the "+" button in the top-right corner of the app. The change happens immediately and updates in the app:
 
-[image](4)
+<img src="img/quickstart-3.png" height="400">
 
 ### 9. Server Integration
 
