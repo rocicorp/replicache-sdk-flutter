@@ -85,7 +85,7 @@ flutter run
 
 In the console, you will see output like:
 
-```
+```bash
 flutter: Replicache (native): 02 Jun 20 13:53:31.000 -1000 INF Opened Replicache instance at: /Users/aa/Library/Developer/CoreSimulator/Devices/66A73307-D0C6-4D9A-87A4-B2664A3F13CA/data/Containers/Data/Application/4FD702A2-84E8-4D47-82D6-F804702481F5/Library/Application Support/com.example.todo/replicache/aHR0cDovL2xvY2FsaG9zdDo3MDAxL3B1bGw with tempdir: /Users/aa/Library/Developer/CoreSimulator/Devices/66A73307-D0C6-4D9A-87A4-B2664A3F13CA/data/Containers/Data/Application/4FD702A2-84E8-4D47-82D6-F804702481F5/tmp and ClientID: o3mMfS36gUrMkw3jfoNWun db=http://localhost:7001/pull gr=17 req=open rid=1
 flutter: Replicache: LogLevel.info: Error: Exception: Error invoking "beginSync": PlatformException(UNAVAILABLE, sync o3mMfS36gUrMkw3jfoNWun-5ed6e67b-1 failed: pull from http://localhost:7001/pull failed: Post "http://localhost:7001/pull": dial tcp [::1]:7001: connect: connection refused, null)
 ```
@@ -148,7 +148,7 @@ EOF
 
 Replace `main.dart` with:
 
-```
+```dart
 import 'package:flutter/material.dart';
 import 'package:replicache/replicache.dart';
 import 'dart:io';
@@ -331,7 +331,7 @@ At this point, you are reading and writing locally, but you're not syncing with 
 
 In the meantime you can hook your client up to our sample todo server by changing the URLs like so:
 
-```
+```dart
   final diffsUrl = 'https://serve.replicache.dev/pull';
   final diffsAuth = '1';
   final batchUrl = 'https://replicache-sample-todo.now.sh/serve/replicache-batch';
