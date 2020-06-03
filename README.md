@@ -2,10 +2,6 @@
 
 ![Flutter Test](https://github.com/rocicorp/replicache-sdk-flutter/workflows/Flutter%20Test/badge.svg)
 
-# Contributing
-
-See the [contributing guide in the main Replicache repo](https://github.com/rocicorp/replicache/blob/master/contributing.md).
-
 # Quickstart
 
 Hi! This tutorial walks through creating a basic offline-first todo app in Flutter with Replicache.
