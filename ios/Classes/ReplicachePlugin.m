@@ -5,8 +5,7 @@
 const NSString* CHANNEL_NAME = @"replicache.dev";
 
 @implementation ReplicachePlugin
-  dispatch_queue_t generalQueue;
-  dispatch_queue_t pullQueue;
+  dispatch_queue_t q;
 
 + (void)registerWithRegistrar:(NSObject<FlutterPluginRegistrar>*)registrar {
   FlutterMethodChannel* channel = [FlutterMethodChannel
@@ -16,31 +15,22 @@ const NSString* CHANNEL_NAME = @"replicache.dev";
   instance->channel = channel;
   [registrar addMethodCallDelegate:instance channel:channel];
 
-  // Most Replicache operations happen serially, but not blocking UI thread.
-  generalQueue = dispatch_queue_create("dev.roci.Replicache", NULL);
+  // The replicache-client API is threadafe and handles locking internally,
+  // so we can dispatch commands on multiple threads.
+  q = dispatch_get_global_queue(QOS_CLASS_USER_INTERACTIVE, 0);
 
-  // Pull uses a concurrent queue because we don't want it to block other Replicache operations.
-  pullQueue = dispatch_get_global_queue( DISPATCH_QUEUE_PRIORITY_DEFAULT, 0);
-
-  dispatch_async(generalQueue, ^(void){
+  dispatch_async(q, ^(void){
     RepmInit([instance replicacheDir], @"", instance);
   });
 }
 
 - (void)handleMethodCall:(FlutterMethodCall*)call result:(FlutterResult)result {
-  dispatch_queue_t queue;
-  if ([call.method isEqualToString:@"pull"]) {
-    queue = pullQueue;
-  } else {
-    queue = generalQueue;
-  }
-
   // The arguments passed from Flutter is a two-element array:
   // 0th element is the name of the database to call on
   // 1st element is the rpc argument (UTF8 encoded string containing JSON)
   NSArray* args = (NSArray*)call.arguments;
 
-  dispatch_async(queue, ^(void){
+  dispatch_async(q, ^(void){
     NSError* err = nil;
     NSData* res = RepmDispatch([args objectAtIndex:0], call.method, [[args objectAtIndex:1] data], &err);
     dispatch_async(dispatch_get_main_queue(), ^(void){
