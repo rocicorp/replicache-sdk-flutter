@@ -109,7 +109,7 @@ class Replicache implements ReadTransaction {
 
   Replicache._new({
     @required String diffServerUrl,
-    String name = '',
+    String name = 'default',
     String dataLayerAuth = '',
     String diffServerAuth = '',
     String batchUrl = '',
@@ -119,9 +119,7 @@ class Replicache implements ReadTransaction {
         _dataLayerAuth = dataLayerAuth,
         _diffServerAuth = diffServerAuth,
         _batchUrl = batchUrl,
-        // TODO(arv): Probably does not make much sense to have name default to
-        // the diffServerUrl. Make it a required param?
-        _name = name.isEmpty ? diffServerUrl : name,
+        _name = name,
         _syncInterval = syncInterval,
         _repmInvoke = repmInvoke {
     if (_diffServerUrl.isEmpty) {
