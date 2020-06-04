@@ -286,6 +286,10 @@ class Replicache implements ReadTransaction {
     A args,
   ) async {
     final mutatorImpl = _mutatorRegistry[name];
+    if (mutatorImpl == null) {
+      error('Unknown mutator $name');
+      return basis;
+    }
     final res = await _mutate(
       name,
       mutatorImpl,
