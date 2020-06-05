@@ -262,7 +262,7 @@ class Replicache implements ReadTransaction {
     final replayMutations = res['replayMutations'];
     if (replayMutations == null || replayMutations.isEmpty) {
       // All done.
-      await _checkChange(beginSyncResult.syncHead);
+      await _checkChange(syncHead);
       return;
     }
 
@@ -286,6 +286,10 @@ class Replicache implements ReadTransaction {
     A args,
   ) async {
     final mutatorImpl = _mutatorRegistry[name];
+    if (mutatorImpl == null) {
+      error('Unknown mutator $name');
+      return basis;
+    }
     final res = await _mutate(
       name,
       mutatorImpl,
@@ -539,7 +543,7 @@ class Replicache implements ReadTransaction {
     R rv;
     try {
       final tx = newWriteTransaction(this._invoke, txId);
-      rv = await Function.apply(mutatorImpl, [tx, args]);
+      rv = await mutatorImpl(tx, args);
     } catch (ex) {
       // No need to await the response.
       _closeTransaction(txId);
