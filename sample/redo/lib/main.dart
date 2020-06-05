@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 import 'dart:math';
 
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -471,6 +472,14 @@ class TodoDrawer extends StatelessWidget {
         ),
       );
     }
+    children.add(
+      ListTile(
+        title: Text('Crash'),
+        onTap: () {
+          exit(0);
+        },
+      ),
+    );
     children.add(
       ListTile(
         title: Text('Logout'),
