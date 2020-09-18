@@ -2,6 +2,14 @@
 
 ![Flutter Test](https://github.com/rocicorp/replicache-sdk-flutter/workflows/Flutter%20Test/badge.svg)
 
+# Status
+
+**WARNING:** This repo is archived and not being updated.
+
+The Replicache project shifted focus to web. See https://github.com/rocicorp/replicache-sdk-js for the latest. We might return to this in the future.
+
+---
+
 # Quickstart
 
 Hi! This tutorial walks through creating a basic offline-first todo app in Flutter with Replicache.
